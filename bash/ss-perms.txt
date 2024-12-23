@@ -1,0 +1,289 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: https://mirrors.slickstack.io/bash/ss-perms.txt #######################################
+#### path: /var/www/ss-perms #######################################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Resets all file and user permissions across the entire SlickStack server #############
+#### module version: Ubuntu 22.04 LTS ##############################################################
+#### sourced by: ss-install, ss-update-modules #####################################################
+#### bash aliases: ss perms, ss reset perms ########################################################
+####################################################################################################
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Perms) ##################################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Touch Timestamp File
+## B. Message (Begin Script)
+## C. 
+
+####################################################################################################
+#### A. SS-Perms: Touch Timestamp File #############################################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_PERMS}"
+
+####################################################################################################
+#### B. SS-Perms: Message (Begin Script) ###########################################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-perms... ${COLOR_RESET}"
+
+####################################################################################################
+#### C. SS-Perms: Reset Permissions (SlickStack) #####################################
+####################################################################################################
+
+## SNIPPET: ss-check, ss-perms, ss-worker
+
+## because SlickStack core permissions are critical this is hardcoded in multiple scripts ##
+## this ensures that permissions are reset regularly and do not rely on sourcing ##
+
+## make directories ##
+ss_mkdir /var/www
+ss_mkdir /var/www/cache
+ss_mkdir /var/www/cache/nginx
+ss_mkdir /var/www/cache/opcache
+ss_mkdir /var/www/cache/system
+ss_mkdir /var/www/crons
+ss_mkdir /var/www/html
+ss_mkdir /var/www/logs
+ss_mkdir /var/www/meta
+
+## reset permissions ##
+chown root:root /var ## must be root:root
+chown root:root /var/www ## must be root:root
+chown www-data:www-data /var/www/cache ## must be www-data:www-data
+chown www-data:www-data /var/www/cache/opcache ## must be www-data:www-data
+chown root:root /var/www/crons ## must be root:root
+chown -R $SFTP_USER:www-data /var/www/html/.well-known
+chown www-data:www-data /var/www/logs ## must be www-data:www-data
+chown www-data:www-data /var/www/meta ## must be www-data:www-data
+chmod 0755 /var/www ## must be 0755
+chmod 0775 /var/www/cache ## 6755 should also work
+chmod 0755 /var/www/cache/opcache ## 755 should also work
+chmod 0755 /var/www/crons ## must be 0755
+chmod 0775 /var/www/logs ## 6755 should also work
+chmod 0775 /var/www/meta ## 6755 should also work
+
+####################################################################################################
+#### SS-Perms: Reset Permissions (Ubuntu) ##########################################################
+####################################################################################################
+
+## here we ensure permissions are safe for general system (Linux) files and otherwise ##
+## since this is a single-user stack we can lock these down without issues ##
+
+## run ss-perms-ubuntu-bash ##
+source "${PATH_SS_PERMS_UBUNTU_BASH}"
+
+## run ss-perms-ubuntu-crontab ##
+source "${PATH_SS_PERMS_UBUNTU_CRONTAB}"
+
+## run ss-perms-ubuntu-kernel ##
+source "${PATH_SS_PERMS_UBUNTU_KERNEL}"
+
+## run ss-perms-ubuntu-ssh ##
+source "${PATH_SS_PERMS_UBUNTU_SSH}"
+
+## run ss-perms-ubuntu-swapfile ##
+source "${PATH_SS_PERMS_UBUNTU_SWAPFILE}"
+
+## run ss-perms-ubuntu-users ##
+source "${PATH_SS_PERMS_UBUNTU_USERS}"
+
+## run ss-perms-ubuntu-utils ##
+source "${PATH_SS_PERMS_UBUNTU_UTILS}"
+
+####################################################################################################
+#### SS-Perms: Reset Permissions (MySQL) ###########################################################
+####################################################################################################
+
+## run ss-perms-mysql-packages ##
+source "${PATH_SS_PERMS_MYSQL_PACKAGES}"
+
+## run ss-perms-mysql-config ##
+source "${PATH_SS_PERMS_MYSQL_CONFIG}"
+
+####################################################################################################
+#### SS-Perms: Reset Permissions (PHP-FPM) #########################################################
+####################################################################################################
+
+## run ss-perms-php-packages ##
+source "${PATH_SS_PERMS_PHP_PACKAGES}"
+
+## run ss-perms-php-config ##
+source "${PATH_SS_PERMS_PHP_CONFIG}"
+
+####################################################################################################
+#### SS-Perms: Reset Permissions (Nginx) ###########################################################
+####################################################################################################
+
+## run ss-perms-nginx-packages ##
+source "${PATH_SS_PERMS_NGINX_PACKAGES}"
+
+## run ss-perms-nginx-config ##
+source "${PATH_SS_PERMS_NGINX_CONFIG}"
+
+####################################################################################################
+#### SS-Perms: Reset Permissions (CMS) #############################################################
+####################################################################################################
+
+if [[ "$SS_APP" == "craft" ]]; then
+
+    ## run ss-perms-craft-config ##
+    source "${PATH_SS_PERMS_CRAFT_CONFIG}"
+    
+    ## run ss-perms-craft-packages ##
+    source "${PATH_SS_PERMS_CRAFT_PACKAGES}"
+
+fi
+
+if [[ "$SS_APP" == "mediawiki" ]]; then
+
+    ## run ss-perms-mediawiki-config ##
+    source "${PATH_SS_PERMS_MEDIAWIKI_CONFIG}"
+    
+    ## run ss-perms-mediawiki-packages ##
+    source "${PATH_SS_PERMS_MEDIAWIKI_PACKAGES}"
+
+fi
+
+if [[ "$SS_APP" == "moodle" ]]; then
+
+    ## run ss-perms-moodle-config ##
+    source "${PATH_SS_PERMS_MOODLE_CONFIG}"
+    
+    ## run ss-perms-moodle-packages ##
+    source "${PATH_SS_PERMS_MOODLE_PACKAGES}"
+
+fi
+
+if [[ "$SS_APP" == "opencart" ]]; then
+
+    ## run ss-perms-opencart-config ##
+    source "${PATH_SS_PERMS_OPENCART_CONFIG}"
+    
+    ## run ss-perms-opencart-packages ##
+    source "${PATH_SS_PERMS_OPENCART_PACKAGES}"
+
+fi
+
+if [[ "$SS_APP" == "prestashop" ]]; then
+    
+    ## run ss-perms-prestashop-config ##
+    source "${PATH_SS_PERMS_PRESTASHOP_CONFIG}"
+    
+    ## run ss-perms-prestashop-packages ##
+    source "${PATH_SS_PERMS_PRESTASHOP_PACKAGES}"
+    
+fi
+
+if [[ "${SS_APP}" == "wordpress" ]] || [[ -z "${SS_APP}"  ]]; then
+
+    ## run ss-perms-wordpress-config ##
+    source "${PATH_SS_PERMS_WORDPRESS_CONFIG}"
+
+    ## run ss-perms-wordpress-mu-plugins ##
+    source "${PATH_SS_PERMS_WORDPRESS_MU_PLUGINS}"
+
+    ## run ss-perms-wordpress-cli ##
+    source "${PATH_SS_PERMS_WORDPRESS_CLI}"
+    
+    ## run ss-perms-wordpress-packages ##
+    source "${PATH_SS_PERMS_WORDPRESS_PACKAGES}"
+    
+fi
+
+####################################################################################################
+#### SS-Perms: Reset Permissions (Memcached) ###########################################################
+####################################################################################################
+
+## run ss-perms-redis-packages ##
+source "${PATH_SS_PERMS_MEMCACHED_PACKAGES}"
+
+## run ss-perms-redis-config ##
+source "${PATH_SS_PERMS_MEMCACHED_CONFIG}"
+
+####################################################################################################
+#### SS-Perms: Reset Permissions (UFW Firewall) ####################################################
+####################################################################################################
+
+## run ss-perms-ufw-packages ##
+source "${PATH_SS_PERMS_UFW_PACKAGES}"
+
+## run ss-perms-ufw-config ##
+source "${PATH_SS_PERMS_UFW_CONFIG}"
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: http://www.unixmantra.com/2013/04/unix-linux-file-permissions.html
+## Ref: https://unix.stackexchange.com/questions/203371/run-script-sh-vs-bash-script-sh-permission-denied/203372#203372
+## Ref: https://stackoverflow.com/questions/14372645/convert-dos2unix-line-endings-for-all-files-in-a-directory/19284034#19284034
+## Ref: https://stackoverflow.com/questions/11929461/how-can-i-run-dos2unix-on-an-entire-directory/11929475#11929475
+## Ref: https://unix.stackexchange.com/questions/310432/bash-script-to-convert-all-files-of-a-given-type-from-unix-to-dos-format/310437#310437
+## Ref: https://kb.iu.edu/d/acux
+## Ref: https://stackoverflow.com/questions/2613800/how-to-convert-dos-windows-newline-crlf-to-unix-newline-lf-in-a-bash-script
+## Ref: https://github.com/wp-cli/wp-cli/issues/3181
+## Ref: https://github.com/wp-cli/wp-cli/issues/1241
+## Ref: https://www.alexgeorgiou.gr/wp-cli-www-data-user-permissions-linux/
+## Ref: https://www.darklaunch.com/php-normalize-newlines-line-endings-crlf-cr-lf-unix-windows-mac
+## Ref: https://serverfault.com/questions/344544/what-is-the-first-digit-for-in-4-digit-octal-unix-file-permission-notation
+## Ref: https://unix.stackexchange.com/questions/79395/how-does-the-sticky-bit-work
+## Ref: https://superuser.com/questions/684213/why-are-execute-permissions-along-with-write-permissions-needed-for-creating-a-f
+## Ref: https://ubuntuforums.org/showthread.php?t=2383638
+## Ref: https://serverfault.com/questions/584986/bad-ownership-or-modes-for-chroot-directory-component
+## Ref: https://stackoverflow.com/questions/6851909/how-do-i-delete-everything-in-redis
+## Ref: https://serverfault.com/questions/888653/correct-web-user-for-php-fpm-under-nginx
+## Ref: https://askubuntu.com/questions/25681/can-scripts-run-even-when-they-are-not-set-as-executable
+## Ref: https://serverfault.com/questions/616788/nginx-403-forbidden-on-some-files-extensions
+## Ref: https://serverfault.com/questions/686357/unable-to-open-jpeg-files-with-nginx
+## Ref: https://askubuntu.com/questions/831414/what-is-the-difference-between-touch-file-and-file
+## Ref: https://bash.cyberciti.biz/guide/Setting_up_permissions_on_a_script
+## Ref: http://bazaar.launchpad.net/~ubuntu-branches/ubuntu/raring/cron/raring/view/head:/database.c#L380
+## Ref: https://askubuntu.com/questions/23009/why-crontab-scripts-are-not-working
+## Ref: https://unix.stackexchange.com/questions/358112/permissions-error-with-wordpress
+## Ref: https://webinoly.com/support/975/chown-problem?show=975
+## Ref: https://unix.stackexchange.com/questions/118085/transform-a-directory-into-file-or-a-file-into-directory
+## Ref: https://github.com/geerlingguy/ansible-role-mysql/issues/246
+## Ref: https://github.com/geerlingguy/ansible-role-mysql/issues/220
+
+## SS_EOF

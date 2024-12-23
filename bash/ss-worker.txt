@@ -1,0 +1,611 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/bash/ss-worker.txt #################################
+#### path: /var/www/ss-worker ######################################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Performs SlickStack maintenance tasks and updates the ss-check bash script ###########
+#### module version: Ubuntu 24.04 LTS ##############################################################
+#### sourced by: ss-install, ss-update-modules #####################################################
+#### bash aliases: ss worker #######################################################################
+####################################################################################################
+
+## SS-WORKER TAKES CARE OF MANY IMPORTANT TASKS AND CRITICAL PATCHES FOR SLICKSTACK ##
+## DISABLE SLICKSTACK CRON JOBS AND SS-CONFIG INTERVALS AT YOUR OWN RISK ##
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Worker) #################################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Source SS-Config + SS-Functions
+## B. Touch Timestamp File
+## C. Message (Begin Script)
+## D. Backup SS-Config
+## E. Backup Custom Cron Jobs
+## F. Update SS-Check
+## G. Update Blacklist.txt
+
+## H. Transfer Pilot File Settings (If Exists)
+## I. Install SS-Constants.php
+## K. Install Default Robots.txt (If Not Exists)
+## L. Install SS-Icon.svg (If Not Exists)
+
+## M. Install Nginx Error Pages (If Not Exists)
+## N. Delete Object-Cache.php (Conditional)
+## O. Urgent SlickStack Patches
+## P. Reset Permissions (SlickStack)
+
+####################################################################################################
+#### A. SS-Worker: Source SS-Config + SS-Functions #################################################
+####################################################################################################
+
+## before anything else we must source the critical variables that power this script ##
+## ss-config is setup during ss-install wizard but ss-functions is hardcoded ##
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### B. SS-Worker: Touch Timestamp File ############################################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_WORKER}"
+
+####################################################################################################
+#### C. SS-Worker: Message (Begin Script) ##########################################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-worker... ${COLOR_RESET}"
+
+####################################################################################################
+#### D. SS-Worker: Backup SS-Config ################################################################
+####################################################################################################
+
+## this will replicate your current ss-config file (and settings) to the backups dir ##
+## the oldest .bak files will be cleaned up periodically by ss-clean-files ##
+
+## SNIPPET: ss-update-config, ss-worker
+## UPDATED: 20MAR2024
+
+ss_cp "${PATH_SS_CONFIG}" /var/www/backups/config/ss-config.bak.${SYSTEM_CURRENT_TIME}
+
+####################################################################################################
+#### E. SS-Worker: Backup Custom Cron Jobs #########################################################
+####################################################################################################
+
+## this will backup and overwrite all your custom cron job files to the backups dir ##
+## you can then remotely backup this folder or simply use it for reference ##
+
+ss_rsync /var/www/crons/custom/ /var/www/backups/crons
+
+####################################################################################################
+#### F. SS-Worker: Update SS-Check #################################################################
+####################################################################################################
+
+## here we retrieve the latest ss-check bash script to improve SlickStack redundancy ##
+## ss-check thus avoids installing itself and single point of failure (SPOF) ##
+
+## retrieve ss-check ##
+ss_wget "${TMP_SS_CHECK}" "${GITHUB_SS_CHECK}"
+VALIDATE_TMP_SS_CHECK=$(grep 'SS_EOF' "${TMP_SS_CHECK}" 2> /dev/null)
+if [[ -z "${VALIDATE_TMP_SS_CHECK}" ]]; then
+    ss_wget "${TMP_SS_CHECK}" "${GITLAB_SS_CHECK}"
+fi
+
+## install ss-check ##
+VALIDATE2_TMP_SS_CHECK=$(grep 'SS_EOF' "${TMP_SS_CHECK}" 2> /dev/null)
+if [[ -n "${VALIDATE2_TMP_SS_CHECK}" ]]; then
+    ss_mv "${TMP_SS_CHECK}" "${PATH_SS_CHECK}"
+fi
+
+####################################################################################################
+#### G. SS-Worker: Update Blacklist.txt ############################################################
+####################################################################################################
+
+## here we retrieve the latest plugin blacklist file which might contain urgent changes ##
+## maintaining a thoughtful blacklist vastly improves WP performance and security ##
+
+## download latest blacklist (or custom blacklist) ##
+if [[ -z "${WP_PLUGIN_BLACKLIST_SOURCE}" ]]; then 
+    ss_wget "${TMP_BLACKLIST_TXT}" "${GITHUB_BLACKLIST_TXT}"
+else
+    ss_wget "${TMP_BLACKLIST_TXT}" "${WP_PLUGIN_BLACKLIST_SOURCE}"
+fi
+
+## ensure wp-content directory exists ##
+ss_mkdir /var/www/html/wp-content/
+
+## null blacklist.txt if false in ss-config (allows default SS MU plugin to be installed while still being able to disable plugin blacklist) ##
+if [[ "${WP_PLUGIN_BLACKLIST}" == "false" ]]; then 
+    ss_touch "${PATH_BLACKLIST_TXT}"
+    cat /dev/null > "${PATH_BLACKLIST_TXT}"
+
+    if [[ "${DEV_SITE}" != "false" ]]; then 
+        ss_touch /var/www/html/dev/wp-content/blacklist.txt
+        cat /dev/null > /var/www/html/dev/wp-content/blacklist.txt
+    fi
+
+    if [[ "${STAGING_SITE}" != "false" ]]; then 
+        ss_touch /var/www/html/staging/wp-content/blacklist.txt
+        cat /dev/null > /var/www/html/staging/wp-content/blacklist.txt
+    fi
+
+else 
+    ss_cp "${TMP_BLACKLIST_TXT}" "${PATH_BLACKLIST_TXT}"
+fi
+
+## reset permissions ##
+ss_chown "${SFTP_USER}":www-data "${PATH_BLACKLIST_TXT}"
+chmod 0444 "${PATH_BLACKLIST_TXT}"
+
+####################################################################################################
+#### H. SS-Worker: Transfer Pilot File Settings (If Exists) ########################################
+####################################################################################################
+
+## this snippet retrieves the remote pilot file defined in ss-config and reads settings ##
+## it replaces ss-config options with these values for multi-server management ##
+
+## retrieve pilot file if exists ##
+if [[ -n "${SS_PILOT_FILE}" ]]; then 
+
+ss_wget "${TMP_SS_PILOT_FILE}" "${SS_PILOT_FILE}"
+
+## read variables from pilot file ##
+PILOT_CLOUDFLARE_API_KEY=$(source /tmp/ss-pilot; echo "${CLOUDFLARE_API_KEY}")
+PILOT_CLOUDFLARE_API_EMAIL=$(source /tmp/ss-pilot; echo "${CLOUDFLARE_API_EMAIL}")
+PILOT_NGINX_HEADER_POWERED_BY=$(source /tmp/ss-pilot; echo "${NGINX_HEADER_POWERED_BY}")
+PILOT_PHP_EXTENSIONS=$(source /tmp/ss-pilot; echo "${PHP_EXTENSIONS}")
+PILOT_WHITELABEL_BRAND=$(source /tmp/ss-pilot; echo "${WHITELABEL_BRAND}")
+PILOT_WHITELABEL_HOMEPAGE=$(source /tmp/ss-pilot; echo "${WHITELABEL_HOMEPAGE}")
+PILOT_WHITELABEL_SUPPORT_URL=$(source /tmp/ss-pilot; echo "${WHITELABEL_SUPPORT_URL}")
+PILOT_WHITELABEL_SUPPORT_EMAIL=$(source /tmp/ss-pilot; echo "${WHITELABEL_SUPPORT_EMAIL}")
+PILOT_WP_PLUGIN_BLACKLIST=$(source /tmp/ss-pilot; echo "${WP_PLUGIN_BLACKLIST}")
+PILOT_WP_PLUGIN_BLACKLIST_SOURCE=$(source /tmp/ss-pilot; echo "${WP_PLUGIN_BLACKLIST_SOURCE}")
+
+## whitelabel brand ##
+if [[ -n "${PILOT_WHITELABEL_BRAND}" ]]; then 
+    ss_sed "s|\(^WHITELABEL_BRAND=\).*|WHITELABEL_BRAND=\"$PILOT_WHITELABEL_BRAND\"|g" "${PATH_SS_CONFIG}"
+fi
+
+## whitelabel homepage ##
+if [[ -n "${PILOT_WHITELABEL_HOMEPAGE}" ]]; then 
+    ss_sed "s|\(^WHITELABEL_HOMEPAGE=\).*|WHITELABEL_HOMEPAGE=\"$PILOT_WHITELABEL_HOMEPAGE\"|g" "${PATH_SS_CONFIG}"
+fi
+
+## whitelabel support url ##
+if [[ -n "${PILOT_WHITELABEL_SUPPORT_URL}" ]]; then 
+    ss_sed "s|\(^WHITELABEL_SUPPORT_URL=\).*|WHITELABEL_SUPPORT_URL=\"$PILOT_WHITELABEL_SUPPORT_URL\"|g" "${PATH_SS_CONFIG}"
+fi
+
+## whitelabel support email ##
+if [[ -n "${PILOT_WHITELABEL_SUPPORT_EMAIL}" ]]; then 
+    ss_sed "s|\(^WHITELABEL_SUPPORT_EMAIL=\).*|WHITELABEL_SUPPORT_EMAIL=\"$PILOT_WHITELABEL_SUPPORT_EMAIL\"|g" "${PATH_SS_CONFIG}"
+fi
+
+## nginx header powered by ##
+if [[ -n "${PILOT_NGINX_HEADER_POWERED_BY}" ]]; then 
+    ss_sed "s|\(^NGINX_HEADER_POWERED_BY=\).*|NGINX_HEADER_POWERED_BY=\"$PILOT_NGINX_HEADER_POWERED_BY\"|g" "${PATH_SS_CONFIG}"
+fi
+
+## cloudflare api key ##
+if [[ -n "${PILOT_CLOUDFLARE_API_KEY}" ]]; then 
+    ss_sed "s|\(^CLOUDFLARE_API_KEY=\).*|CLOUDFLARE_API_KEY=\"$PILOT_CLOUDFLARE_API_KEY\"|g" "${PATH_SS_CONFIG}"
+fi
+
+## cloudflare api email ##
+if [[ -n "${PILOT_CLOUDFLARE_API_EMAIL}" ]]; then 
+    ss_sed "s|\(^CLOUDFLARE_API_EMAIL=\).*|CLOUDFLARE_API_EMAIL=\"$PILOT_CLOUDFLARE_API_EMAIL\"|g" "${PATH_SS_CONFIG}"
+fi
+
+## php extensions ##
+if [[ -n "${PILOT_PHP_EXTENSIONS}" ]]; then 
+    ss_sed "s|\(^PHP_EXTENSIONS=\).*|PHP_EXTENSIONS=\"$PILOT_PHP_EXTENSIONS\"|g" "${PATH_SS_CONFIG}"
+fi
+
+## plugin blacklist status 1 ##
+if [[ -n "${PILOT_WP_PLUGIN_BLACKLIST}" ]]; then 
+    ss_sed "s|\(^SS_WORDPRESS_PLUGIN_BLACKLIST=\).*|SS_WORDPRESS_PLUGIN_BLACKLIST=\"$PILOT_WP_PLUGIN_BLACKLIST\"|g" "${PATH_SS_CONFIG}"
+fi
+
+## plugin blacklist status 2 ##
+if [[ -n "${PILOT_WP_PLUGIN_BLACKLIST}" ]]; then 
+    ss_sed "s|\(^WP_PLUGIN_BLACKLIST=\).*|WP_PLUGIN_BLACKLIST=\"$PILOT_WP_PLUGIN_BLACKLIST\"|g" "${PATH_SS_CONFIG}"
+fi
+
+## plugin blacklist source 1 ##
+if [[ -n "${PILOT_WP_PLUGIN_BLACKLIST_SOURCE}" ]]; then 
+    ss_sed "s|\(^SS_WORDPRESS_PLUGIN_BLACKLIST_SOURCE=\).*|SS_WORDPRESS_PLUGIN_BLACKLIST_SOURCE=\"$PILOT_WP_PLUGIN_BLACKLIST_SOURCE\"|g" "${PATH_SS_CONFIG}"
+fi
+
+## plugin blacklist source 2 ##
+if [[ -n "${PILOT_WP_PLUGIN_BLACKLIST_SOURCE}" ]]; then 
+    ss_sed "s|\(^WP_PLUGIN_BLACKLIST_SOURCE=\).*|WP_PLUGIN_BLACKLIST_SOURCE=\"$PILOT_WP_PLUGIN_BLACKLIST_SOURCE\"|g" "${PATH_SS_CONFIG}"
+fi
+
+fi 
+
+####################################################################################################
+#### I. SS-Worker: Install SS-Constants.php ########################################################
+####################################################################################################
+
+## here we use some janky magic to convert various system settings into PHP constants ##
+## this allows SlickStack to use these handy PHP constants inside PHP scripts ##
+
+## SNIPPET: ss-install-wordpress-config, ss-worker
+## UPDATED: 07APR2024
+
+## download latest boilerplate ##
+ss_wget "${TMP_SS_CONSTANTS_PHP}" "${GITHUB_SS_CONSTANTS_PHP}"
+VALIDATE_TMP_SS_CONSTANTS_PHP=$(grep 'SS_EOF' "${TMP_SS_CONSTANTS_PHP}" 2> /dev/null)
+if [[ -z "${VALIDATE_TMP_SS_CONSTANTS_PHP}" ]]; then
+    ss_wget "${TMP_SS_CONSTANTS_PHP}" "${GITLAB_SS_CONSTANTS_PHP}"
+fi
+
+## wp cron ##
+ss_sed "s|@WP_CRON_METHOD|${WP_CRON_METHOD}|g" "${TMP_SS_CONSTANTS_PHP}"
+ss_sed "s|@WP_CRON_INTERVAL|${WP_CRON_INTERVAL}|g" "${TMP_SS_CONSTANTS_PHP}"
+
+## system information ##
+ss_sed "s|@SYSTEM_VIRTUAL|${SYSTEM_VIRTUAL}|g" "${TMP_SS_CONSTANTS_PHP}"
+ss_sed "s|@SYSTEM_LINUX_KERNEL|${SYSTEM_LINUX_KERNEL}|g" "${TMP_SS_CONSTANTS_PHP}"
+ss_sed "s|@SYSTEM_OS_PRETTY_NAME|${SYSTEM_OS_PRETTY_NAME}|g" "${TMP_SS_CONSTANTS_PHP}"
+ss_sed "s|@SYSTEM_CPU_CORES|${SYSTEM_CPU_CORES}|g" "${TMP_SS_CONSTANTS_PHP}"
+ss_sed "s|@SYSTEM_DISK_FREE_EASY|${SYSTEM_DISK_FREE_EASY}|g" "${TMP_SS_CONSTANTS_PHP}"
+ss_sed "s|@SYSTEM_DISK_FREE|${SYSTEM_DISK_FREE}|g" "${TMP_SS_CONSTANTS_PHP}"
+ss_sed "s|@SYSTEM_DISK_TOTAL_EASY|${SYSTEM_DISK_TOTAL_EASY}|g" "${TMP_SS_CONSTANTS_PHP}"
+ss_sed "s|@SYSTEM_DISK_TOTAL|${SYSTEM_DISK_TOTAL}|g" "${TMP_SS_CONSTANTS_PHP}"
+ss_sed "s|@SYSTEM_DISK_USED_PERCENT|${SYSTEM_DISK_USED_PERCENT}|g" "${TMP_SS_CONSTANTS_PHP}"
+ss_sed "s|@SYSTEM_IPV4_ADDRESS|${SYSTEM_IPV4_ADDRESS}|g" "${TMP_SS_CONSTANTS_PHP}"
+ss_sed "s|@SYSTEM_IPV6_ADDRESS|${SYSTEM_IPV6_ADDRESS}|g" "${TMP_SS_CONSTANTS_PHP}"
+ss_sed "s|@SYSTEM_HOSTNAME|${SYSTEM_HOSTNAME}|g" "${TMP_SS_CONSTANTS_PHP}"
+ss_sed "s|@SYSTEM_PHP_VERSION|${SYSTEM_PHP_VERSION}|g" "${TMP_SS_CONSTANTS_PHP}"
+ss_sed "s|@SYSTEM_PHP_EXTENSIONS|${SYSTEM_PHP_EXTENSIONS}|g" "${TMP_SS_CONSTANTS_PHP}"
+ss_sed "s|@SYSTEM_SERVER_SOFTWARE|${SYSTEM_SERVER_SOFTWARE}|g" "${TMP_SS_CONSTANTS_PHP}"
+
+## mysql version ##
+if [[ "${SYSTEM_UBUNTU_VERSION}" == "22.04" ]]; then
+    SYSTEM_MYSQL_VERSION=$(ss_mysql_root --version |& awk '{print $3}' | sed 's/,//g')
+elif [[ "${SYSTEM_UBUNTU_VERSION}" == "20.04" ]]; then
+    SYSTEM_MYSQL_VERSION=$(ss_mysql_root --version |& awk '{print $3}' | sed 's/,//g')
+elif [[ "${SYSTEM_UBUNTU_VERSION}" == "18.04" ]]; then
+    SYSTEM_MYSQL_VERSION=$(ss_mysql_root --version |& awk '{print $5}' | sed 's/,//g')
+fi
+
+## mysql version (more) ##
+if [[ "${SS_DATABASE_REMOTE}" != "false" ]]; then
+    ss_sed "s|@SYSTEM_MYSQL_VERSION|Unavailable|g" "${TMP_SS_CONSTANTS_PHP}"
+else
+    ss_sed "s|@SYSTEM_MYSQL_VERSION|${SYSTEM_MYSQL_VERSION}|g" "${TMP_SS_CONSTANTS_PHP}"
+fi
+
+## mysql database size ##
+if [[ "${SS_DATABASE_REMOTE}" != "false" ]]; then
+    # ss_sed "/MYSQL_SIZE/d" "${TMP_SS_CONSTANTS_PHP}"
+    ss_sed "s|@SYSTEM_MYSQL_SIZE|Unavailable|g" "${TMP_SS_CONSTANTS_PHP}"
+else
+    ss_sed "s|@SYSTEM_MYSQL_SIZE|${SYSTEM_MYSQL_SIZE}|g" "${TMP_SS_CONSTANTS_PHP}"
+fi
+
+## sftp details ##
+ss_sed "s|@SFTP_USER|${SFTP_USER}|g" "${TMP_SS_CONSTANTS_PHP}"
+ss_sed "s|@SFTP_PASSWORD|${SFTP_PASSWORD}|g" "${TMP_SS_CONSTANTS_PHP}"
+ss_sed "s|@SFTP_PORT|${SSH_PORT}|g" "${TMP_SS_CONSTANTS_PHP}"
+
+## adminer ##
+ss_sed "s|@ADMINER_PUBLIC|${ADMINER_PUBLIC}|g" "${TMP_SS_CONSTANTS_PHP}"
+
+## whitelabel ##
+ss_sed "s|@WHITELABEL_BRAND|${WHITELABEL_BRAND}|g" "${TMP_SS_CONSTANTS_PHP}"
+ss_sed "s|@WHITELABEL_HOMEPAGE|${WHITELABEL_HOMEPAGE}|g" "${TMP_SS_CONSTANTS_PHP}"
+ss_sed "s|@WHITELABEL_SUPPORT_URL|${WHITELABEL_SUPPORT_URL}|g" "${TMP_SS_CONSTANTS_PHP}"
+ss_sed "s|@WHITELABEL_SUPPORT_EMAIL|${WHITELABEL_SUPPORT_EMAIL}|g" "${TMP_SS_CONSTANTS_PHP}"
+
+## staging/dev ##
+ss_sed "s|@STAGING_SITE_STATUS|${STAGING_SITE}|g" "${TMP_SS_CONSTANTS_PHP}"
+ss_sed "s|@DEV_SITE_STATUS|${DEV_SITE}|g" "${TMP_SS_CONSTANTS_PHP}"
+ss_sed "s|@SYNC_STAGING_SITE_STATUS|${SS_SYNC_STAGING}|g" "${TMP_SS_CONSTANTS_PHP}"
+
+## validate and reinstall ##
+## future: if fails add dummy values to avoid fatal errors ##
+VALIDATE2_TMP_SS_CONSTANTS_PHP=$(grep 'SS_EOF' "${TMP_SS_CONSTANTS_PHP}")
+if [[ -n "${VALIDATE2_TMP_SS_CONSTANTS_PHP}" ]]; then
+    ss_mv "${TMP_SS_CONSTANTS_PHP}" "${PATH_SS_CONSTANTS_PHP}"
+    chown www-data:www-data "${PATH_SS_CONSTANTS_PHP}"
+    chmod 0440 "${PATH_SS_CONSTANTS_PHP}" ## should be 0440 (read-only)
+fi
+
+####################################################################################################
+#### K. SS-Worker: Install Default Robots.txt (If Not Exists) ######################################
+####################################################################################################
+
+## here we install a basic robots.txt file in case none exists yet on production site ##
+## by default we allow all URLs to be crawled and block archive.org crawling ##
+
+if [[ ! -f "${PATH_ROBOTS_TXT}" ]]; then 
+    ss_wget "${TMP_ROBOTS_TXT}" "${GITHUB_ROBOTS_TXT}"
+    ss_cp "${TMP_ROBOTS_TXT}" "${PATH_ROBOTS_TXT}"
+    chown www-data:www-data "${PATH_ROBOTS_TXT}"
+    chmod 0644 "${PATH_ROBOTS_TXT}"
+fi
+
+####################################################################################################
+#### L. SS-Worker: Install SS-Icon.svg (If Not Exists) #############################################
+####################################################################################################
+
+if [[ ! -f "${PATH_SS_ICON_SVG}" ]]; then 
+    ss_wget "${TMP_SS_ICON_SVG}" "${GITHUB_SS_ICON_SVG}"
+    ss_mv "${TMP_SS_ICON_SVG}" "${PATH_SS_ICON_SVG}"
+fi
+
+####################################################################################################
+#### M. SS-Worker: Install Nginx Error Pages (If Not Exists) #######################################
+####################################################################################################
+
+## error_404.html ##
+if [[ ! -f "${PATH_ERROR_404_HTML}" ]]; then 
+
+    ## retrieve error_404.html ##
+    ss_wget "${TMP_ERROR_404_HTML}" "${GITHUB_ERROR_404_HTML}"
+    VALIDATE_TMP_ERROR_404_HTML=$(grep 'h1' "${TMP_ERROR_404_HTML}" 2> /dev/null)
+    if [[ -z "${VALIDATE_TMP_ERROR_404_HTML}" ]]; then
+        ss_wget "${TMP_ERROR_404_HTML}" "${GITLAB_ERROR_404_HTML}"
+    fi
+
+    ## install error_404.html ##
+    VALIDATE2_TMP_ERROR_404_HTML=$(grep 'h1' "${TMP_ERROR_404_HTML}" 2> /dev/null)
+    if [[ -n "${VALIDATE2_TMP_ERROR_404_HTML}" ]]; then
+        ss_cp "${TMP_ERROR_404_HTML}" "${PATH_ERROR_404_HTML}"
+        ss_chown root:root "${PATH_ERROR_404_HTML}"
+        chmod 0644 "${PATH_ERROR_404_HTML}"
+    fi
+
+fi
+
+## error_50x.html ##
+if [[ ! -f "${PATH_ERROR_50X_HTML}" ]]; then 
+
+    ## retrieve error_50x.html ##
+    ss_wget "${TMP_ERROR_50X_HTML}" "${GITHUB_ERROR_50X_HTML}"
+    VALIDATE_TMP_ERROR_50X_HTML=$(grep 'h1' "${TMP_ERROR_50X_HTML}" 2> /dev/null)
+    if [[ -z "${VALIDATE_TMP_ERROR_50X_HTML}" ]]; then
+        ss_wget "${TMP_ERROR_50X_HTML}" "${GITLAB_ERROR_50X_HTML}"
+    fi
+
+    ## install error_50x.html ##
+    VALIDATE2_TMP_ERROR_50X_HTML=$(grep 'h1' "${TMP_ERROR_50X_HTML}" 2> /dev/null)
+    if [[ -n "${VALIDATE2_TMP_ERROR_50X_HTML}" ]]; then
+        ss_cp "${TMP_ERROR_50X_HTML}" "${PATH_ERROR_50X_HTML}"
+        ss_chown root:root "${PATH_ERROR_50X_HTML}"
+        chmod 0644 "${PATH_ERROR_50X_HTML}"
+    fi
+
+fi
+
+####################################################################################################
+#### N. SS-Worker: Delete Object-Cache.php (Conditional) ###########################################
+####################################################################################################
+
+## in case the object cache is disabled in ss-config settings we delete that file here ##
+## you can also reinstall SlickStack to achieve this but here for redundancy ##
+
+## delete from dev (always) ##
+if [[ "${DEV_SITE}" == "true" ]]; then 
+    ss_rm /var/www/html/dev/wp-content/object-cache.php
+fi
+
+## delete from staging (always) ##
+if [[ "${STAGING_SITE}" == "true" ]]; then 
+    ss_rm /var/www/html/staging/wp-content/object-cache.php
+fi
+
+## delete from production (conditional) ##
+if [[ "${WP_OBJECT_CACHE}" == "false" ]]; then
+    ss_rm /var/www/html/wp-content/object-cache.php
+fi
+
+####################################################################################################
+#### O. SS-Worker: Urgent SlickStack Patches #######################################################
+####################################################################################################
+
+## our team uses the below space to occassionally add urgent patches to SlickStack ##
+## this is usually easier as it doesnt depend on your interval_ss settings ##
+
+# if [[ "${SS_LOCKDOWN}" != "true" ]]; then
+# source /var/www/ss-install-nginx-config
+# source /var/www/ss-install-wordpress-cli
+# source /var/www/ss-install-wordpress-config
+# source /var/www/ss-install-wordpress-mu-plugins
+# source /var/www/ss-install-ubuntu-bash
+# source /var/www/ss-install-ubuntu-crontab
+# source /var/www/ss-encrypt-openssl
+# source /var/www/ss-encrypt-certbot
+# source /var/www/ss-update-config
+# fi
+
+## temp forced fixes ##
+ss_sed 's|WP_CRON_METHOD="wordpress"|WP_CRON_METHOD="wpcli"|g' /var/www/ss-config
+
+####################################################################################################
+#### P. SS-Worker: Reset Permissions (SlickStack) ##################################################
+####################################################################################################
+
+## we hardcode this permissions reset snippet into some core scripts for redundancy ##
+## this ensures permissions are regularly fixed without any dependencies ##
+
+## NOT TRUE ANYMORE SHOULD USE SS-CONFIG... UPDATE THISSSSSSSS .... May 2024 note ##
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS ##
+
+## SNIPPET: ss-worker, ss core cron jobs
+## UPDATED: 03SEP2024
+
+## make directories ##
+ss_mkdir /var/www
+ss_mkdir /var/www/auth
+ss_mkdir /var/www/backups
+ss_mkdir /var/www/backups/config
+ss_mkdir /var/www/backups/crons
+ss_mkdir /var/www/backups/html
+ss_mkdir /var/www/backups/mysql
+ss_mkdir /var/www/backups/mysql/data
+ss_mkdir /var/www/backups/nginx
+ss_mkdir /var/www/backups/private ## create only if does not exist yet (this folder is for the sudo user to save random files he desires)
+ss_mkdir /var/www/cache
+ss_mkdir /var/www/cache/nginx
+ss_mkdir /var/www/cache/opcache
+ss_mkdir /var/www/cache/system
+ss_mkdir /var/www/cache/wp-cli
+ss_mkdir /var/www/crons
+ss_mkdir /var/www/crons/custom
+ss_mkdir /var/www/html
+ss_mkdir /var/www/html/.well-known
+ss_mkdir /var/www/html/.well-known/acme-challenge
+ss_mkdir /var/www/logs
+ss_mkdir /var/www/meta
+ss_mkdir /var/www/meta/assets
+ss_mkdir /var/www/meta/assets/images
+ss_mkdir /var/www/meta/dynamic
+ss_mkdir /var/www/meta/timestamps
+ss_mkdir /var/www/sites
+ss_mkdir /var/www/sites/includes
+ss_mkdir /var/www/sites/error_pages
+
+## FIFO ##
+if [[ ! -p "${PATH_FIFO}" ]]; then
+    sudo mkfifo "${PATH_FIFO}"
+fi
+
+sudo chown "${SFTP_USER}":www-data "${PATH_FIFO}"
+sudo chmod 660 "${PATH_FIFO}"
+
+## if staging enabled
+if [[ "$STAGING_SITE" != "false" ]]; then 
+    ss_mkdir /var/www/html/staging
+    ss_mkdir /var/www/html/staging/.well-known
+    ss_mkdir /var/www/html/staging/.well-known/acme-challenge
+    chown -R "${SFTP_USER}":www-data /var/www/html/staging/.well-known ## accessed by server for e.g. Cerbot but also by SFTP user for things like Stripe ##
+    chown -R "${SFTP_USER}":www-data /var/www/html/staging/.well-known/acme-challenge ## accessed by server for e.g. Cerbot but also by SFTP user for things like Stripe ##
+fi
+
+if [[ -f "/var/www/backups/mysql/production.sql" ]]; then 
+    chown -R "${SFTP_USER}":www-data "${PATH_DUMP_DATABASE_PRODUCTION}"
+    chmod 0440 "${PATH_DUMP_DATABASE_PRODUCTION}"
+fi
+
+## if dev enabled
+if [[ "$DEV_SITE" != "false" ]]; then 
+    ss_mkdir /var/www/html/dev
+    ss_mkdir /var/www/html/dev/.well-known
+    ss_mkdir /var/www/html/dev/.well-known/acme-challenge
+    chown -R "${SFTP_USER}":www-data /var/www/html/dev/.well-known ## accessed by server for e.g. Cerbot but also by SFTP user for things like Stripe ##
+    chown -R "${SFTP_USER}":www-data /var/www/html/dev/.well-known/acme-challenge ## accessed by server for e.g. Cerbot but also by SFTP user for things like Stripe ##
+fi
+
+## user/group ownership ##
+chown root:root /var/www ## must be root:root
+chown root:root /var/www/backups ## must be root:root
+chown root:root /var/www/backups/config ## must be root:root
+chown root:root /var/www/backups/mysql ## must be root:root
+chown root:root /var/www/backups/mysql/data ## must be root:root
+chown -R root:root /var/www/backups/private ## must be root:root
+chown www-data:www-data /var/www/cache ## must be www-data:www-data
+chown www-data:www-data /var/www/cache/nginx ## must be www-data:www-data
+chown www-data:www-data /var/www/cache/opcache ## must be www-data:www-data (PHP-FPM pool)
+chown root:root /var/www/cache/system ## must be root:root
+chown -R "${SFTP_USER}":www-data /var/www/cache/wp-cli ## must be SFTP_USER as we usually run WP-CLI as that user
+chown root:root /var/www/crons ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chown -R "${SFTP_USER}":www-data /var/www/html/.well-known ## accessed by server for e.g. Cerbot but also by SFTP user for things like Stripe ##
+chown -R "${SFTP_USER}":www-data /var/www/html/.well-known/acme-challenge ## accessed by server for e.g. Cerbot but also by SFTP user for things like Stripe ##
+chown www-data:www-data /var/www/logs ## must be www-data:www-data
+chown www-data:www-data /var/www/logs/nginx*.log ## must be www-data:www-data
+chown www-data:www-data /var/www/meta ## must be www-data:www-data
+chown www-data:www-data /var/www/meta/.htpasswd ## must be www-data:www-data
+chown www-data:www-data /var/www/meta/ss-constants.php ## must be www-data:www-data
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/sites
+chown root:root /var/www/sites/includes
+chown root:root /var/www/sites/error_pages
+
+## https://serverfault.com/questions/501258/php-fpm-gives-permission-denied
+chown -Rf www-data:www-data /var/lib/nginx ## https://slickstack.io/forum/topic/php-fpm-fails-on-openvz-server-from-dedipath
+
+## linux permissions ##
+chmod 0755 /var/www ## must be 0755
+chmod 0775 /var/www/cache ## 0755 should also work
+chmod 0755 /var/www/cache/opcache ## 0755 should work
+chmod 0775 /var/www/cache/wp-cli ## 0775 should work for all users who use wp-cli
+chmod 0755 /var/www/crons ## must be 0755
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root can execute
+chmod 0755 /var/www/crons/custom ## must be 0755
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root can execute
+chmod 0755 /var/www/html/.well-known ## accessed by server for e.g. Cerbot but also by SFTP user for things like Stripe ##
+chmod 0775 /var/www/logs ## 6755 should also work
+chmod 0775 /var/www/meta ## 6755 should also work
+chmod 0644 /var/www/meta/.htpasswd ## 0644 seems enough
+chmod 0440 /var/www/meta/ss-constants.php
+chmod 0700 /var/www/ss* ## 0700 means only root can execute
+chmod 0755 /var/www/sites ## must be 0755
+chmod 0755 /var/www/sites/includes ## must be 0755
+chmod 0755 /var/www/sites/error_pages
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://linuxize.com/post/bash-functions/
+## Ref: https://www.cyberciti.biz/faq/unix-linux-appleosx-bsd-shell-appending-date-to-filename/
+## Ref: https://wordpress.stackexchange.com/questions/199725/triggering-cron-by-calling-wp-cron-php-on-the-command-line-rather-than-with-wget
+## Ref: https://serverfault.com/questions/259302/best-location-to-keep-ssl-certificates-and-private-keys-on-ubuntu-servers
+## Ref: https://tldp.org/LDP/abs/html/comparison-ops.html
+## Ref: https://stackoverflow.com/questions/33203898/wget-skip-download-if-file-already-exists
+## Ref: https://stackoverflow.com/questions/12664534/idealised-wget-download-install-process
+## Ref: https://unix.stackexchange.com/questions/471521/how-to-get-only-the-version-number-of-php
+## Ref: https://stackoverflow.com/questions/62271695/sed-command-isnt-working-to-extract-the-nginx-version-number
+## Ref: https://unix.stackexchange.com/questions/67806/how-to-recursively-find-the-amount-stored-in-directory
+## Ref: https://www.tecmint.com/check-linux-disk-usage-of-files-and-directories/
+## Ref: https://dba.stackexchange.com/questions/14337/calculating-disk-space-usage-per-mysql-db
+## Ref: https://serverfault.com/questions/693027/how-to-extract-mysql-version-by-bash-script-in-centos-6
+## Ref: https://ss64.com/bash/stat.html
+## Ref: https://stackoverflow.com/questions/8714355/turning-multi-line-string-into-single-comma-separated
+## Ref: https://unix.stackexchange.com/questions/104881/remove-particular-characters-from-a-variable-using-bash
+## Ref: https://unix.stackexchange.com/questions/257514/how-to-delete-the-rest-of-each-line-after-a-certain-pattern-or-a-string-in-a-fil
+## Ref: https://stackoverflow.com/questions/8049132/how-can-i-detect-whether-a-symlink-is-broken-in-bash
+## Ref: https://roots.io/trellis/docs/nginx-includes/
+
+## SS_EOF

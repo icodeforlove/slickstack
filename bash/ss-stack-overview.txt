@@ -1,0 +1,200 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/bash/ss-stack-overview.txt #########################
+#### path: /var/www/ss-stack-overview ##############################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Displays a summary of critical SlickStack settings (passwords, domains, etc) #########
+#### module version: Ubuntu 24.04 LTS ##############################################################
+#### sourced by: ss-install, ss-update-modules #####################################################
+#### bash aliases: ss info, ss overview, ss status, ss summary #####################################
+####################################################################################################
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Stack-Overview) #########################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Source SS-Config + SS-Functions
+## B. Touch Timestamp File
+## C. Message (Begin Script)
+## D. Display Critical SlickStack Settings
+## E. Display SSH Key (One Time Only)
+
+####################################################################################################
+#### A. SS-Stack-Overview: Source SS-Config + SS-Functions #########################################
+####################################################################################################
+
+## before anything else we must source the critical variables that power this script ##
+## ss-config is setup during ss-install wizard but ss-functions is hardcoded ##
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### B. SS-Stack-Overview: Touch Timestamp File ####################################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_STACK_OVERVIEW}"
+
+####################################################################################################
+#### C. SS-Stack-Overview: Message (Begin Script) ##################################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-stack-overview... ${COLOR_RESET}"
+
+####################################################################################################
+#### D. SS-Stack-Overview: Display Critical SlickStack Settings ####################################
+####################################################################################################
+
+## the shell will echo the most important ss-config settings (and beyond) currently used ##
+## this allows you to easily copy/paste for your records or for your clients ##
+
+if [[ -f "${PATH_LETSENCRYPT_CERT_FULLCHAIN}" ]]; then
+    LETSENCRYPT_STATUS="OK"
+ else
+    LETSENCRYPT_STATUS="MISSING"
+fi
+
+if [[ -f "${PATH_OPENSSL_CERTIFICATE}" ]]; then
+    OPENSSL_STATUS="OK"
+ else
+    OPENSSL_STATUS="MISSING"
+fi
+
+## validate crontab ##
+VALIDATE_CRONTAB=$(ss_grep_boolean 'SS_EOF' /var/spool/cron/crontabs/root)
+if [[ -n "${VALIDATE_CRONTAB}" ]]; then
+    CRONTAB_STATUS="OK"
+else
+    CRONTAB_STATUS="MISSING"
+fi
+
+## add more checks like block files exist, which ssl is active etc
+
+## calculate how many dots in chosen site domain ##
+CALC_DOMAIN=${SITE_FULL_DOMAIN//$SITE_ROOT_DOMAIN/}
+CALC_DOMAIN_SUB=$(echo "${CALC_DOMAIN}" | grep -o "\." | wc -l)
+
+## exit if the local domain (besides TLD) contains more than one dot ##
+if [[ "${CALC_DOMAIN_SUB}" -gt 1 ]]; then 
+    echo -e ""
+    echo -e "${COLOR_WARN}It appears your SITE_FULL_DOMAIN value is a sub-subdomain or is otherwise not ${NOCOLOR}"
+    echo -e "${COLOR_WARN}compatible with SlickStack. Please edit ss-config and try again. ${NOCOLOR}"
+    echo -e ""
+fi
+###############
+
+ss_echo ""
+ss_echo "${COLOR_INFO}################################################################################${COLOR_RESET}"
+ss_echo "${COLOR_INFO}#### Here are your SlickStack settings (SS-Stack-Overview) #####################${COLOR_RESET}"
+ss_echo "${COLOR_INFO}################################################################################${COLOR_RESET}"
+ss_echo ""
+# ss_echo "${COLOR_WARN}Please copy/paste or take a screenshot of the settings below to share with ${COLOR_RESET}"
+# ss_echo "${COLOR_WARN}your client, or otherwise keep somewhere safe for your own records. ${COLOR_RESET}"
+# ss_echo ""
+ss_echo "${COLOR_INFO}Current time: ${LIGHTGREEN}${SYSTEM_CURRENT_TIME} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}Build: ${LIGHTGREEN}${SS_BUILD} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}IPv4 Address: ${LIGHTGREEN}${SYSTEM_IPV4_ADDRESS} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}IPv6 Address: ${LIGHTGREEN}${SYSTEM_IPV6_ADDRESS} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}Site Root Domain: ${LIGHTGREEN}${SITE_ROOT_DOMAIN} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}Site Full Domain: ${LIGHTGREEN}${SITE_FULL_DOMAIN} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}Adminer URL: ${LIGHTGREEN}https://${SITE_FULL_DOMAIN}/${ADMINER_URL}/ ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}Server Noindex: ${LIGHTGREEN}${SS_NOINDEX} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}Sudo User: ${LIGHTGREEN}${SUDO_USER} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}Sudo Password: ${LIGHTGREEN}${SUDO_PASSWORD} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}SFTP User: ${LIGHTGREEN}${SFTP_USER} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}SFTP Password: ${LIGHTGREEN}${SFTP_PASSWORD} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}SSH Keys: ${LIGHTGREEN}${SSH_KEYS} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}Staging site: ${LIGHTGREEN}${STAGING_SITE} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}Dev site: ${LIGHTGREEN}${DEV_SITE} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}Guest user: ${LIGHTGREEN}${GUEST_USER} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}Guest password: ${LIGHTGREEN}${GUEST_PASSWORD} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}Database name: ${LIGHTGREEN}${DB_NAME} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}Database user: ${LIGHTGREEN}${DB_USER} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}Database user password: ${LIGHTGREEN}${DB_PASSWORD} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}Database admin user: ${LIGHTGREEN}admin@127.0.0.1 ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}Database admin user password: ${LIGHTGREEN}${DB_PASSWORD_ROOT} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}Database host: ${LIGHTGREEN}${DB_HOST} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}Database port: ${LIGHTGREEN}${DB_PORT} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}Database prefix: ${LIGHTGREEN}${DB_PREFIX} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}WP Multisite: ${LIGHTGREEN}${WP_MULTISITE} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}WP Multisite subdomains: ${LIGHTGREEN}${WP_MULTISITE_SUBDOMAINS} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}WP Multisite domain mapping: ${LIGHTGREEN}${WP_MULTISITE_DOMAIN_MAPPING} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}Rsync server: ${LIGHTGREEN}${RSYNC_REMOTE_HOST} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}Rsync user: ${LIGHTGREEN}${RSYNC_USER} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}Rsync password: ${LIGHTGREEN}${RSYNC_PASSWORD} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}Swapfile: ${LIGHTGREEN} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}Crontab: ${LIGHTGREEN}${CRONTAB_STATUS} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}OpenSSL status: ${LIGHTGREEN}${OPENSSL_STATUS} ${COLOR_RESET}"
+ss_echo "${COLOR_INFO}Lets Encrypt status: ${LIGHTGREEN}${LETSENCRYPT_STATUS} ${COLOR_RESET}"
+ss_echo ""
+
+####################################################################################################
+#### E. SS-Stack-Overview: Display SSH Key (One Time Only) #########################################
+####################################################################################################
+
+## for ease of use this snippet will diplay the generated SSH private key one time only ##
+## users are expected to copy and paste this somewhere safe (advanced users only) ##
+
+if [[ "${SSH_KEYS}" == "true" ]] && [[ -f "${PATH_SSH_PRIVATE_KEY_FILE}" ]]; then
+    ss_echo ""
+    ss_echo "${COLOR_WARN}Below is your private SSH key (copy to your local computer): ${COLOR_RESET}"
+    ss_echo ""
+    cat "${PATH_SSH_PRIVATE_KEY_FILE}"
+    ss_echo ""
+    ss_echo "${COLOR_WARN}This private key file (id_rsa) will be deleted on next cleanup cycle... COPY IT NOW before it disappears! ${COLOR_RESET}"
+fi
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://askubuntu.com/questions/560412/displaying-ip-address-on-eth0-interface
+## Ref: https://serverfault.com/questions/46645/shell-command-for-getting-ip-address
+## Ref: https://stackoverflow.com/questions/15331259/use-awk-to-find-first-occurrence-only-of-string-after-a-delimiter
+## Ref: https://stackoverflow.com/questions/6946677/grep-with-quotation-mark
+## Ref: https://unix.stackexchange.com/questions/48535/can-grep-return-true-false-or-are-there-alternative-methods
+
+## SS_EOF

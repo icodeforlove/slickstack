@@ -1,0 +1,164 @@
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/crons/00-crontab.txt ###############################
+#### path: /var/www/crons/00-crontab (boilerplate remains here for reference) ######################
+#### destination: /var/spool/cron/crontabs/root (after install) ####################################
+#### purpose: SlickStack root crontab boilerplate (never, ever modify the root crontab) ############
+#### module version: Ubuntu 24.04 LTS ##############################################################
+#### sourced by: n/a ###############################################################################
+#### bash aliases: n/a (ss-install-ubuntu-crontab) #################################################
+####################################################################################################
+
+## NEVER MODIFY ROOT CRONTAB AND SLICKSTACK CRON JOBS OR YOUR STACK WILL STOP WORKING ##
+## INSTEAD ADJUST INTERVAL_SS SETTINGS IN SS-CONFIG OR EDIT CUSTOM CRON FILES ##
+
+## THIS CRONTAB FILE DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+
+## @RANDOM_STRING (forces crontab to reload)
+
+####################################################################################################
+#### TABLE OF CONTENTS (Crontab) ###################################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Use Bash Instead Of Sh
+## B. Set Default Linux System Path
+## C. Run Cron Jobs (DO NOT EDIT)
+## D. Cleanup Stale Lock Files
+## E. Self-Healing (Repairs Cron Jobs)
+
+####################################################################################################
+#### A. Crontab: Use Bash Instead Of Sh ############################################################
+####################################################################################################
+
+## to take advantage of modern shell scripting syntax SlickStack supports Bash only ##
+## make sure to follow Bash coding standards for any custom cron job files ##
+
+SHELL="/bin/bash"
+
+####################################################################################################
+#### B. Crontab: Set Default Linux System Path #####################################################
+####################################################################################################
+
+## including the default system path setting below ensures wget (etc) works properly ##
+## this setting is also placed in ss-functions for SlickStack bash scripts ##
+
+PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+####################################################################################################
+#### C. Crontab: Run Cron Jobs (DO NOT EDIT) #######################################################
+####################################################################################################
+
+## this schedule is hardcoded to run SlickStack cron jobs and must never be modified ##
+## the purpose of this approach is to promote stack stability and uniformity ##
+
+MAILTO=""
+
+*/1 * * * * /usr/bin/flock -w 0 /tmp/01-cron-minutely.lock /var/www/crons/01-cron-minutely > /dev/null 2>&1
+*/2 * * * * /usr/bin/flock -w 0 /tmp/02-cron-often.lock /var/www/crons/02-cron-often > /dev/null 2>&1
+*/5 * * * * /usr/bin/flock -w 0 /tmp/03-cron-regular.lock /var/www/crons/03-cron-regular > /dev/null 2>&1
+*/15 * * * * /usr/bin/flock -w 0 /tmp/04-cron-quarter-hourly.lock /var/www/crons/04-cron-quarter-hourly > /dev/null 2>&1
+*/30 * * * * /usr/bin/flock -w 0 /tmp/05-cron-half-hourly.lock /var/www/crons/05-cron-half-hourly > /dev/null 2>&1
+0 * * * * /usr/bin/flock -w 0 /tmp/06-cron-hourly.lock /var/www/crons/06-cron-hourly > /dev/null 2>&1
+0 */6 * * * /usr/bin/flock -w 0 /tmp/07-cron-quarter-daily.lock /var/www/crons/07-cron-quarter-daily > /dev/null 2>&1
+0 */12 * * * /usr/bin/flock -w 0 /tmp/08-cron-half-daily.lock /var/www/crons/08-cron-half-daily > /dev/null 2>&1
+0 0 * * * /usr/bin/flock -w 0 /tmp/09-cron-daily.lock /var/www/crons/09-cron-daily > /dev/null 2>&1
+0 0 */3 * * /usr/bin/flock -w 0 /tmp/10-cron-half-weekly.lock /var/www/crons/10-cron-half-weekly > /dev/null 2>&1
+0 0 * * 0 /usr/bin/flock -w 0 /tmp/11-cron-weekly.lock /var/www/crons/11-cron-weekly > /dev/null 2>&1
+0 0 13 * * /usr/bin/flock -w 0 /tmp/12-cron-half-monthly.lock /var/www/crons/12-cron-half-monthly > /dev/null 2>&1
+0 0 1 * * /usr/bin/flock -w 0 /tmp/13-cron-monthly.lock /var/www/crons/13-cron-monthly > /dev/null 2>&1
+0 0 1 */2 * /usr/bin/flock -w 0 /tmp/14-cron-sometimes.lock /var/www/crons/14-cron-sometimes > /dev/null 2>&1
+
+## new line to avoid conflicts ##
+
+####################################################################################################
+#### D. Crontab: Cleanup Stale Lock Files ##########################################################
+####################################################################################################
+
+## this will cleanup any stale lock files in the case they become frozen or otherwise ##
+## it is set to remove lock files that are 6 hours old which is pretty safe ##
+
+MAILTO=""
+
+*/30 * * * * /usr/bin/find /tmp/*.lock -mmin +360 -delete > /dev/null 2>&1
+
+## new line to avoid conflicts ##
+
+####################################################################################################
+#### E. Crontab: Self-Healing (Repairs Cron Jobs) ##################################################
+####################################################################################################
+
+## this will reinstall SlickStack cron job files in case they are missing or damaged ##
+## it is not foolproof so running ss-install occassionally is recommended ##
+
+MAILTO=""
+
+47 */3 * * * /bin/bash -c 'sleep $((RANDOM % 300)) && wget --no-check-certificate -q -4 -t 3 -T 30 -O /var/www/crons/01-cron-minutely https://slick.fyi/crons/01-cron-minutely.txt' > /dev/null 2>&1
+47 */3 * * * /bin/bash -c 'sleep $((RANDOM % 300)) && wget --no-check-certificate -q -4 -t 3 -T 30 -O /var/www/crons/02-cron-often https://slick.fyi/crons/02-cron-often.txt' > /dev/null 2>&1
+47 */3 * * * /bin/bash -c 'sleep $((RANDOM % 300)) && wget --no-check-certificate -q -4 -t 3 -T 30 -O /var/www/crons/03-cron-regular https://slick.fyi/crons/03-cron-regular.txt' > /dev/null 2>&1
+47 */3 * * * /bin/bash -c 'sleep $((RANDOM % 300)) && wget --no-check-certificate -q -4 -t 3 -T 30 -O /var/www/crons/04-cron-quarter-hourly https://slick.fyi/crons/04-cron-quarter-hourly.txt' > /dev/null 2>&1
+47 */3 * * * /bin/bash -c 'sleep $((RANDOM % 300)) && wget --no-check-certificate -q -4 -t 3 -T 30 -O /var/www/crons/05-cron-half-hourly https://slick.fyi/crons/05-cron-half-hourly.txt' > /dev/null 2>&1
+47 */3 * * * /bin/bash -c 'sleep $((RANDOM % 300)) && wget --no-check-certificate -q -4 -t 3 -T 30 -O /var/www/crons/06-cron-hourly https://slick.fyi/crons/06-cron-hourly.txt' > /dev/null 2>&1
+47 */3 * * * /bin/bash -c 'sleep $((RANDOM % 300)) && wget --no-check-certificate -q -4 -t 3 -T 30 -O /var/www/crons/07-cron-quarter-daily https://slick.fyi/crons/07-cron-quarter-daily.txt' > /dev/null 2>&1
+47 */3 * * * /bin/bash -c 'sleep $((RANDOM % 300)) && wget --no-check-certificate -q -4 -t 3 -T 30 -O /var/www/crons/08-cron-half-daily https://slick.fyi/crons/08-cron-half-daily.txt' > /dev/null 2>&1
+47 */3 * * * /bin/bash -c 'sleep $((RANDOM % 300)) && wget --no-check-certificate -q -4 -t 3 -T 30 -O /var/www/crons/09-cron-daily https://slick.fyi/crons/09-cron-daily.txt' > /dev/null 2>&1
+47 */3 * * * /bin/bash -c 'sleep $((RANDOM % 300)) && wget --no-check-certificate -q -4 -t 3 -T 30 -O /var/www/crons/10-cron-half-weekly https://slick.fyi/crons/10-cron-half-weekly.txt' > /dev/null 2>&1
+47 */3 * * * /bin/bash -c 'sleep $((RANDOM % 300)) && wget --no-check-certificate -q -4 -t 3 -T 30 -O /var/www/crons/11-cron-weekly https://slick.fyi/crons/11-cron-weekly.txt' > /dev/null 2>&1
+47 */3 * * * /bin/bash -c 'sleep $((RANDOM % 300)) && wget --no-check-certificate -q -4 -t 3 -T 30 -O /var/www/crons/12-cron-half-monthly https://slick.fyi/crons/12-cron-half-monthly.txt' > /dev/null 2>&1
+47 */3 * * * /bin/bash -c 'sleep $((RANDOM % 300)) && wget --no-check-certificate -q -4 -t 3 -T 30 -O /var/www/crons/13-cron-monthly https://slick.fyi/crons/13-cron-monthly.txt' > /dev/null 2>&1
+47 */3 * * * /bin/bash -c 'sleep $((RANDOM % 300)) && wget --no-check-certificate -q -4 -t 3 -T 30 -O /var/www/crons/14-cron-sometimes https://slick.fyi/crons/14-cron-sometimes.txt' > /dev/null 2>&1
+53 */3 * * * /bin/bash -c 'chown root:root /var/www/crons/*cron*' > /dev/null 2>&1
+53 */3 * * * /bin/bash -c 'chown root:root /var/www/crons/custom/*cron*' > /dev/null 2>&1
+53 */3 * * * /bin/bash -c 'chmod 0700 /var/www/crons/*cron*' > /dev/null 2>&1
+53 */3 * * * /bin/bash -c 'chmod 0700 /var/www/crons/custom/*cron*' > /dev/null 2>&1
+
+## new line to avoid conflicts ##
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: ChatGPT
+## Ref: https://linuxize.com/post/scheduling-cron-jobs-with-crontab/
+## Ref: https://unix.stackexchange.com/questions/26133/are-multiple-daily-crontab-entries-processed-in-order-serially
+## Ref: https://askubuntu.com/questions/143666/in-what-order-do-cron-jobs-with-the-same-schedule-run
+## Ref: https://askubuntu.com/questions/23009/why-crontab-scripts-are-not-working/23337#23337
+## Ref: https://www.freebsd.org/doc/handbook/configtuning-cron.html
+## Ref: https://superuser.com/questions/290093/difference-between-etc-crontab-and-crontab-e
+## Ref: https://stackoverflow.com/questions/22203120/cronjob-entry-in-crontab-e-vs-etc-crontab-which-one-is-better
+## Ref: https://unix.stackexchange.com/questions/127732/system-crontab-or-root-crontab
+## Ref: https://stackoverflow.com/questions/31778785/crontab-not-running-wget
+## Ref: https://serverfault.com/questions/748943/using-flock-with-cron
+## Ref: https://superuser.com/questions/1391999/is-there-a-downside-to-using-flock-in-cron-jobs
+## Ref: https://simpleit.rocks/linux/shell/prevent-running-of-duplicate-cron-jobs/
+## Ref: https://ma.ttias.be/prevent-cronjobs-from-overlapping-in-linux/
+## Ref: https://stackoverflow.com/questions/655149/i-want-to-make-a-conditional-cronjob
+## Ref: https://serverfault.com/questions/571321/linux-bash-if-conditions-not-processing-when-running-as-crontab
+## Ref: https://stackoverflow.com/questions/10204562/difference-between-if-e-and-if-f
+## Ref: https://arachnoid.com/linux/shell_programming.html
+## Ref: https://unix.stackexchange.com/questions/206350/what-is-the-difference-if-i-start-bash-with-bin-bash-or-usr-bin-env-bash
+## Ref: https://askubuntu.com/questions/752240/crontab-syntax-multiple-commands
+## Ref: https://superuser.com/questions/871704/why-does-root-cron-job-script-need-sudo-to-run-properly
+## Ref: https://unix.stackexchange.com/questions/144514/add-arguments-to-bash-c
+## Ref: https://stackoverflow.com/questions/39904003/when-to-use-bash-with-option-c
+## Ref: https://stackoverflow.com/questions/4883069/debugging-crontab-jobs
+## Ref: https://medium.com/@satishcse.mit/debug-cron-job-issues-4fbb6113c7ce
+## Ref: https://askubuntu.com/questions/56683/where-is-the-cron-crontab-log
+## Ref: https://linoxide.com/linux-how-to/check-cron-logs-ubuntu/
+## Ref: https://stackoverflow.com/questions/10193788/restarting-cron-after-changing-crontab-file
+## Ref: https://tecadmin.net/disable-crontab-output-email-notifications/
+## Ref: https://www.howtoforge.com/community/threads/what-is-the-usefulness-of-dev-null-2-1-in-cron.60842/
+## Ref: https://unix.stackexchange.com/questions/108242/crontab-change-mailto-for-only-one-specific-job-in-roots-crontab
+## Ref: https://stackoverflow.com/questions/30418188/how-to-force-wget-to-overwrite-an-existing-file-ignoring-timestamp
+## Ref: https://unix.stackexchange.com/questions/16303/what-is-the-significance-of-single-and-double-quotes-in-environment-variables
+## Ref: https://vpsfix.com/7456/setup-proper-cron-jobs-wordpress-multisite-network/
+## Ref: https://gist.github.com/kasparsd/10b9a8b1217b26992a30
+## Ref: https://tech.chrishardie.com/2020/running-wordpress-cron-on-a-multisite-instance/
+## Ref: https://sabrinazeidan.com/fixing-WordPress-multisite-cron/
+## Ref: https://wordpress.stackexchange.com/questions/167238/running-wp-cron-on-multisite-the-right-way
+## Ref: https://geek.hellyer.kiwi/2017/using-wp-cli-run-cron-jobs-multisite-networks/
+
+## SS_EOF

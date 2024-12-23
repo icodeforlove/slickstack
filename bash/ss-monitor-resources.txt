@@ -1,0 +1,102 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: https://mirrors.slickstack.io/bash/ss-monitor-resources.txt ###########################
+#### path: /var/www/ss-monitor-resources ###########################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Monitors localhost RAM memory usage, disk space, and CPU load in real time ###########
+#### module version: Ubuntu 22.04 LTS ##############################################################
+#### sourced by: n/a ###############################################################################
+#### bash aliases: ss monitor, ss monitor resources, ss resources ##################################
+####################################################################################################
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Monitor-Resources) ######################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Touch Timestamp File
+## B. Message (Begin Script)
+
+####################################################################################################
+#### A. SS-Monitor-Resources: Touch Timestamp File #################################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_MONITOR_RESOURCES}"
+
+####################################################################################################
+#### B. SS-Monitor-Resources: Message (Begin Script) ###############################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-monitor-resources... ${COLOR_RESET}"
+
+####################################################################################################
+#### X. Change To Default Directory #####################################
+####################################################################################################
+
+ss_cd_default
+
+####################################################################################################
+#### SS-Monitor: Output Current Status Of RAM, CPU, Disk Space #####################################
+####################################################################################################
+
+printf "Memory\t\tDisk\t\tCPU\n"
+end=$((SECONDS+3600))
+while [ $SECONDS -lt $end ]; do
+MEMORY=$(free -m | awk 'NR==2{printf "%.2f%%\t\t", $3*100/$2 }')
+DISK=$(df -h | awk '$NF=="/"{printf "%s\t\t", $5}')
+CPU=$(top -bn1 | grep load | awk '{printf "%.2f%%\t\t\n", $(NF-2)}')
+echo "$MEMORY$DISK$CPU"
+sleep 5
+done
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: http://www.systeen.com/2016/05/07/bash-script-monitor-cpu-memory-disk-usage-linux/
+## Ref: https://archive.is/GM8yS
+## Ref: https://unix.stackexchange.com/questions/119126/command-to-display-memory-usage-disk-usage-and-cpu-load
+## Ref: https://www.inmotionhosting.com/support/website/server-usage/create-server-load-monitoring-bash-script/
+## Ref: https://www.tecmint.com/linux-server-health-monitoring-script/
+## Ref: https://www.2daygeek.com/linux-shell-script-to-monitor-cpu-memory-swap-usage-send-email/
+## Ref: https://www.instructables.com/id/Service-Monitor-Script-for-Linux-Servers/
+## Ref: https://linoxide.com/linux-shell-script/shell-script-check-linux-system-health/
+
+## SS_EOF

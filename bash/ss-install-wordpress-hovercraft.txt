@@ -1,0 +1,113 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/bash/ss-install-wordpress-hovercraft.txt ###########
+#### path: /var/www/ss-install-wordpress-hovercraft ################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Reinstalls the WordPress module package and non-config files (idempotent) ############
+#### module version: WordPress 6.6.x ###############################################################
+#### sourced by: ss-install-wordpress-packages #####################################################
+#### bash aliases: ss install hovercraft, ss install wordpress|wp hovercraft #######################
+####################################################################################################
+
+## SS-CONFIG MUST BE PROPERLY CONFIGURED AND ON CURRENT BUILD BEFORE RUNNING SS-INSTALL ##
+## ENSURE YOUR SS-CONFIG BUILD REMAINS CURRENT BY RUNNING SS-UPDATE OCCASIONALLY ##
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Install-WordPress-HoverCraft) ###########################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Source SS-Config + SS-Functions
+## B. Touch Timestamp File
+## C. Message (Begin Script)
+## D. Run SS-Install-Ubuntu-Utils
+## E. Reinstall HoverCraft WordPress Theme
+
+####################################################################################################
+#### A. SS-Install-WordPress-HoverCraft: Source SS-Config + SS-Functions ###########################
+####################################################################################################
+
+## before anything else we must source the critical variables that power this script ##
+## ss-config is setup during ss-install wizard but ss-functions is hardcoded ##
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### B. SS-Install-WordPress-HoverCraft: Touch Timestamp File ######################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_INSTALL_WORDPRESS_HOVERCRAFT}"
+
+####################################################################################################
+#### C. SS-Install-WordPress-HoverCraft: Message (Begin Script) ####################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-install-wordpress-hovercraft... ${COLOR_RESET}"
+
+####################################################################################################
+#### D. SS-Install-WordPress-HoverCraft: Run SS-Install-Ubuntu-Utils ###############################
+####################################################################################################
+
+source "${PATH_SS_INSTALL_UBUNTU_UTILS}"
+
+####################################################################################################
+#### E. SS-Install-WordPress-HoverCraft: Reinstall HoverCraft WordPress Theme ######################
+####################################################################################################
+
+ss_rm /tmp/hovercraft*
+ss_rm /tmp/master*.zip*
+ss_wget "${TMP_HOVERCRAFT_ZIP}" "${GITHUB_HOVERCRAFT_ZIP}"
+ss_unzip "${TMP_HOVERCRAFT_ZIP}" -d /tmp
+ss_mv /tmp/hovercraft-master /tmp/hovercraft
+chown -R www-data:slickstack /tmp/hovercraft
+ss_chmod 775 /tmp/hovercraft
+ss_mkdir /var/www/html/wp-content/themes/hovercraft
+ss_rm /var/www/html/wp-content/themes/hovercraft/*
+ss_rsync /tmp/hovercraft/* /var/www/html/wp-content/themes/hovercraft
+chown -R www-data:slickstack /var/www/html/wp-content/themes/hovercraft
+ss_chmod 775 /var/www/html/wp-content/themes/hovercraft
+ss_rm /tmp/hovercraft*
+ss_rm /tmp/master*.zip*
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref:
+
+## SS_EOF

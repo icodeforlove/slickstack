@@ -1,0 +1,146 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/bash/ss-install-wordpress-cli.txt ##################
+#### path: /var/www/ss-install-wordpress-cli #######################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Reinstalls the entire WP-CLI module for SlickStack servers (idempotent) ##############
+#### module version: WP-CLI 2.11.0 #################################################################
+#### sourced by: ss-install ########################################################################
+#### bash aliases: ss install wordpress|wp cli, ss install wp-cli|wpcli ############################
+####################################################################################################
+
+## SS-CONFIG MUST BE PROPERLY CONFIGURED AND ON CURRENT BUILD BEFORE RUNNING SS-INSTALL ##
+## ENSURE YOUR SS-CONFIG BUILD REMAINS CURRENT BY RUNNING SS-UPDATE OCCASIONALLY ##
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Install-WordPress-CLI) ##################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Source SS-Config + SS-Functions
+## B. Touch Timestamp File
+## C. Message (Begin Script)
+## D. Lockdown Prompt (INTERACTIVE)
+## E. Install WP-CLI
+## F. Reset Permissions (WP-CLI)
+## G. Exit Script Per Feedback
+
+####################################################################################################
+#### A. SS-Install-WordPress-CLI: Source SS-Config + SS-Functions ##################################
+####################################################################################################
+
+## before anything else we must source the critical variables that power this script ##
+## ss-config is setup during ss-install wizard but ss-functions is hardcoded ##
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### B. SS-Install-WordPress-CLI: Touch Timestamp File #############################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_INSTALL_WORDPRESS_CLI}"
+
+####################################################################################################
+#### C. SS-Install-WordPress-CLI: Message (Begin Script) ###########################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-install-wordpress-cli... ${COLOR_RESET}"
+
+####################################################################################################
+#### D. SS-Install-WordPress-CLI: Lockdown Prompt (INTERACTIVE) ####################################
+####################################################################################################
+
+## in case SS_LOCKDOWN is enabled this interactive prompt will ask before proceeding ##
+## otherwise by default this script cannot run if lockdown is currently enabled ##
+
+if [[ "${SS_LOCKDOWN}" == "true" ]]; then
+    read -r -p "Your SlickStack server has lockdown enabled, run ss-install-wordpress-cli anyways? [y/N]" response
+fi
+
+if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]] || [[ "${SS_LOCKDOWN}" != "true" ]]
+    then
+
+####################################################################################################
+### E. SS-Install-WordPress-CLI: Install WP-CLI ####################################################
+####################################################################################################
+
+## to keep things simple we include the WP-CLI aliases within our own Bash aliases file ##
+## here we retrieve latest WP-CLI files and move aliases to /var/www/meta/ ##
+
+## uninstall current wp-cli versions ##
+ss_rm "${PATH_WP_CLI_PHAR}"
+ss_rm "${PATH_WP_CLI_YML}"
+ss_rm "${PATH_WP_COMPLETION_BASH}"
+
+## download latest versions ##
+ss_wget "${TMP_WP_CLI_PHAR}" "${REMOTE_WP_CLI_PHAR}"
+ss_wget "${TMP_WP_CLI_YML}" "${GITHUB_WP_CLI_YML}"
+ss_wget "${TMP_WP_COMPLETION}" "${GITHUB_WP_COMPLETION}"
+
+## make files executable ##
+chmod +x "${TMP_WP_CLI_PHAR}"
+
+## replace placeholders in wp-cli.yml ##
+ss_sed "s|@SITE_FULL_DOMAIN|${SITE_FULL_DOMAIN}|g" "${TMP_WP_CLI_YML}"
+
+## copy files to destinations ##
+ss_cp "${TMP_WP_CLI_PHAR}" "${PATH_WP_CLI_PHAR}"
+ss_cp "${TMP_WP_CLI_YML}" "${PATH_WP_CLI_YML}"
+ss_cp "${TMP_WP_COMPLETION}" "${PATH_WP_COMPLETION_BASH}"
+
+####################################################################################################
+#### F. SS-Install-WordPress-CLI: Reset Permissions (WP-CLI) #######################################
+####################################################################################################
+
+source "${PATH_SS_PERMS_WORDPRESS_CLI}"
+
+####################################################################################################
+#### G. SS-Install-WordPress-CLI: Exit Script Per Feedback #########################################
+####################################################################################################
+
+else
+    ss_echo "${COLOR_WARN}did not run ss-install-wordpress-cli becase SS_LOCKDOWN is true or lack of interactive confirmation... ${COLOR_RESET}"
+fi
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://make.wordpress.org/cli/2024/08/08/wp-cli-v2-11-0-release-notes/
+
+## SS_EOF

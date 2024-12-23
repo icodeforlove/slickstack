@@ -1,0 +1,90 @@
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/modules/ufw-firewall/user-rules.txt ################
+#### path: n/a (boilerplate) #######################################################################
+#### destination: /etc/ufw/user.rules (after install) ##############################################
+#### purpose: UFW user rules IPv4 configuration file boilerplate (hardcoded SSH port 22) ###########
+#### module version: UFW 0.36.x ####################################################################
+#### sourced by: n/a ###############################################################################
+#### bash aliases: n/a (ss-install-ufw-config) #####################################################
+####################################################################################################
+
+*filter
+:ufw-user-input - [0:0]
+:ufw-user-output - [0:0]
+:ufw-user-forward - [0:0]
+:ufw-before-logging-input - [0:0]
+:ufw-before-logging-output - [0:0]
+:ufw-before-logging-forward - [0:0]
+:ufw-user-logging-input - [0:0]
+:ufw-user-logging-output - [0:0]
+:ufw-user-logging-forward - [0:0]
+:ufw-after-logging-input - [0:0]
+:ufw-after-logging-output - [0:0]
+:ufw-after-logging-forward - [0:0]
+:ufw-logging-deny - [0:0]
+:ufw-logging-allow - [0:0]
+:ufw-user-limit - [0:0]
+:ufw-user-limit-accept - [0:0]
+
+####################################################################################################
+#### User Rules (IPv4): Port Settings ##############################################################
+####################################################################################################
+
+## UFW allows ports 80 and 443 by default so we retain that rule and their formatting ##
+## we also add a separate rule for port 22 (SSH) using their required syntax ##
+
+### RULES ###
+
+### tuple ### allow tcp 80,443 0.0.0.0/0 any 0.0.0.0/0 in
+-A ufw-user-input -p tcp -m multiport --dports 80,443 -j ACCEPT
+
+### tuple ### allow tcp 22 0.0.0.0/0 any 0.0.0.0/0 in
+-A ufw-user-input -p tcp --dport 22 -j ACCEPT
+
+### END RULES ###
+
+####################################################################################################
+#### User Rules (IPv4): Logging ####################################################################
+####################################################################################################
+
+### LOGGING ###
+-A ufw-after-logging-input -j LOG --log-prefix "[UFW BLOCK] " -m limit --limit 3/min --limit-burst 10
+-A ufw-after-logging-forward -j LOG --log-prefix "[UFW BLOCK] " -m limit --limit 3/min --limit-burst 10
+-I ufw-logging-deny -m conntrack --ctstate INVALID -j RETURN -m limit --limit 3/min --limit-burst 10
+-A ufw-logging-deny -j LOG --log-prefix "[UFW BLOCK] " -m limit --limit 3/min --limit-burst 10
+-A ufw-logging-allow -j LOG --log-prefix "[UFW ALLOW] " -m limit --limit 3/min --limit-burst 10
+### END LOGGING ###
+
+####################################################################################################
+#### User Rules (IPv4): Rate Limiting ##############################################################
+####################################################################################################
+
+### RATE LIMITING ###
+-A ufw-user-limit -m limit --limit 3/minute -j LOG --log-prefix "[UFW LIMIT BLOCK] "
+-A ufw-user-limit -j REJECT
+-A ufw-user-limit-accept -j ACCEPT
+### END RATE LIMITING ###
+
+####################################################################################################
+#### User Rules (IPv4): Commit Rules ###############################################################
+####################################################################################################
+
+COMMIT
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://wiki.ubuntu.com/UncomplicatedFirewall
+## Ref: https://bugs.launchpad.net/ufw/+bug/728128
+## Ref: https://askubuntu.com/questions/1006834/ufw-rules-disappear-after-manually-adding-them-to-user-rules-ubuntu-16-04
+## Ref: https://serverfault.com/questions/198398/ubuntu-how-to-add-an-iptables-rule-that-ufw-cant-create
+## Ref: https://www.digitalocean.com/community/tutorials/ufw-essentials-common-firewall-rules-and-commands
+## Ref: https://gist.github.com/joshuaebowling/a95debd752e507684347ca1ffc4461a0
+## Ref: https://geekrewind.com/how-to-install-memcached-on-ubuntu-linux/
+## Ref: https://www.digitalocean.com/community/tutorials/how-to-install-and-secure-memcached-on-ubuntu-20-04
+## Ref: https://45squared.com/rate-limiting-with-ufw/
+
+## SS_EOF

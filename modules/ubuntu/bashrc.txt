@@ -1,0 +1,849 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/modules/ubuntu/bashrc.txt ##########################
+#### path: /var/www/meta/.bashrc ###################################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Shell optimization and useful shortcut commands for SlickStack and WP-CLI ############
+#### module version: Ubuntu 24.04 LTS ##############################################################
+#### sourced by: /home/SFTP_USER/.bashrc, /home/SUDO_USER/.bashrc, /root/.bashrc ###################
+#### bash aliases: n/a (ss-install-ubuntu-bash) ####################################################
+####################################################################################################
+
+## BASH COMMAND ALIASES USING [ss] PREFIX ARE DIFFERENT THAN WP-CLI [wp] BASH COMPLETION ##
+## THIS FILE IS SOURCED BY UBUNTU USER CONFIGS AND DOES NOT REPLACE THEIR BASHRC ##
+
+####################################################################################################
+#### TABLE OF CONTENTS (Bashrc) ####################################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Default Linux System Path
+## B. Nano Default Shell Editor
+## C. PS1 (Shell Prompt) Customization
+## D. SlickStack [ss] Bash Alias Commands
+## E. WP-CLI Bash Completion Settings
+## F. Include Rclone Configuration
+## G. Home Directory For New Shell Sessions
+
+####################################################################################################
+#### A. Bashrc: Default Linux System Path ##########################################################
+####################################################################################################
+
+## including the default system path setting below ensures wget (etc) works properly ##
+## this setting is also placed in ss-functions for SlickStack bash scripts ##
+
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+####################################################################################################
+#### B. Bashrc: Nano Default Shell Editor ##########################################################
+####################################################################################################
+
+## nano replaced vim as the default in recent Ubuntu releases but we still retain this ##
+## since SlickStack aims to be extremely user-friendly we discourage using vim ##
+
+export EDITOR="/usr/bin/nano"
+
+
+## should we also define HTTP_HOST here for WP-CLI?
+## https://technote.fyi/programming/wordpress/php-notice-undefined-index-http_host-in-home-ms-settings-php-on-line-48/
+## might conflict with wp-config.php definition of HTTP_HOST
+
+####################################################################################################
+#### C. Bashrc: PS1 (Shell Prompt) Customization ###################################################
+####################################################################################################
+
+## here we customize the shell prompt for all Ubuntu users (new session may be required) ##
+## the prompt will include user@hostname in pink and working directory in purple ##
+
+PS1="\[\e[1;35m\]\u@\$(hostname -f)\[\e[0m\]:\[\e[45m\]\w\\[\e[0m\]$ \[$(tput sgr0)\]"
+
+####################################################################################################
+#### D. Bashrc: SlickStack [ss] Bash Alias Commands ################################################
+####################################################################################################
+
+## this is a nifty way to save admins keystrokes by implementing the [ss] bash prefix ##
+## for example instead of sudo bash /var/www/ss-check you can just type ss check ##
+
+function ss {
+    if [[ $@ == "backup" ]]; then
+        command sudo bash /var/www/ss-remote-backup
+    elif [[ $@ == "browse rsync" ]]; then
+        command sshpass -p "${RSYNC_PASSWORD}" sftp "${RSYNC_USER}"@"${RSYNC_REMOTE_HOST}"
+    elif [[ $@ == "certbot" ]]; then
+        command sudo bash /var/www/ss-encrypt-certbot
+    elif [[ $@ == "check" ]]; then
+        command sudo bash /var/www/ss-check
+    elif [[ $@ == "config certbot" ]]; then
+        command sudo sed -i "s|\(^SSL_TYPE=\).*|SSL_TYPE=\"certbot\"|g" /var/www/ss-config
+    elif [[ $@ == "config dev disable" ]]; then
+        command sudo sed -i "s|\(^DEV_SITE=\).*|DEV_SITE=\"false\"|g" /var/www/ss-config
+    elif [[ $@ == "config dev enable" ]]; then
+        command sudo sed -i "s|\(^DEV_SITE=\).*|DEV_SITE=\"true\"|g" /var/www/ss-config
+    elif [[ $@ == "config disable dev" ]]; then
+        command sudo sed -i "s|\(^DEV_SITE=\).*|DEV_SITE=\"false\"|g" /var/www/ss-config
+    elif [[ $@ == "config disable dev sync" ]]; then
+        command sudo sed -i "s|\(^SS_SYNC_DEVELOPMENT=\).*|SS_SYNC_DEVELOPMENT=\"false\"|g" /var/www/ss-config
+    elif [[ $@ == "config disable dev site sync" ]]; then
+        command sudo sed -i "s|\(^SS_SYNC_DEVELOPMENT=\).*|SS_SYNC_DEVELOPMENT=\"true\"|g" /var/www/ss-config
+    elif [[ $@ == "config disable staging" ]]; then
+        command sudo sed -i "s|\(^STAGING_SITE=\).*|STAGING_SITE=\"false\"|g" /var/www/ss-config
+    elif [[ $@ == "config disable staging sync" ]]; then
+        command sudo sed -i "s|\(^SS_SYNC_STAGING=\).*|SS_SYNC_STAGING=\"false\"|g" /var/www/ss-config
+    elif [[ $@ == "config disable staging site sync" ]]; then
+        command sudo sed -i "s|\(^SS_SYNC_STAGING=\).*|SS_SYNC_STAGING=\"false\"|g" /var/www/ss-config
+    elif [[ $@ == "config enable dev" ]]; then
+        command sudo sed -i "s|\(^DEV_SITE=\).*|DEV_SITE=\"true\"|g" /var/www/ss-config
+    elif [[ $@ == "config enable dev sync" ]]; then
+        command sudo sed -i "s|\(^SS_SYNC_DEVELOPMENT=\).*|SS_SYNC_DEVELOPMENT=\"true\"|g" /var/www/ss-config
+    elif [[ $@ == "config enable dev site sync" ]]; then
+        command sudo sed -i "s|\(^SS_SYNC_DEVELOPMENT=\).*|SS_SYNC_DEVELOPMENT=\"true\"|g" /var/www/ss-config
+    elif [[ $@ == "config enable staging" ]]; then
+        command sudo sed -i "s|\(^STAGING_SITE=\).*|STAGING_SITE=\"true\"|g" /var/www/ss-config
+    elif [[ $@ == "config enable staging sync" ]]; then
+        command sudo sed -i "s|\(^SS_SYNC_STAGING=\).*|SS_SYNC_STAGING=\"true\"|g" /var/www/ss-config
+    elif [[ $@ == "config enable staging site sync" ]]; then
+        command sudo sed -i "s|\(^SS_SYNC_STAGING=\).*|SS_SYNC_STAGING=\"true\"|g" /var/www/ss-config
+    elif [[ $@ == "config enable sync dev" ]]; then
+        command sudo sed -i "s|\(^SS_SYNC_DEVELOPMENT=\).*|SS_SYNC_DEVELOPMENT=\"true\"|g" /var/www/ss-config
+    elif [[ $@ == "config enable sync staging" ]]; then
+        command sudo sed -i "s|\(^SS_SYNC_STAGING=\).*|SS_SYNC_STAGING=\"true\"|g" /var/www/ss-config
+    elif [[ $@ == "config lets encrypt" ]]; then
+        command sudo sed -i "s|\(^SSL_TYPE=\).*|SSL_TYPE=\"certbot\"|g" /var/www/ss-config
+    elif [[ $@ == "config letsencrypt" ]]; then
+        command sudo sed -i "s|\(^SSL_TYPE=\).*|SSL_TYPE=\"certbot\"|g" /var/www/ss-config
+    elif [[ $@ == "config openssl" ]]; then
+        command sudo sed -i "s|\(^SSL_TYPE=\).*|SSL_TYPE=\"openssl\"|g" /var/www/ss-config
+    elif [[ $@ == "config staging disable" ]]; then
+        command sudo sed -i "s|\(^STAGING_SITE=\).*|STAGING_SITE=\"false\"|g" /var/www/ss-config
+    elif [[ $@ == "config staging enable" ]]; then
+        command sudo sed -i "s|\(^STAGING_SITE=\).*|STAGING_SITE=\"true\"|g" /var/www/ss-config
+    elif [[ $@ == "clean database" ]]; then
+        command sudo bash /var/www/ss-clean-database
+    elif [[ $@ == "clean db" ]]; then
+        command sudo bash /var/www/ss-clean-database
+    elif [[ $@ == "clean files" ]]; then
+        command sudo bash /var/www/ss-clean-files
+    ## ss cron ... ##
+    elif [[ $@ == "cron 01" ]]; then
+        command sudo bash /var/www/crons/01-cron-minutely
+    elif [[ $@ == "cron minutely" ]]; then
+        command sudo bash /var/www/crons/01-cron-minutely
+    elif [[ $@ == "cron 02" ]]; then
+        command sudo bash /var/www/crons/02-cron-often
+    elif [[ $@ == "cron often" ]]; then
+        command sudo bash /var/www/crons/02-cron-often
+    elif [[ $@ == "cron 03" ]]; then
+        command sudo bash /var/www/crons/03-cron-regular
+    elif [[ $@ == "cron regular" ]]; then
+        command sudo bash /var/www/crons/03-cron-regular
+    elif [[ $@ == "cron 04" ]]; then
+        command sudo bash /var/www/crons/04-cron-quarter-hourly
+    elif [[ $@ == "cron quarter-hourly" ]]; then
+        command sudo bash /var/www/crons/04-cron-quarter-hourly
+    elif [[ $@ == "cron 05" ]]; then
+        command sudo bash /var/www/crons/05-cron-half-hourly
+    elif [[ $@ == "cron half-hourly" ]]; then
+        command sudo bash /var/www/crons/05-cron-half-hourly
+    elif [[ $@ == "cron 06" ]]; then
+        command sudo bash /var/www/crons/06-cron-hourly
+    elif [[ $@ == "cron hourly" ]]; then
+        command sudo bash /var/www/crons/06-cron-hourly
+    elif [[ $@ == "cron 07" ]]; then
+        command sudo bash /var/www/crons/07-cron-quarter-daily
+    elif [[ $@ == "cron quarter-daily" ]]; then
+        command sudo bash /var/www/crons/07-cron-quarter-daily
+    elif [[ $@ == "cron 08" ]]; then
+        command sudo bash /var/www/crons/08-cron-half-daily
+    elif [[ $@ == "cron half-daily" ]]; then
+        command sudo bash /var/www/crons/08-cron-half-daily
+    elif [[ $@ == "cron 09" ]]; then
+        command sudo bash /var/www/crons/09-cron-daily
+    elif [[ $@ == "cron daily" ]]; then
+        command sudo bash /var/www/crons/09-cron-daily
+    elif [[ $@ == "cron 10" ]]; then
+        command sudo bash /var/www/crons/10-cron-half-weekly
+    elif [[ $@ == "cron half-weekly" ]]; then
+        command sudo bash /var/www/crons/10-cron-half-weekly
+    elif [[ $@ == "cron 11" ]]; then
+        command sudo bash /var/www/crons/11-cron-weekly
+    elif [[ $@ == "cron weekly" ]]; then
+        command sudo bash /var/www/crons/11-cron-weekly
+    elif [[ $@ == "cron 12" ]]; then
+        command sudo bash /var/www/crons/12-cron-half-monthly
+    elif [[ $@ == "cron half-monthly" ]]; then
+        command sudo bash /var/www/crons/12-cron-half-monthly
+    elif [[ $@ == "cron 13" ]]; then
+        command sudo bash /var/www/crons/13-cron-monthly
+    elif [[ $@ == "cron monthly" ]]; then
+        command sudo bash /var/www/crons/13-cron-monthly
+    elif [[ $@ == "cron 14" ]]; then
+        command sudo bash /var/www/crons/14-cron-sometimes
+    elif [[ $@ == "cron sometimes" ]]; then
+        command sudo bash /var/www/crons/14-cron-sometimes
+    ## ss cron custom ... ##
+    elif [[ $@ == "cron custom 01" ]]; then
+        command sudo bash /var/www/crons/custom/01-cron-minutely-custom
+    elif [[ $@ == "cron custom minutely" ]]; then
+        command sudo bash /var/www/crons/custom/01-cron-minutely-custom
+    elif [[ $@ == "cron custom 02" ]]; then
+        command sudo bash /var/www/crons/custom/02-cron-often-custom
+    elif [[ $@ == "cron custom often" ]]; then
+        command sudo bash /var/www/crons/custom/02-cron-often-custom
+    elif [[ $@ == "cron custom 03" ]]; then
+        command sudo bash /var/www/crons/custom/03-cron-regular-custom
+    elif [[ $@ == "cron custom regular" ]]; then
+        command sudo bash /var/www/crons/custom/03-cron-regular-custom
+    elif [[ $@ == "cron custom 04" ]]; then
+        command sudo bash /var/www/crons/custom/04-cron-quarter-hourly-custom
+    elif [[ $@ == "cron custom quarter-hourly" ]]; then
+        command sudo bash /var/www/crons/custom/04-cron-quarter-hourly-custom
+    elif [[ $@ == "cron custom 05" ]]; then
+        command sudo bash /var/www/crons/custom/05-cron-half-hourly-custom
+    elif [[ $@ == "cron custom half-hourly" ]]; then
+        command sudo bash /var/www/crons/custom/05-cron-half-hourly-custom
+    elif [[ $@ == "cron custom 06" ]]; then
+        command sudo bash /var/www/crons/custom/06-cron-hourly-custom
+    elif [[ $@ == "cron custom hourly" ]]; then
+        command sudo bash /var/www/crons/custom/06-cron-hourly-custom
+    elif [[ $@ == "cron custom 07" ]]; then
+        command sudo bash /var/www/crons/custom/07-cron-quarter-daily-custom
+    elif [[ $@ == "cron custom quarter-daily" ]]; then
+        command sudo bash /var/www/crons/custom/07-cron-quarter-daily-custom
+    elif [[ $@ == "cron custom 08" ]]; then
+        command sudo bash /var/www/crons/custom/08-cron-half-daily-custom
+    elif [[ $@ == "cron custom half-daily" ]]; then
+        command sudo bash /var/www/crons/custom/08-cron-half-daily-custom
+    elif [[ $@ == "cron custom 09" ]]; then
+        command sudo bash /var/www/crons/custom/09-cron-daily-custom
+    elif [[ $@ == "cron custom daily" ]]; then
+        command sudo bash /var/www/crons/custom/09-cron-daily-custom
+    elif [[ $@ == "cron custom 10" ]]; then
+        command sudo bash /var/www/crons/custom/10-cron-half-weekly-custom
+    elif [[ $@ == "cron custom half-weekly" ]]; then
+        command sudo bash /var/www/crons/custom/10-cron-half-weekly-custom
+    elif [[ $@ == "cron custom 11" ]]; then
+        command sudo bash /var/www/crons/custom/11-cron-weekly-custom
+    elif [[ $@ == "cron custom weekly" ]]; then
+        command sudo bash /var/www/crons/custom/11-cron-weekly-custom
+    elif [[ $@ == "cron custom 12" ]]; then
+        command sudo bash /var/www/crons/custom/12-cron-half-monthly-custom
+    elif [[ $@ == "cron custom half-monthly" ]]; then
+        command sudo bash /var/www/crons/custom/12-cron-half-monthly-custom
+    elif [[ $@ == "cron custom 13" ]]; then
+        command sudo bash /var/www/crons/custom/13-cron-monthly-custom
+    elif [[ $@ == "cron custom monthly" ]]; then
+        command sudo bash /var/www/crons/custom/13-cron-monthly-custom
+    elif [[ $@ == "cron custom 14" ]]; then
+        command sudo bash /var/www/crons/custom/14-cron-sometimes-custom
+    elif [[ $@ == "cron custom sometimes" ]]; then
+        command sudo bash /var/www/crons/custom/14-cron-sometimes-custom
+    ## ss delete ... ##
+    elif [[ $@ == "delete database" ]]; then
+        command sudo bash /var/www/ss-delete-database
+    elif [[ $@ == "delete db" ]]; then
+        command sudo bash /var/www/ss-delete-database
+    elif [[ $@ == "delete files" ]]; then
+        command sudo bash /var/www/ss-delete-files
+    elif [[ $@ == "delete html" ]]; then
+        command sudo bash /var/www/ss-delete-files
+    ## ss dump ... ##
+    elif [[ $@ == "dump database" ]]; then
+        command sudo bash /var/www/ss-dump-database
+    elif [[ $@ == "dump db" ]]; then
+        command sudo bash /var/www/ss-dump-database
+    elif [[ $@ == "dump files" ]]; then
+        command sudo bash /var/www/ss-dump-files
+    ## ss empty ... ##
+    elif [[ $@ == "empty logs" ]]; then
+        command sudo bash /var/www/ss-empty-logs
+    elif [[ $@ == "null logs" ]]; then
+        command sudo bash /var/www/ss-empty-logs
+    ## ss encrypt ... ##
+    elif [[ $@ == "encrypt" ]]; then
+        command sudo bash /var/www/ss-encrypt-openssl
+        command sudo bash /var/www/ss-encrypt-certbot
+    elif [[ $@ == "encrypt certbot" ]]; then
+        command sudo bash /var/www/ss-encrypt-certbot
+    elif [[ $@ == "encrypt letsencrypt" ]]; then
+        command sudo bash /var/www/ss-encrypt-certbot
+    elif [[ $@ == "encrypt openssl" ]]; then
+        command sudo bash /var/www/ss-encrypt-openssl
+    ## ss grep ... ##
+    # elif [[ $@ == "grep" ]]; then
+    #    command sudo /usr/bin/grep -rnw '/var/www/' -e "$@"
+    ## ss import ... ##
+    elif [[ $@ == "import database" ]]; then
+        command sudo bash /var/www/ss-import-database
+    elif [[ $@ == "import db" ]]; then
+        command sudo bash /var/www/ss-import-database
+    elif [[ $@ == "import files" ]]; then
+        command sudo bash /var/www/ss-import-files
+    ## ss install ... ##
+    elif [[ $@ == "install" ]]; then
+        command sudo bash /var/www/ss-install
+    elif [[ $@ == "install adminer" ]]; then
+        command sudo bash /var/www/ss-install-adminer
+    elif [[ $@ == "install aliases" ]]; then
+        command sudo bash /var/www/ss-install-ubuntu-bash
+    elif [[ $@ == "install bash" ]]; then
+        command sudo bash /var/www/ss-install-ubuntu-bash
+    elif [[ $@ == "install bash aliases" ]]; then
+        command sudo bash /var/www/ss-install-ubuntu-bash
+    elif [[ $@ == "install bash commands" ]]; then
+        command sudo bash /var/www/ss-install-ubuntu-bash
+    elif [[ $@ == "install bash functions" ]]; then
+        command sudo bash /var/www/ss-install-ubuntu-bash
+    elif [[ $@ == "install clamav" ]]; then
+        command sudo bash /var/www/ss-install-clamav
+    elif [[ $@ == "install craft config" ]]; then
+        command sudo bash /var/www/ss-install-craft-config
+    elif [[ $@ == "install craft packages" ]]; then
+        command sudo bash /var/www/ss-install-craft-packages
+    elif [[ $@ == "install crontab" ]]; then
+        command sudo bash /var/www/ss-install-ubuntu-crontab
+    elif [[ $@ == "install database" ]]; then
+        command sudo bash /var/www/ss-dump-database
+        command sudo bash /var/www/ss-install-mysql-database
+    elif [[ $@ == "install db" ]]; then
+        command sudo bash /var/www/ss-dump-database
+        command sudo bash /var/www/ss-install-mysql-database
+    elif [[ $@ == "install fail2ban" ]]; then
+        command sudo bash /var/www/ss-install-fail2ban-packages
+        command sudo bash /var/www/ss-install-fail2ban-config
+    elif [[ $@ == "install fail2ban config" ]]; then
+        command sudo bash /var/www/ss-install-fail2ban-config
+    elif [[ $@ == "install fail2ban packages" ]]; then
+        command sudo bash /var/www/ss-install-fail2ban-packages
+    elif [[ $@ == "install hovercraft" ]]; then
+        command sudo bash /var/www/ss-install-wordpress-hovercraft
+    elif [[ $@ == "install memcached" ]]; then
+        command sudo bash /var/www/ss-install-memcached-packages
+        command sudo bash /var/www/ss-install-memcached-config
+    elif [[ $@ == "install memcached config" ]]; then
+        command sudo bash /var/www/ss-install-memcached-config
+    elif [[ $@ == "install memcached packages" ]]; then
+        command sudo bash /var/www/ss-install-memcached-packages
+    elif [[ $@ == "install mediawiki" ]]; then
+        command sudo bash /var/www/ss-install-mediawiki-packages
+        command sudo bash /var/www/ss-install-mediawiki-config
+    elif [[ $@ == "install mediawiki config" ]]; then
+        command sudo bash /var/www/ss-install-mediawiki-config
+    elif [[ $@ == "install mediawiki packages" ]]; then
+        command sudo bash /var/www/ss-install-mediawiki-packages
+    elif [[ $@ == "install moodle config" ]]; then
+        command sudo bash /var/www/ss-install-moodle-config
+    elif [[ $@ == "install moodle packages" ]]; then
+        command sudo bash /var/www/ss-install-moodle-packages
+    elif [[ $@ == "install mu plugins" ]]; then
+        command sudo bash /var/www/ss-install-wordpress-mu-plugins
+    elif [[ $@ == "install mysql" ]]; then
+        command sudo bash /var/www/ss-dump-database
+        command sudo bash /var/www/ss-install-mysql-packages
+        command sudo bash /var/www/ss-install-mysql-config
+    elif [[ $@ == "install mysql packages" ]]; then
+        command sudo bash /var/www/ss-dump-database
+        command sudo bash /var/www/ss-install-mysql-packages
+    elif [[ $@ == "install mysql config" ]]; then
+        command sudo bash /var/www/ss-dump-database
+        command sudo bash /var/www/ss-install-mysql-config
+    elif [[ $@ == "install mysql database" ]]; then
+        command sudo bash /var/www/ss-dump-database
+        command sudo bash /var/www/ss-install-mysql-database
+    elif [[ $@ == "install mysql db" ]]; then
+        command sudo bash /var/www/ss-dump-database
+        command sudo bash /var/www/ss-install-mysql-database
+    elif [[ $@ == "install mysql packages" ]]; then
+        command sudo bash /var/www/ss-dump-database
+        command sudo bash /var/www/ss-install-mysql-packages
+    elif [[ $@ == "install nginx" ]]; then
+        command sudo bash /var/www/ss-install-nginx-packages
+        command sudo bash /var/www/ss-install-nginx-config
+    elif [[ $@ == "install nginx cloudflare" ]]; then
+        command sudo bash /var/www/ss-install-nginx-cloudflare-ips
+    elif [[ $@ == "install nginx cloudflare ips" ]]; then
+        command sudo bash /var/www/ss-install-nginx-cloudflare-ips
+    elif [[ $@ == "install nginx authenticated origin" ]]; then
+        command sudo bash /var/www/ss-install-nginx-cloudflare-authenticated-origin
+    elif [[ $@ == "install nginx aop" ]]; then
+        command sudo bash /var/www/ss-install-nginx-cloudflare-authenticated-origin
+    elif [[ $@ == "install nginx config" ]]; then
+        command sudo bash /var/www/ss-install-nginx-config
+        elif [[ $@ == "install nginx packages" ]]; then
+        command sudo bash /var/www/ss-install-nginx-packages
+    elif [[ $@ == "install nginx ssl" ]]; then
+        command sudo bash /var/www/ss-install-nginx-ssl
+    elif [[ $@ == "install opencart config" ]]; then
+        command sudo bash /var/www/ss-install-opencart-config
+    elif [[ $@ == "install opencart packages" ]]; then
+        command sudo bash /var/www/ss-install-opencart-packages
+    elif [[ $@ == "install php" ]]; then
+        command sudo bash /var/www/ss-install-php-packages
+        command sudo bash /var/www/ss-install-php-config
+    elif [[ $@ == "install php config" ]]; then
+        command sudo bash /var/www/ss-install-php-config
+    elif [[ $@ == "install php packages" ]]; then
+        command sudo bash /var/www/ss-install-php-packages
+    elif [[ $@ == "install prestashop config" ]]; then
+        command sudo bash /var/www/ss-install-prestashop-config
+    elif [[ $@ == "install prestashop packages" ]]; then
+        command sudo bash /var/www/ss-install-prestashop-packages
+    elif [[ $@ == "install rclone" ]]; then
+        command sudo bash /var/www/ss-install-rclone-packages
+        command sudo bash /var/www/ss-install-rclone-config
+    elif [[ $@ == "install rclone config" ]]; then
+        command sudo bash /var/www/ss-install-rclone-config
+    elif [[ $@ == "install rclone packages" ]]; then
+        command sudo bash /var/www/ss-install-rclone-packages
+    elif [[ $@ == "install ssh" ]]; then
+        command sudo bash /var/www/ss-install-ubuntu-ssh
+    elif [[ $@ == "install ssl" ]]; then
+        command sudo bash /var/www/ss-install-nginx-ssl
+    elif [[ $@ == "install swap" ]]; then
+        command sudo bash /var/www/ss-install-ubuntu-swapfile
+    elif [[ $@ == "install swapfile" ]]; then
+        command sudo bash /var/www/ss-install-ubuntu-swapfile
+    elif [[ $@ == "install ubuntu aliases" ]]; then
+        command sudo bash /var/www/ss-install-ubuntu-bash
+    elif [[ $@ == "install ubuntu bash" ]]; then
+        command sudo bash /var/www/ss-install-ubuntu-bash
+    elif [[ $@ == "install ubuntu bash aliases" ]]; then
+        command sudo bash /var/www/ss-install-ubuntu-bash
+    elif [[ $@ == "install ubuntu bash commands" ]]; then
+        command sudo bash /var/www/ss-install-ubuntu-bash
+    elif [[ $@ == "install ubuntu bash functions" ]]; then
+        command sudo bash /var/www/ss-install-ubuntu-bash
+    elif [[ $@ == "install ubuntu crontab" ]]; then
+        command sudo bash /var/www/ss-install-ubuntu-crontab
+    elif [[ $@ == "install ubuntu kernel" ]]; then
+        command sudo bash /var/www/ss-install-ubuntu-kernel
+    elif [[ $@ == "install ubuntu ssh" ]]; then
+        command sudo bash /var/www/ss-install-ubuntu-ssh
+    elif [[ $@ == "install ubuntu swap" ]]; then
+        command sudo bash /var/www/ss-install-ubuntu-swapfile
+    elif [[ $@ == "install ubuntu users" ]]; then
+        command sudo bash /var/www/ss-install-ubuntu-users
+    elif [[ $@ == "install ubuntu utils" ]]; then
+        command sudo bash /var/www/ss-install-ubuntu-utils
+    elif [[ $@ == "install ufw" ]]; then
+        command sudo bash /var/www/ss-install-ufw-packages
+        command sudo bash /var/www/ss-install-ufw-config
+    elif [[ $@ == "install ufw config" ]]; then
+        command sudo bash /var/www/ss-install-ufw-config
+    elif [[ $@ == "install ufw packages" ]]; then
+        command sudo bash /var/www/ss-install-ufw-packages
+    elif [[ $@ == "install users" ]]; then
+        command sudo bash /var/www/ss-install-ubuntu-users
+    elif [[ $@ == "install utils" ]]; then
+        command sudo bash /var/www/ss-install-ubuntu-utils
+    ## ss install wordpress ... ##
+    elif [[ $@ == "install wordpress" ]]; then
+        command sudo bash /var/www/ss-install-wordpress-packages
+        command sudo bash /var/www/ss-install-wordpress-config
+        command sudo bash /var/www/ss-install-wordpress-mu-plugins
+        command sudo bash /var/www/ss-install-wordpress-cli
+    elif [[ $@ == "install wp" ]]; then
+        command sudo bash /var/www/ss-install-wordpress-packages
+        command sudo bash /var/www/ss-install-wordpress-config
+        command sudo bash /var/www/ss-install-wordpress-mu-plugins
+        command sudo bash /var/www/ss-install-wordpress-cli
+    ## ss install wordpress cli ##
+    elif [[ $@ == "install wordpress cli" ]]; then
+        command sudo bash /var/www/ss-install-wordpress-cli
+    elif [[ $@ == "install wp-cli" ]]; then
+        command sudo bash /var/www/ss-install-wordpress-cli
+    elif [[ $@ == "install wp cli" ]]; then
+        command sudo bash /var/www/ss-install-wordpress-cli
+    elif [[ $@ == "install wpcli" ]]; then
+        command sudo bash /var/www/ss-install-wordpress-cli
+    ## ss install wordpress config ##
+    elif [[ $@ == "install wordpress config" ]]; then
+        command sudo bash /var/www/ss-install-wordpress-config
+    elif [[ $@ == "install wp config" ]]; then
+        command sudo bash /var/www/ss-install-wordpress-config
+    ## ss install wordpress mu plugins ##
+    elif [[ $@ == "install wordpress mu plugins" ]]; then
+        command sudo bash /var/www/ss-install-wordpress-mu-plugins
+    elif [[ $@ == "install wp mu plugins" ]]; then
+        command sudo bash /var/www/ss-install-wordpress-mu-plugins
+    ## ss install wordpress hovercraft ##
+    elif [[ $@ == "install wordpress hovercraft" ]]; then
+        command sudo bash /var/www/ss-install-wordpress-hovercraft
+    elif [[ $@ == "install wordpress packages" ]]; then
+        command sudo bash /var/www/ss-install-wordpress-packages
+    ## ss install wp hovercraft ##
+    elif [[ $@ == "install wp hovercraft" ]]; then
+        command sudo bash /var/www/ss-install-wordpress-hovercraft
+    elif [[ $@ == "install wp packages" ]]; then
+        command sudo bash /var/www/ss-install-wordpress-packages
+    ## ss main ... ##
+    elif [[ $@ == "main disable" ]]; then
+        command sudo bash /var/www/ss-maintenance-disable
+    elif [[ $@ == "main enable" ]]; then
+        command sudo bash /var/www/ss-maintenance-enable
+    elif [[ $@ == "main off" ]]; then
+        command sudo bash /var/www/ss-maintenance-disable
+    elif [[ $@ == "main on" ]]; then
+        command sudo bash /var/www/ss-maintenance-enable
+    elif [[ $@ == "maintenance disable" ]]; then
+        command sudo bash /var/www/ss-maintenance-disable
+    elif [[ $@ == "maintenance enable" ]]; then
+        command sudo bash /var/www/ss-maintenance-enable
+    elif [[ $@ == "maintenance off" ]]; then
+        command sudo bash /var/www/ss-maintenance-disable
+    elif [[ $@ == "maintenance on" ]]; then
+        command sudo bash /var/www/ss-maintenance-enable
+    elif [[ $@ == "monitor" ]]; then
+        command sudo bash /var/www/ss-monitor-resources
+    elif [[ $@ == "monitor resources" ]]; then
+        command sudo bash /var/www/ss-monitor-resources
+    elif [[ $@ == "monitor server" ]]; then
+        command sudo bash /var/www/ss-monitor-resources
+    ## ss optimize ... ##
+    elif [[ $@ == "optimize" ]]; then
+        command sudo bash /var/www/ss-optimize-database
+        command sudo bash /var/www/ss-optimize-files
+    elif [[ $@ == "optimize database" ]]; then
+        command sudo bash /var/www/ss-optimize-database
+    elif [[ $@ == "optimize db" ]]; then
+        command sudo bash /var/www/ss-optimize-database
+    elif [[ $@ == "optimize files" ]]; then
+        command sudo bash /var/www/ss-optimize-files
+    ## ss overview ... ##
+    elif [[ $@ == "info" ]]; then
+        command sudo bash /var/www/ss-stack-overview
+    elif [[ $@ == "overview" ]]; then
+        command sudo bash /var/www/ss-stack-overview
+    elif [[ $@ == "perms" ]]; then
+        command sudo bash /var/www/ss-perms
+    elif [[ $@ == "perms adminer" ]]; then
+        command sudo bash /var/www/ss-perms-adminer
+    elif [[ $@ == "perms aliases" ]]; then
+        command sudo bash /var/www/ss-perms-ubuntu-bash
+    elif [[ $@ == "perms bash" ]]; then
+        command sudo bash /var/www/ss-perms-ubuntu-bash
+    elif [[ $@ == "perms clamav" ]]; then
+        command sudo bash /var/www/ss-perms-clamav
+    elif [[ $@ == "perms craft config" ]]; then
+        command sudo bash /var/www/ss-perms-craft-config
+    elif [[ $@ == "perms craft core" ]]; then
+        command sudo bash /var/www/ss-perms-craft-packages
+    elif [[ $@ == "perms lets encrypt" ]]; then
+        command sudo bash /var/www/ss-perms-nginx-ssl
+    elif [[ $@ == "perms letsencrypt" ]]; then
+        command sudo bash /var/www/ss-perms-nginx-ssl
+    elif [[ $@ == "perms mediawiki config" ]]; then
+        command sudo bash /var/www/ss-perms-mediawiki-config
+    elif [[ $@ == "perms mediawiki core" ]]; then
+        command sudo bash /var/www/ss-perms-mediawiki-packages
+    elif [[ $@ == "perms memcached" ]]; then
+        command sudo bash /var/www/ss-perms-memcached-packages
+        command sudo bash /var/www/ss-perms-memcached-config
+    elif [[ $@ == "perms memcached config" ]]; then
+        command sudo bash /var/www/ss-perms-memcached-config
+    elif [[ $@ == "perms memcached core" ]]; then
+        command sudo bash /var/www/ss-perms-memcached-packages
+    elif [[ $@ == "perms memcached packages" ]]; then
+        command sudo bash /var/www/ss-perms-memcached-packages
+    elif [[ $@ == "perms moodle config" ]]; then
+        command sudo bash /var/www/ss-perms-moodle-config
+    elif [[ $@ == "perms moodle core" ]]; then
+        command sudo bash /var/www/ss-perms-moodle-packages
+    elif [[ $@ == "perms mysql" ]]; then
+        command sudo bash /var/www/ss-perms-mysql-packages
+        command sudo bash /var/www/ss-perms-mysql-config
+    elif [[ $@ == "perms mysql packages" ]]; then
+        command sudo bash /var/www/ss-perms-mysql-packages
+    elif [[ $@ == "perms mysql config" ]]; then
+        command sudo bash /var/www/ss-perms-mysql-config
+    elif [[ $@ == "perms nginx" ]]; then
+        command sudo bash /var/www/ss-perms-nginx-config
+        command sudo bash /var/www/ss-perms-nginx-packages
+    elif [[ $@ == "perms nginx ssl" ]]; then
+        command sudo bash /var/www/ss-perms-nginx-ssl
+    elif [[ $@ == "perms opencart config" ]]; then
+        command sudo bash /var/www/ss-perms-opencart-config
+    elif [[ $@ == "perms opencart core" ]]; then
+        command sudo bash /var/www/ss-perms-opencart-packages
+    elif [[ $@ == "perms php" ]]; then
+        command sudo bash /var/www/ss-perms-php-config
+        command sudo bash /var/www/ss-perms-php-packages
+    elif [[ $@ == "perms php config" ]]; then
+        command sudo bash /var/www/ss-perms-php-config
+    elif [[ $@ == "perms php core" ]]; then
+        command sudo bash /var/www/ss-perms-php-packages
+    elif [[ $@ == "perms php packages" ]]; then
+        command sudo bash /var/www/ss-perms-php-packages
+    elif [[ $@ == "perms prestashop config" ]]; then
+        command sudo bash /var/www/ss-perms-prestashop-config
+    elif [[ $@ == "perms prestashop core" ]]; then
+        command sudo bash /var/www/ss-perms-prestashop-packages
+    elif [[ $@ == "perms rclone" ]]; then
+        command sudo bash /var/www/ss-perms-rclone-packages
+        command sudo bash /var/www/ss-perms-rclone-config
+    elif [[ $@ == "perms rclone config" ]]; then
+        command sudo bash /var/www/ss-perms-rclone-config
+    elif [[ $@ == "perms rclone packages" ]]; then
+        command sudo bash /var/www/ss-perms-rclone-packages
+    elif [[ $@ == "perms ssl" ]]; then
+        command sudo bash /var/www/ss-perms-nginx-ssl
+    elif [[ $@ == "perms ubuntu aliases" ]]; then
+        command sudo bash /var/www/ss-perms-ubuntu-bash
+    elif [[ $@ == "perms ubuntu bash" ]]; then
+        command sudo bash /var/www/ss-perms-ubuntu-bash
+    elif [[ $@ == "perms ubuntu crontab" ]]; then
+        command sudo bash /var/www/ss-perms-ubuntu-crontab
+    elif [[ $@ == "perms ubuntu kernel" ]]; then
+        command sudo bash /var/www/ss-perms-ubuntu-kernel
+    elif [[ $@ == "perms ubuntu ssh" ]]; then
+        command sudo bash /var/www/ss-perms-ubuntu-ssh
+    elif [[ $@ == "perms ubuntu users" ]]; then
+        command sudo bash /var/www/ss-perms-ubuntu-users
+    elif [[ $@ == "perms ubuntu utils" ]]; then
+        command sudo bash /var/www/ss-perms-ubuntu-utils
+    elif [[ $@ == "perms ufw" ]]; then
+        command sudo bash /var/www/ss-perms-ufw-packages
+        command sudo bash /var/www/ss-perms-ufw-config
+    elif [[ $@ == "perms ufw core" ]]; then
+        command sudo bash /var/www/ss-perms-ufw-packages
+    elif [[ $@ == "perms ufw config" ]]; then
+        command sudo bash /var/www/ss-perms-ufw-config
+    elif [[ $@ == "perms wordpress cli" ]]; then
+        command sudo bash /var/www/ss-perms-wordpress-cli
+    elif [[ $@ == "perms wp cli" ]]; then
+        command sudo bash /var/www/ss-perms-wordpress-cli
+    elif [[ $@ == "perms wordpress config" ]]; then
+        command sudo bash /var/www/ss-perms-wordpress-config
+    elif [[ $@ == "perms wp config" ]]; then
+        command sudo bash /var/www/ss-perms-wordpress-config
+    elif [[ $@ == "perms wordpress packages" ]]; then
+        command sudo bash /var/www/ss-perms-wordpress-packages
+    elif [[ $@ == "perms wp packages" ]]; then
+        command sudo bash /var/www/ss-perms-wordpress-packages
+    elif [[ $@ == "perms wordpress mu plugins" ]]; then
+        command sudo bash /var/www/ss-perms-wordpress-mu-plugins
+    elif [[ $@ == "perms wp mu plugins" ]]; then
+        command sudo bash /var/www/ss-perms-wordpress-mu-plugins
+    elif [[ $@ == "perms mu plugins" ]]; then
+        command sudo bash /var/www/ss-perms-wordpress-mu-plugins
+    elif [[ $@ == "private" ]]; then
+        sudo mv "$@" /var/www/backups/private/
+    ## ss purge ... ##
+    elif [[ $@ == "purge" ]]; then
+        command sudo bash /var/www/ss-purge-nginx
+        command sudo bash /var/www/ss-purge-opcache
+        command sudo bash /var/www/ss-purge-memcached
+        command sudo bash /var/www/ss-purge-transients
+    elif [[ $@ == "purge nginx" ]]; then
+        command sudo bash /var/www/ss-purge-nginx
+    elif [[ $@ == "purge object cache" ]]; then
+        command sudo bash /var/www/ss-purge-memcached
+    elif [[ $@ == "purge opcache" ]]; then
+        command sudo bash /var/www/ss-purge-opcache
+    elif [[ $@ == "purge memcached" ]]; then
+        command sudo bash /var/www/ss-purge-memcached
+    elif [[ $@ == "purge transients" ]]; then
+        command sudo bash /var/www/ss-purge-transients
+    elif [[ $@ == "push dev" ]]; then
+        command sudo bash /var/www/ss-push-development
+    elif [[ $@ == "push development" ]]; then
+        command sudo bash /var/www/ss-push-development
+    elif [[ $@ == "push staging" ]]; then
+        command sudo bash /var/www/ss-push-staging
+    elif [[ $@ == "reboot" ]]; then
+        command sudo bash /var/www/ss-reboot-machine
+    elif [[ $@ == "remote backup" ]]; then
+        command sudo bash /var/www/ss-remote-backup
+    elif [[ $@ == "reset password sftp" ]]; then
+        command sudo bash /var/www/ss-reset-password-sftp
+    elif [[ $@ == "reset pass sftp" ]]; then
+        command sudo bash /var/www/ss-reset-password-sftp
+    elif [[ $@ == "reset sftp password" ]]; then
+        command sudo bash /var/www/ss-reset-password-sftp
+    elif [[ $@ == "reset sftp pass" ]]; then
+        command sudo bash /var/www/ss-reset-password-sftp
+    elif [[ $@ == "restart" ]]; then
+        command sudo bash /var/www/ss-restart-php
+        command sudo bash /var/www/ss-restart-nginx
+        command sudo bash /var/www/ss-restart-mysql
+        command sudo bash /var/www/ss-restart-memcached
+        command sudo bash /var/www/ss-restart-ufw
+        command sudo bash /var/www/ss-restart-fail2ban
+    elif [[ $@ == "restart all" ]]; then
+        command sudo bash /var/www/ss-restart-php
+        command sudo bash /var/www/ss-restart-nginx
+        command sudo bash /var/www/ss-restart-mysql
+        command sudo bash /var/www/ss-restart-memcached
+        command sudo bash /var/www/ss-restart-ufw
+        command sudo bash /var/www/ss-restart-fail2ban
+    elif [[ $@ == "restart fail2ban" ]]; then
+        command sudo bash /var/www/ss-restart-fail2ban
+    elif [[ $@ == "restart modules" ]]; then
+        command sudo bash /var/www/ss-restart-php
+        command sudo bash /var/www/ss-restart-nginx
+        command sudo bash /var/www/ss-restart-mysql
+        command sudo bash /var/www/ss-restart-memcached
+        command sudo bash /var/www/ss-restart-ufw
+        command sudo bash /var/www/ss-restart-fail2ban
+    elif [[ $@ == "restart memcached" ]]; then
+        command sudo bash /var/www/ss-restart-memcached
+    elif [[ $@ == "restart mysql" ]]; then
+        command sudo bash /var/www/ss-restart-mysql
+    elif [[ $@ == "restart nginx" ]]; then
+        command sudo bash /var/www/ss-restart-nginx
+    elif [[ $@ == "restart php" ]]; then
+        command sudo bash /var/www/ss-restart-php
+    elif [[ $@ == "restart php-fpm" ]]; then
+        command sudo bash /var/www/ss-restart-php
+    elif [[ $@ == "restart services" ]]; then
+        command sudo bash /var/www/ss-restart-php
+        command sudo bash /var/www/ss-restart-nginx
+        command sudo bash /var/www/ss-restart-mysql
+        command sudo bash /var/www/ss-restart-memcached
+        command sudo bash /var/www/ss-restart-ufw
+        command sudo bash /var/www/ss-restart-fail2ban
+    elif [[ $@ == "restart ufw" ]]; then 
+        command sudo bash /var/www/ss-restart-ufw
+    elif [[ $@ == "status" ]]; then
+        command sudo bash /var/www/ss-stack-overview ## repeat
+    elif [[ $@ == "status nginx" ]]; then
+        sudo service nginx status
+    elif [[ $@ == "status php" ]]; then
+        sudo systemctl status php*-fpm.service
+    elif [[ $@ == "summary" ]]; then
+        command sudo bash /var/www/ss-stack-overview ## repeat
+    elif [[ $@ == "sync dev" ]]; then
+        command sudo bash /var/www/ss-sync-development
+    elif [[ $@ == "sync development" ]]; then
+        command sudo bash /var/www/ss-sync-development
+    elif [[ $@ == "sync staging" ]]; then
+        command sudo bash /var/www/ss-sync-staging
+    elif [[ $@ == "tail fail2ban log" ]]; then
+        sudo tail -f /var/log/fail2ban.log
+    elif [[ $@ == "tail nginx access log" ]]; then
+        sudo tail -f /var/www/logs/nginx-access.log
+    elif [[ $@ == "tail nginx error log" ]]; then
+        sudo tail -f /var/www/logs/nginx-error.log
+    elif [[ $@ == "tail php error log" ]]; then
+        sudo tail -f /var/www/logs/php-error.log
+    elif [[ $@ == "test openssl" ]]; then
+        openssl x509 -noout -text -in /var/www/certs/slickstack.crt
+    elif [[ $@ == "update" ]]; then
+        command sudo bash /var/www/ss-check
+        command sudo bash /var/www/ss-worker
+        command sudo bash /var/www/ss-check
+        command sudo bash /var/www/ss-update-config
+        command sudo bash /var/www/ss-check
+        command sudo bash /var/www/ss-worker
+        command sudo bash /var/www/ss-check
+        command sudo bash /var/www/ss-install-ubuntu-crontab
+        command sudo bash /var/www/ss-update-modules
+        command sudo bash /var/www/ss-restart-php
+        command sudo bash /var/www/ss-restart-nginx
+        command sudo bash /var/www/ss-restart-mysql
+        command sudo bash /var/www/ss-restart-memcached
+    elif [[ $@ == "update config" ]]; then
+        command sudo bash /var/www/ss-update-config
+    elif [[ $@ == "update modules" ]]; then
+        command sudo bash /var/www/ss-update-modules
+    elif [[ $@ == "update packages" ]]; then
+        command sudo bash /var/www/ss-update-modules
+    elif [[ $@ == "update ss-config" ]]; then
+        command sudo bash /var/www/ss-update-config
+    elif [[ $@ == "upgrade" ]]; then
+        command sudo bash /var/www/ss-update-config
+        command sudo bash /var/www/ss-update-modules
+    elif [[ $@ == "upgrade config" ]]; then
+        command sudo bash /var/www/ss-update-config
+    elif [[ $@ == "upgrade modules" ]]; then
+        command sudo bash /var/www/ss-update-modules
+    elif [[ $@ == "upgrade packages" ]]; then
+        command sudo bash /var/www/ss-update-modules
+    elif [[ $@ == "upgrade ss-config" ]]; then
+        command sudo bash /var/www/ss-update-config
+    elif [[ $@ == "worker" ]]; then
+        command sudo bash /var/www/ss-worker
+    fi
+}
+
+####################################################################################################
+#### E. Bashrc: WP-CLI Bash Completion Settings ####################################################
+####################################################################################################
+
+## SlickStack aims to be self-reliant so we do not integrate WP-CLI into our scripts ##
+## however if you prefer using WP-CLI we include it here as a bundled feature ##
+
+export WP_CLI_CACHE_DIR="/var/www/cache/wp-cli"
+export WP_CLI_CONFIG_PATH="/var/www/meta/wp-cli.yml"
+export WP_CLI_CUSTOM_SHELL="/bin/bash"
+export WP_CLI_DISABLE_AUTO_CHECK_UPDATE="true"
+export WP_CLI_PACKAGES_DIR="/tmp"
+# export WP_CLI_PHP=""
+# export WP_CLI_PHP_ARGS=""
+# export WP_CLI_SSH_PRE_CMD=""
+export WP_CLI_STRICT_ARGS_MODE="false"
+export WP_CLI_SUPPRESS_GLOBAL_PARAMS="false"
+
+## include .wp-completion ##
+source /var/www/meta/.wp-completion
+
+####################################################################################################
+#### F. Bashrc: Include Rclone Configuration #######################################################
+####################################################################################################
+
+export RCLONE_CONFIG="/var/www/meta/rclone.conf"
+
+####################################################################################################
+#### G. Bashrc: Home Directory For New Shell Sessions ##############################################
+####################################################################################################
+
+## the last thing we include is this command to change to SlickStack root directory ##
+## this helps alleviate confusion when sudo users SSH into their server ##
+
+cd /var/www/
+
+####################################################################################################
+#### External References Used By SlickStack To Improve This Script (Thanks, Interwebz) #############
+####################################################################################################
+
+## Ref: https://askubuntu.com/questions/915626/setting-permanent-export-editor-to-nano-for-all-future-sessions
+## Ref: https://linuxize.com/post/bash-functions/
+## Ref: https://askubuntu.com/a/606882/935172
+## Ref: https://unix.stackexchange.com/a/247125/353848
+## Ref: https://ceaksan.com/tr/wp-cli-config-komutu-ve-islemleri/
+## Ref: https://github.com/greenpeace/planet4-docker/blob/master/src/planet-4-151612/wordpress/Dockerfile
+## Ref: https://unix.stackexchange.com/questions/129143/what-is-the-purpose-of-bashrc-and-how-does-it-work
+## Ref: https://superuser.com/questions/105375/bash-spaces-in-alias-name
+## Ref: https://www.gnu.org/software/bash/manual/html_node/Bash-Startup-Files.html
+## Ref: https://unix.stackexchange.com/questions/3467/what-does-rc-in-bashrc-stand-for
+## Ref: https://superuser.com/questions/173165/what-does-the-rc-in-bashrc-etc-mean
+## Ref: https://gist.github.com/dhaiducek/174cdb04a5a51f016c6ca69ece721b17
+## Ref: https://github.com/victorhundo/matrix-script/blob/master/matrix.sh
+## Ref: https://forum.rclone.org/t/changing-default-location-of-rclone-conf/6698/4
+## Ref: https://unix.stackexchange.com/questions/140602/how-do-i-start-all-shell-sessions-in-a-directory-other-than-home
+## Ref: https://serverfault.com/questions/167416/how-can-i-automatically-change-directory-on-ssh-login
+## Ref: https://askubuntu.com/questions/27314/script-to-display-all-terminal-colors
+## Ref: https://unix.stackexchange.com/questions/124407/what-color-codes-can-i-use-in-my-bash-ps1-prompt
+## Ref: https://www.reddit.com/r/Wordpress/comments/dwukz2/running_wpcli_commands_as_root/
+## Ref: https://blog.christosoft.de/2017/06/wp-cli-run-as-correct-user/
+## Ref: https://github.com/littlebizzy/slickstack/issues/164
+## Ref: https://www.baeldung.com/linux/bashrc-add-files
+## Ref: https://askubuntu.com/questions/1241303/how-to-include-configuration-from-other-file-in-bashrc-and-bash-profile
+## Ref: https://unix.stackexchange.com/questions/713466/best-way-to-source-config-file-inside-sudo-user-bashrc-file
+## Ref: https://unix.stackexchange.com/questions/46066/why-unix-mv-program-doesnt-need-r-recursive-option-for-directories-but-cp-do
+## Ref: https://bashrcgenerator.com
+## Ref: https://mossiso.com/what-is-tput-sgr0-doin-in-my-bash-prompt/
+## Ref: https://community.wordops.net/d/776-i-cant-run-any-wp-cli-commands
+## Ref: https://wordpress.stackexchange.com/questions/236725/whats-the-proper-way-to-setup-wp-cli-on-ubuntu-so-that-i-dont-have-to-use-the
+## Ref: https://www.fullstackfoundations.com/courses/bash-course-for-complete-beginners/bash-path
+## Ref: https://wordpress.stackexchange.com/questions/267592/changing-the-wp-cli-cache-folder
+## Ref: https://wp-kama.com/handbook/wp-cli/environment-variables
+## Ref: https://danielbachhuber.com/tip/set-environment-variable/
+## Ref: https://www.baeldung.com/linux/bash-variables-export
+## Ref: https://askubuntu.com/questions/58814/how-do-i-add-environment-variables
+
+## SS_EOF

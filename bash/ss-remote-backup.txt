@@ -1,0 +1,156 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/bash/ss-remote-backup.txt ##########################
+#### path: /var/www/ss-remote-backup ###############################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Syncs local production server data to preferred remote cloud storage service #########
+#### module version: Rsync 3.2.x, Rclone 1.55.x ####################################################
+#### bash aliases: ss backup, ss remote backup #####################################################
+####################################################################################################
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Remote-Backup) ##########################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Source SS-Config + SS-Functions
+## B. Touch Timestamp File
+## C. Message (Begin Script)
+## D. Install SSHPASS (Required For Rsync)
+## E. Run Rclone Backup (Conditional)
+## F. Run Rsync Backup (Conditional)
+
+####################################################################################################
+#### A. SS-Remote-Backup: Source SS-Config + SS-Functions ##########################################
+####################################################################################################
+
+## before anything else we must source the critical variables that power this script ##
+## ss-config is setup during ss-install wizard but ss-functions is hardcoded ##
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### B. SS-Remote-Backup: Touch Timestamp File #####################################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_REMOTE_BACKUP}"
+
+####################################################################################################
+#### C. SS-Remote-Backup: Message (Begin Script) ###################################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-remote-backup... ${COLOR_RESET}"
+
+####################################################################################################
+#### D. SS-Remote-Backup: Install SSHPASS (Required For Rsync) #####################################
+####################################################################################################
+
+## since this script uses rsync over ssh (not daemonized) we use sshpass to automate it ##
+## sshpass will provide the password for the remote rsync server to the shell ##
+
+ss_apt_install sshpass > /dev/null 2>&1
+
+####################################################################################################
+#### E. SS-Remote-Backup: Run Rclone Backup (Conditional) ##########################################
+####################################################################################################
+
+## this will rclone all desired files to your remote cloud without removing anything ##
+## we hardcode the slickstack prefix into remote paths to avoid any confusion ##
+
+RCLONE_CONFIG="/var/www/meta/rclone.conf"
+export RCLONE_CONFIG
+
+if [[ -n "${RCLONE_USER}" ]] || [[ "${SS_REMOTE_BACKUPS}" == "rclone" ]]; then
+    rclone "${RCLONE_MODE}" "${RCLONE_BACKUP_PATH}" "slickstack:${RCLONE_REMOTE_PATH}" --transfers "${RCLONE_PARALLEL_TRANSFERS}" --retries 5 --fast-list
+fi
+
+####################################################################################################
+#### F. SS-Remote-Backup: Run Rsync Backup (Conditional) ###########################################
+####################################################################################################
+
+## this will rsync all desired files to your remote cloud without removing anything ##
+## we hardcode the slickstack prefix into remote paths to avoid any confusion ##
+
+if [[ -n "${RSYNC_USER}" ]] || [[ "${SS_REMOTE_BACKUPS}" == "rsync" ]]; then
+     ss_rsync_backup /var/www/html/ "${RSYNC_USER}"@"${RSYNC_REMOTE_HOST}":slickstack/"${SITE_DOMAIN_EXCLUDING_WWW}"/html/
+fi
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://rclone.org
+## Ref: https://github.com/jamesrascal/wordpress-backup
+## Ref: https://dev.to/hunterparks/backing-up-files-to-backblaze-b2-with-rclone
+## Ref: https://help.backblaze.com/hc/en-us/articles/1260804565710-How-to-use-rclone-with-Backblaze-B2-Cloud-Storage
+## Ref: https://www.howtogeek.com/451262/how-to-use-rclone-to-back-up-to-google-drive-on-linux/
+## Ref: https://forum.rclone.org/t/bash-script-cronjob-for-automating-rclone-sync/13526
+## Ref: https://forum.rclone.org/t/trying-to-create-a-bash-script-to-run-a-command-when-rclone-doesnt-transfer-anything-x-times/17738
+## Ref: https://medium.com/swlh/using-rclone-on-linux-to-automate-backups-to-google-drive-d599b49c42e8
+## Ref: https://github.com/wolfv6/rclone_jobber
+## Ref: https://www.pcworld.com/article/3170896/how-to-easily-keep-your-cloud-files-private-with-rclone.html
+## Ref: http://manpages.ubuntu.com/manpages/bionic/man1/rclone.1.html
+## Ref: https://anchor.host/wordpress-backups-with-rclone-and-restic/
+## Ref: https://github.com/restic/restic
+## Ref: https://news.ycombinator.com/item?id=26200922
+## Ref: https://news.ycombinator.com/item?id=14140408
+## Ref: https://www.reddit.com/r/backblaze/comments/esjcaa/b2_advantages_of_goodsyncduplicati_vs_resticrclone/
+## Ref: https://forum.duplicacy.com/t/duplicacy-demolishes-duplicati-and-rclone-for-large-backups/2483
+## Ref: https://forums.unraid.net/topic/95924-the-state-of-various-backup-solutions/
+## Ref: https://medium.com/@mormesher/building-your-own-linux-cloud-backup-system-75750f47d550
+## Ref: https://www.reddit.com/r/DataHoarder/comments/bb259k/backups_with_borg_rclone_gdrive/
+## Ref: https://www.reddit.com/r/unRAID/comments/e6l4x6/tutorial_borg_rclone_v2_the_best_method_to/
+## Ref: https://forum.rclone.org/t/rclone-config-different-path/4672/5
+## Ref: https://linuxpip.org/rclone-examples/#Use_rclone_to_copy_the_whole_directoryfolder_including_directory_structure_and_contents
+## Ref: https://stackoverflow.com/questions/11829022/bypass-rsync-prompt-are-you-sure-you-want-to-continue-connecting
+## Ref: https://www.unix.com/shell-programming-and-scripting/277256-how-avoid-rsync-authenticity-host-prompt.html
+## Ref: https://unix.stackexchange.com/questions/111526/how-can-i-rsync-without-prompt-for-password-without-using-public-key-authentica
+## Ref: https://www.upguard.com/blog/secure-rsync
+## Ref: https://serverfault.com/questions/127209/username-and-password-for-rsync-in-script
+## Ref: https://unix.stackexchange.com/questions/33271/how-to-avoid-ssh-asking-permission
+## Ref: https://stackoverflow.com/questions/13510229/giving-the-password-of-the-server-within-the-command
+## Ref: https://www.rsync.net/resources/howto/rsync.html
+## Ref: https://stackoverflow.com/questions/3299951/how-to-pass-password-automatically-for-rsync-ssh-command
+## Ref: https://www.linuxquestions.org/questions/slackware-14/rsync-having-trouble-creating-directories-4175611946/
+## Ref: https://bobcares.com/blog/rsync-error-error-in-ipc-code-code-14/
+## Ref: https://serverfault.com/questions/641414/rsync-mkdir-2014-11-failed-no-such-file-or-directory-2
+## Ref: https://stackoverflow.com/questions/1636889/how-can-i-configure-it-to-create-target-directory-on-server
+## Ref: http://manpages.ubuntu.com/manpages/trusty/man1/sshpass.1.html
+## Ref: https://askubuntu.com/questions/1403153/can-i-use-sshpass-ssh-and-rsync-in-a-shell-script
+
+## SS_EOF

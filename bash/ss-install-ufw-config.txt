@@ -1,0 +1,153 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/bash/ss-install-ufw-config.txt #####################
+#### path: /var/www/ss-install-ufw-config ##########################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Reinstalls the UFW firewall module for SlickStack servers (idempotent) ###############
+#### module version: UFW 0.36.x ####################################################################
+#### sourced by: ss-install ########################################################################
+#### bash aliases: ss install ufw config ###########################################################
+####################################################################################################
+
+## SS-CONFIG MUST BE PROPERLY CONFIGURED AND ON CURRENT BUILD BEFORE RUNNING SS-INSTALL ##
+## ENSURE YOUR SS-CONFIG BUILD REMAINS CURRENT BY RUNNING SS-UPDATE OCCASIONALLY ##
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Install-UFW-Config) #####################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Source SS-Config + SS-Functions
+## B. Touch Timestamp File
+## C. Message (Begin Script)
+## D. Force Disable UFW
+## E. Configure UFW Settings
+## F. Configure UFW User Rules
+## G. Reset Permissions (UFW)
+## H. Enable UFW
+
+####################################################################################################
+#### A. SS-Install-UFW-Config: Source SS-Config + SS-Functions #####################################
+####################################################################################################
+
+## before anything else we must source the critical variables that power this script ##
+## ss-config is setup during ss-install wizard but ss-functions is hardcoded ##
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### B. SS-Install-UFW-Config: Touch Timestamp File ################################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_INSTALL_UFW_CONFIG}"
+
+####################################################################################################
+#### C. SS-Install-UFW-Config: Message (Begin Script) ##############################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-install-ufw-config... ${COLOR_RESET}"
+
+####################################################################################################
+#### D. SS-Install-UFW-Config: Force Disable UFW ###################################################
+####################################################################################################
+
+sudo ufw --force disable > /dev/null 2>&1
+
+####################################################################################################
+#### E. SS-Install-UFW-Config: Configure UFW Settings ##############################################
+####################################################################################################
+
+# retrieve latest versions ##
+ss_wget /tmp/ufw "${GITHUB_UFW_UFW}"
+ss_wget "${TMP_UFW_CONF}" "${GITHUB_UFW_CONF}"
+
+## prepare ##
+if [[ -n "${SYSTEM_DIG_IPV6_ADDRESS}" ]]; then
+    ss_sed "s|\(^IPV6=\).*|IPV6=yes|g" /tmp/ufw
+    ss_echo "ipv6 appears active so enabling ipv6 in the ufw config"
+else 
+    ss_sed "s|\(^IPV6=\).*|IPV6=no|g" /tmp/ufw
+    ss_echo "ipv6 appears inactive so disabling ipv6 in the ufw config"
+fi
+
+## copy files to their destinations ##
+ss_cp /tmp/ufw /etc/default/ufw
+ss_cp "${TMP_UFW_CONF}" /etc/ufw/ufw.conf
+
+####################################################################################################
+#### F. SS-Install-UFW-Config: Configure UFW User Rules ############################################
+####################################################################################################
+
+# retrieve latest versions ##
+ss_wget /tmp/user.rules "${GITHUB_USER_RULES}"
+ss_wget /tmp/user6.rules "${GITHUB_USER6_RULES}"
+
+## copy files to their destinations ##
+ss_cp /tmp/user.rules /etc/ufw/user.rules
+ss_cp /tmp/user6.rules /etc/ufw/user6.rules
+
+####################################################################################################
+#### G. SS-Install-UFW-Config: Reset Permissions (UFW) #############################################
+####################################################################################################
+
+source "${PATH_SS_PERMS_UFW_CONFIG}"
+
+####################################################################################################
+#### H. SS-Install-UFW-Config: Enable UFW ##########################################################
+####################################################################################################
+
+## CONSIDER not enabling ufw in this script and letting ss-worker do it or something cuz 
+## many times during re-installation of ss-install the shell session gets kicked off right after this step ##
+
+sudo ufw --force enable > /dev/null 2>&1
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://linux.die.net/man/8/apt-get
+## Ref: https://wiki.ubuntu.com/UncomplicatedFirewall
+## Ref: https://askubuntu.com/questions/1006834/ufw-rules-disappear-after-manually-adding-them-to-user-rules-ubuntu-16-04
+## Ref: https://serverfault.com/questions/198398/ubuntu-how-to-add-an-iptables-rule-that-ufw-cant-create
+## Ref: https://askubuntu.com/questions/104899/make-apt-get-or-aptitude-run-with-y-but-not-prompt-for-replacement-of-configu
+## Ref: https://linuxhint.com/apt_get_fix_missing_broken_packages/
+## Ref: https://bugs.launchpad.net/ubuntu/+source/apt/+bug/1341611
+## Ref: http://manpages.ubuntu.com/manpages/focal/man1/add-apt-repository.1.html
+## Ref: https://www.spyhce.com/post/using-iptables-instead-of-ufw-in-a-basic-server-setup-for-docker
+
+## SS_EOF

@@ -1,0 +1,60 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; author: SlickStack ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; link: https://slickstack.io ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; mirror: https://mirrors.slickstack.io/modules/wordpress/ss-app.txt ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; path: n/a (boilerplate) ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; destination: /var/www/meta/ss-app.ini (after install) ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; purpose: APP ini configuration file for WordPress to request tasks from SlickStack ;;;;;;;;;;;;
+;;;; module version: n/a ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; sourced by: n/a ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; bash aliases: n/a ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+[app]
+
+create_staging_site =
+create_development_site =
+
+sync_staging_site = 
+sync_development_site =
+
+push_staging_live = 
+push_development_live =
+
+change_sftp_password =
+change_guest_password =
+
+make_remote_backup =
+
+reset_file_permissions =
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Ref: https://www.barenakedcoder.com/blog/2020/03/config-files-ini-xml-json-yaml-toml/
+;; Ref: https://javascript.plainenglish.io/yaml-vs-json-vs-xml-what-to-choose-4c7a72417ff4
+;; Ref: https://octopus.com/blog/state-of-config-file-formats
+;; Ref: https://stackoverflow.com/questions/1680297/store-static-data-in-an-array-or-in-a-database
+;; Ref: https://github.com/versionpress/versionpress/issues/914
+;; Ref: https://www.lucidchart.com/techblog/2018/07/16/why-json-isnt-a-good-configuration-language/
+;; Ref: https://dev.to/siddharthshyniben/why-not-toml-1fj9
+;; Ref: https://hitchdev.com/strictyaml/why-not/toml/
+;; Ref: https://softwareengineering.stackexchange.com/questions/215451/php-a-config-file-in-ini-or-php-format
+;; Ref: https://stackoverflow.com/questions/34665423/php-function-to-edit-configuration-file
+;; Ref: https://stackoverflow.com/questions/2464760/modify-config-file-using-bash-script
+;; Ref: https://stackoverflow.com/questions/3724584/what-is-the-best-way-to-save-config-variables-in-a-php-web-app
+;; Ref: https://docs.php.earth/security/configuration/
+;; Ref: https://zetcode.com/php/config/
+;; Ref: https://stackoverflow.com/questions/3472836/how-to-update-an-ini-file-with-php
+;; Ref: https://www.reddit.com/r/devops/comments/6f82nu/yaml_vs_toml/
+;; Ref: https://stackoverflow.com/questions/65283208/toml-vs-yaml-vs-strictyaml
+;; Ref: https://stackoverflow.com/questions/50142633/how-to-read-variables-from-a-php-config-file-using-a-bash-shell-script
+;; Ref: https://stackoverflow.com/questions/20009336/how-to-get-bash-files-to-render-php-constants
+;; Ref: https://stackoverflow.com/questions/3191131/read-edit-save-config-files-php
+;; Ref: https://stackoverflow.com/questions/10976915/bash-script-execution-from-php-and-instantaneous-output-back-to-webpage
+;; Ref: https://stackoverflow.com/questions/35753310/php-communicate-with-shell-script
+;; Ref: https://unix.stackexchange.com/questions/433488/what-is-the-purpose-of-using-a-fifo-vs-a-temporary-file-or-a-pipe
+
+;; SS_EOF

@@ -1,0 +1,72 @@
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/modules/fail2ban/jail-local.txt ####################
+#### path: n/a (boilerplate) #######################################################################
+#### destination: /etc/fail2ban/jail.local (after install) #########################################
+#### purpose: Main configuration file for the Fail2ban module that activates custom filters ########
+#### module version: Fail2ban 1.0.x ################################################################
+#### sourced by: n/a ###############################################################################
+#### bash aliases: n/a (ss-install-fail2ban-config) ################################################
+####################################################################################################
+
+[sshd]
+enabled = true
+port = ssh
+logpath = /var/log/auth.log
+maxretry = 5
+findtime = 3600
+bantime = 86400
+ignoreip = 127.0.0.1
+
+# [nginx-limit-req]
+# enabled = true
+# action = iptables-multiport[name=ReqLimit, port="http,https", protocol=tcp]
+# logpath = /var/www/logs/nginx-access.log
+# findtime = 30
+# maxretry = 10
+# bantime = 600
+
+[nginx-get-dos]
+enabled = true
+port = http,https
+logpath = /var/www/logs/nginx-access.log
+findtime = @FAIL2BAN_GET_DOS_FINDTIME
+maxretry = @FAIL2BAN_GET_DOS_MAXRETRY
+bantime = @FAIL2BAN_GET_DOS_BANTIME
+
+[nginx-post-dos]
+enabled = true
+port = http,https
+logpath = /var/www/logs/nginx-access.log
+findtime = @FAIL2BAN_POST_DOS_FINDTIME
+maxretry = @FAIL2BAN_POST_DOS_MAXRETRY
+bantime = @FAIL2BAN_POST_DOS_BANTIME
+
+[nginx-4xx] 
+enabled = true 
+port = http,https 
+logpath = /var/www/logs/nginx-access.log
+findtime = @FAIL2BAN_4XX_FINDTIME
+maxretry = @FAIL2BAN_4XX_MAXRETRY
+bantime = @FAIL2BAN_4XX_BANTIME
+
+# [nginx-5xx] 
+# enabled = true 
+# port = http,https 
+# logpath = /var/www/logs/nginx-access.log 
+# findtime = @FAIL2BAN_5XX_FINDTIME
+# maxretry = @FAIL2BAN_5XX_MAXRETRY
+# bantime = @FAIL2BAN_5XX_BANTIME
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://www.oodlestechnologies.com/blogs/nginx-ddos-protection-by-fail2ban/
+## Ref: https://sysopstechnix.com/protect-web-servers-from-ddos-attacks-using-fail2ban/
+## Ref: https://easyengine.io/tutorials/nginx/fail2ban/
+## Ref: https://www.linode.com/docs/guides/how-to-use-fail2ban-for-ssh-brute-force-protection/
+## Ref: https://www.linuxcapable.com/fail2ban-custom-filters-20-example-configurations-to-enhance-security/
+
+## SS_EOF

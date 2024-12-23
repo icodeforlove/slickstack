@@ -1,0 +1,587 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/bash/ss-install-wordpress-mu-plugins.txt ###########
+#### path: /var/www/ss-install-wordpress-mu-plugins ################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Reinstalls all the WordPress MU plugins for SlickStack servers (idempotent) ##########
+#### module version: WordPress 6.6.x ###############################################################
+#### sourced by: ss-install ########################################################################
+#### bash aliases: ss install mu plugins, ss install wordpress|wp mu plugins #######################
+####################################################################################################
+
+## SS-CONFIG MUST BE PROPERLY CONFIGURED AND ON CURRENT BUILD BEFORE RUNNING SS-INSTALL ##
+## ENSURE YOUR SS-CONFIG BUILD REMAINS CURRENT BY RUNNING SS-UPDATE OCCASIONALLY ##
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Install-WordPress-MU-Plugins) ###########################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Source SS-Config + SS-Functions
+## B. Touch Timestamp File
+## C. Message (Begin Script)
+## D. Run SS-Install-Ubuntu-Utils
+## E. Delete MU Plugins Directory Contents
+## F. Install 000-Common.php
+## G. Install Autoloader.php
+## H. Install Object-Cache.php
+## I. Install Required Staging/Dev MU Plugins
+## J. Install Custom MU Plugins Specified In SS-Config
+
+## K. Run SS-Worker
+## L. Reset Permissions (WordPress MU Plugins)
+## M. Purge Cache (PHP OPcache)
+## N. Cleanup Temporary Files
+
+####################################################################################################
+#### A. SS-Install-WordPress-MU-Plugins: Source SS-Config + SS-Functions ###########################
+####################################################################################################
+
+## before anything else we must source the critical variables that power this script ##
+## ss-config is setup during ss-install wizard but ss-functions is hardcoded ##
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### B. SS-Install-WordPress-MU-Plugins: Touch Timestamp File ######################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_INSTALL_WORDPRESS_MU_PLUGINS}"
+
+####################################################################################################
+#### C. SS-Install-WordPress-MU-Plugins: Message (Begin Script) ####################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-install-wordpress-mu-plugins... ${COLOR_RESET}"
+
+####################################################################################################
+#### D. SS-Install-WordPress-MU-Plugins: Run SS-Install-Ubuntu-Utils ###############################
+####################################################################################################
+
+source "${PATH_SS_INSTALL_UBUNTU_UTILS}"
+
+####################################################################################################
+#### E. SS-Install-WordPress-MU-Plugins: Delete MU Plugins Directory Contents ######################
+####################################################################################################
+
+## first we must ensure that the mu-plugins directory exists and delete existing contents ##
+## this helps avoid malware and any secret changes to your website file structure ##
+
+## production ##
+ss_mkdir /var/www/html/wp-content/mu-plugins
+ss_rm /var/www/html/wp-content/mu-plugins/*
+
+## development ##
+if [[ "${DEV_SITE}" == "true" ]]; then
+    ss_mkdir /var/www/html/dev/wp-content/mu-plugins
+    ss_rm /var/www/html/dev/wp-content/mu-plugins/*
+fi
+
+## staging ##
+if [[ "${STAGING_SITE}" == "true" ]]; then
+    ss_mkdir /var/www/html/staging/wp-content/mu-plugins
+    ss_rm /var/www/html/staging/wp-content/mu-plugins/*
+fi
+
+####################################################################################################
+#### F. SS-Install-WordPress-MU-Plugins: Install 000-Common.php ####################################
+####################################################################################################
+
+## 000-common is a critical MU plugin for SlickStack that provides WP Admin features ##
+## since it is considered a critical script it cannot be disabled or deleted ##
+
+## get icon first ##
+ss_wget "${TMP_SS_ICON_SVG}" "${GITHUB_SS_ICON_SVG}"
+ss_mv "${TMP_SS_ICON_SVG}" "${PATH_SS_ICON_SVG}"
+
+## download plugin files  ##
+ss_wget "${TMP_000_COMMON_PHP}" "${GITHUB_000_COMMON_PHP}"
+
+## delete potentially conflicting normal plugins (with required MU plugins) ##
+ss_rm /var/www/html/wp-content/plugins/000-common*
+
+## and from staging ##
+if [[ "${STAGING_SITE}" == "true" ]]; then
+    ss_rm /var/www/html/staging/wp-content/plugins/000-common*
+fi
+
+## and from dev ##
+if [[ "${DEV_SITE}" == "true" ]]; then
+    ss_rm /var/www/html/dev/wp-content/plugins/000-common*
+fi
+
+## site tld ##
+if [[ -z "${SITE_ROOT_DOMAIN}" ]]; then 
+    ss_sed "s|@SITE_ROOT_DOMAIN|example.com|g" "${TMP_000_COMMON_PHP}"
+else 
+    ss_sed "s|@SITE_ROOT_DOMAIN|${SITE_ROOT_DOMAIN}|g" "${TMP_000_COMMON_PHP}"
+fi
+
+## site domain ##
+if [[ -z "${SITE_DOMAIN_EXCLUDING_WWW}" ]]; then 
+    ss_sed "s|@SITE_DOMAIN_EXCLUDING_WWW|example.com|g" "${TMP_000_COMMON_PHP}"
+else 
+    ss_sed "s|@SITE_DOMAIN_EXCLUDING_WWW|${SITE_DOMAIN_EXCLUDING_WWW}|g" "${TMP_000_COMMON_PHP}"
+fi
+
+## site domain ##
+if [[ -z "${SITE_FULL_DOMAIN}" ]]; then 
+    ss_sed "s|@SITE_FULL_DOMAIN|www.example.com|g" "${TMP_000_COMMON_PHP}"
+else 
+    ss_sed "s|@SITE_FULL_DOMAIN|${SITE_FULL_DOMAIN}|g" "${TMP_000_COMMON_PHP}"
+fi
+
+## replace adminer url random string ##
+ss_sed "s/@ADMINER_RANDOM_URL/${ADMINER_URL}/g" "${TMP_000_COMMON_PHP}"
+
+## whitelabel brand ##
+if [[ -z "${WHITELABEL_BRAND}" ]]; then 
+    ss_sed "s|@WHITELABEL_BRAND|LittleBizzy|g" "${TMP_000_COMMON_PHP}"
+else 
+    ss_sed "s|@WHITELABEL_BRAND|${WHITELABEL_BRAND}|g" "${TMP_000_COMMON_PHP}"
+fi
+
+## whitelabel homepage ##
+if [[ -z "${WHITELABEL_HOMEPAGE}" ]]; then 
+    ss_sed "s|@WHITELABEL_HOMEPAGE|https://www.littlebizzy.com|g" "${TMP_000_COMMON_PHP}"
+else 
+    ss_sed "s|@WHITELABEL_HOMEPAGE|${WHITELABEL_HOMEPAGE}|g" "${TMP_000_COMMON_PHP}"
+fi
+
+## whitelabel support url ##
+if [[ -z "${WHITELABEL_SUPPORT_URL}" ]]; then 
+    ss_sed "s|@WHITELABEL_SUPPORT_URL|https://www.littlebizzy.com/support|g" "${TMP_000_COMMON_PHP}"
+else 
+    ss_sed "s|@WHITELABEL_SUPPORT_URL|${WHITELABEL_SUPPORT_URL}|g" "${TMP_000_COMMON_PHP}"
+fi
+
+## whitelabel support email ##
+if [[ -z "${WHITELABEL_SUPPORT_EMAIL}" ]]; then 
+    ss_sed "s|@WHITELABEL_SUPPORT_EMAIL|support@littlebizzy.com|g" "${TMP_000_COMMON_PHP}"
+else 
+    ss_sed "s|@WHITELABEL_SUPPORT_EMAIL|${WHITELABEL_SUPPORT_EMAIL}|g" "${TMP_000_COMMON_PHP}"
+fi
+
+## CURRENT NOT USED BUT COMING BACK SOON ##
+## enable WP Admin toolbar switcher shortcut ##
+# if [[ "${STAGING_SITE}" != "false" ]] && [[ "${DEV_SITE}" != "false" ]]; then 
+#     ss_sed "s#//@STAGING_SITE_TRUE//##g" /var/www/html/wp-content/mu-plugins/000-common.php
+# fi
+    
+ss_cp "${TMP_000_COMMON_PHP}" /var/www/html/wp-content/mu-plugins/000-common.php
+
+## and staging ##
+if [[ "${STAGING_SITE}" == "true" ]]; then
+    ss_cp "${TMP_000_COMMON_PHP}" /var/www/html/staging/wp-content/mu-plugins/000-common.php
+fi
+
+## and dev ##
+if [[ "${DEV_SITE}" == "true" ]]; then
+    ss_cp "${TMP_000_COMMON_PHP}" /var/www/html/dev/wp-content/mu-plugins/000-common.php
+fi
+
+####################################################################################################
+#### G. SS-Install-WordPress-MU-Plugins: Install Autoloader.php ####################################
+####################################################################################################
+
+## retrieve files ##
+ss_wget /tmp/autoloader.php "${GITHUB_AUTOLOADER_PHP}"
+
+## copy Autoloader files to destination ##
+ss_cp /tmp/autoloader.php /var/www/html/wp-content/mu-plugins/autoloader.php
+
+if [[ "${STAGING_SITE}" == "true" ]]; then
+    ss_cp /tmp/autoloader.php /var/www/html/staging/wp-content/mu-plugins/autoloader.php
+fi
+
+if [[ "${DEV_SITE}" == "true" ]]; then
+    ss_cp /tmp/autoloader.php /var/www/html/dev/wp-content/mu-plugins/autoloader.php
+fi
+
+####################################################################################################
+#### H. SS-Install-WordPress-MU-Plugins: Install Object-Cache.php ##################################
+####################################################################################################
+
+## object-cache.php is only installed on production to avoid Redis query conflicts ##
+
+## retrieve files ##
+ss_wget "${TMP_OBJECT_CACHE_PHP}" "${WPORG_MEMCACHED_OBJECT_CACHE_PHP}"
+
+## delete existing files ##
+ss_rm /var/www/html/wp-content/object-cache*
+ss_rm /var/www/html/wp-content/plugins/object-cache*
+ss_rm /var/www/html/wp-content/plugins/redis*
+ss_rm /var/www/html/wp-content/plugins/memcache*
+
+## copy Object Cache files to destination ##
+if [[ "${WP_OBJECT_CACHE}" != "false" ]]; then
+    ss_cp "${TMP_OBJECT_CACHE_PHP}" /var/www/html/wp-content/object-cache.php
+elif [[ "${WP_OBJECT_CACHE}" == "false" ]]; then
+    ss_rm /var/www/html/wp-content/object-cache.php
+fi
+
+####################################################################################################
+#### I. SS-Install-WordPress-MU-Plugins: Install Required Staging/Dev MU Plugins ###################
+####################################################################################################
+
+## staging site ##
+ss_wget /tmp/disable-emails.zip "${GITHUB_DISABLE_EMAILS_ZIP}"
+ss_wget /tmp/disable-default-runner.zip "${GITHUB_DISABLE_DEFAULT_RUNNER_ZIP}"
+
+## unzip various files ##
+ss_unzip /tmp/disable-emails.zip -d /tmp
+ss_unzip /tmp/disable-default-runner.zip -d /tmp
+
+## delete old ##
+if [[ "${STAGING_SITE}" == "true" ]]; then
+    ss_rm /var/www/html/staging/wp-content/plugins/disable-emails*
+    ss_rm /var/www/html/staging/wp-content/plugins/disable-default-runner*
+    ss_rm /var/www/html/staging/wp-content/plugins/disable-media-uploads*
+fi
+
+if [[ "${DEV_SITE}" == "true" ]]; then
+    ss_rm /var/www/html/dev/wp-content/plugins/disable-emails*
+    ss_rm /var/www/html/dev/wp-content/plugins/disable-default-runner*
+    ss_rm /var/www/html/dev/wp-content/plugins/disable-media-uploads*
+fi
+
+## and staging ##
+if [[ "${STAGING_SITE}" == "true" ]]; then
+    ss_cp /tmp/disable-emails /var/www/html/staging/wp-content/mu-plugins/disable-emails
+    ss_cp /tmp/disable-default-runner /var/www/html/staging/wp-content/mu-plugins/disable-default-runner
+fi
+
+## and dev ##
+if [[ "${DEV_SITE}" == "true" ]]; then
+    ss_cp /tmp/disable-emails /var/www/html/dev/wp-content/mu-plugins/disable-emails
+    ss_cp /tmp/disable-default-runner /var/www/html/dev/wp-content/mu-plugins/disable-default-runner
+fi
+
+####################################################################################################
+#### J. SS-Install-WordPress-MU-Plugins: Install Custom MU Plugins Specified In SS-Config ##########
+####################################################################################################
+
+## below MU plugins are distinct from the required MU plugins that are always included ##
+## in the case these are missing the default LittleBizzy plugins are installed ##
+
+if [[ "${WP_MU_PLUGINS}" == "custom" ]] && [[ -n "${MU_PLUGIN_01_SOURCE}" ]] && [[ -n "${MU_PLUGIN_01_DIR}" ]]; then
+    ## download specified (custom) MU plugins ##
+    ss_wget /tmp/"${MU_PLUGIN_01_DIR}".zip "${MU_PLUGIN_01_SOURCE}"
+    ss_wget /tmp/"${MU_PLUGIN_02_DIR}".zip "${MU_PLUGIN_02_SOURCE}"
+    ss_wget /tmp/"${MU_PLUGIN_03_DIR}".zip "${MU_PLUGIN_03_SOURCE}"
+    ss_wget /tmp/"${MU_PLUGIN_04_DIR}".zip "${MU_PLUGIN_04_SOURCE}"
+    ss_wget /tmp/"${MU_PLUGIN_05_DIR}".zip "${MU_PLUGIN_05_SOURCE}"
+    ss_wget /tmp/"${MU_PLUGIN_06_DIR}".zip "${MU_PLUGIN_06_SOURCE}"
+    ss_wget /tmp/"${MU_PLUGIN_07_DIR}".zip "${MU_PLUGIN_07_SOURCE}"
+    ss_wget /tmp/"${MU_PLUGIN_08_DIR}".zip "${MU_PLUGIN_08_SOURCE}"
+    ss_wget /tmp/"${MU_PLUGIN_09_DIR}".zip "${MU_PLUGIN_09_SOURCE}"
+    ss_wget /tmp/"${MU_PLUGIN_10_DIR}".zip "${MU_PLUGIN_10_SOURCE}"
+    ss_wget /tmp/"${MU_PLUGIN_11_DIR}".zip "${MU_PLUGIN_11_SOURCE}"
+    ss_wget /tmp/"${MU_PLUGIN_12_DIR}".zip "${MU_PLUGIN_12_SOURCE}"
+    ss_wget /tmp/"${MU_PLUGIN_13_DIR}".zip "${MU_PLUGIN_13_SOURCE}"
+    ss_wget /tmp/"${MU_PLUGIN_14_DIR}".zip "${MU_PLUGIN_14_SOURCE}"
+    ss_wget /tmp/"${MU_PLUGIN_15_DIR}".zip "${MU_PLUGIN_15_SOURCE}"
+    ss_wget /tmp/"${MU_PLUGIN_16_DIR}".zip "${MU_PLUGIN_16_SOURCE}"
+    ss_wget /tmp/"${MU_PLUGIN_17_DIR}".zip "${MU_PLUGIN_17_SOURCE}"
+    ss_wget /tmp/"${MU_PLUGIN_18_DIR}".zip "${MU_PLUGIN_18_SOURCE}"
+    ss_wget /tmp/"${MU_PLUGIN_19_DIR}".zip "${MU_PLUGIN_19_SOURCE}"
+    ss_wget /tmp/"${MU_PLUGIN_20_DIR}".zip "${MU_PLUGIN_20_SOURCE}"
+    
+    ## unzip them all ##
+    ss_unzip /tmp/"${MU_PLUGIN_01_DIR}".zip -d /tmp
+    ss_unzip /tmp/"${MU_PLUGIN_02_DIR}".zip -d /tmp
+    ss_unzip /tmp/"${MU_PLUGIN_03_DIR}".zip -d /tmp
+    ss_unzip /tmp/"${MU_PLUGIN_04_DIR}".zip -d /tmp
+    ss_unzip /tmp/"${MU_PLUGIN_05_DIR}".zip -d /tmp
+    ss_unzip /tmp/"${MU_PLUGIN_06_DIR}".zip -d /tmp
+    ss_unzip /tmp/"${MU_PLUGIN_07_DIR}".zip -d /tmp
+    ss_unzip /tmp/"${MU_PLUGIN_08_DIR}".zip -d /tmp
+    ss_unzip /tmp/"${MU_PLUGIN_09_DIR}".zip -d /tmp
+    ss_unzip /tmp/"${MU_PLUGIN_10_DIR}".zip -d /tmp
+    ss_unzip /tmp/"${MU_PLUGIN_11_DIR}".zip -d /tmp
+    ss_unzip /tmp/"${MU_PLUGIN_12_DIR}".zip -d /tmp
+    ss_unzip /tmp/"${MU_PLUGIN_13_DIR}".zip -d /tmp
+    ss_unzip /tmp/"${MU_PLUGIN_14_DIR}".zip -d /tmp
+    ss_unzip /tmp/"${MU_PLUGIN_15_DIR}".zip -d /tmp
+    ss_unzip /tmp/"${MU_PLUGIN_16_DIR}".zip -d /tmp
+    ss_unzip /tmp/"${MU_PLUGIN_17_DIR}".zip -d /tmp
+    ss_unzip /tmp/"${MU_PLUGIN_18_DIR}".zip -d /tmp
+    ss_unzip /tmp/"${MU_PLUGIN_19_DIR}".zip -d /tmp
+    ss_unzip /tmp/"${MU_PLUGIN_20_DIR}".zip -d /tmp
+    
+    ## copy to destinations ##
+    ss_cp /tmp/"${MU_PLUGIN_01_DIR}" /var/www/html/wp-content/mu-plugins/"${MU_PLUGIN_01_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_02_DIR}" /var/www/html/wp-content/mu-plugins/"${MU_PLUGIN_02_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_03_DIR}" /var/www/html/wp-content/mu-plugins/"${MU_PLUGIN_03_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_04_DIR}" /var/www/html/wp-content/mu-plugins/"${MU_PLUGIN_04_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_05_DIR}" /var/www/html/wp-content/mu-plugins/"${MU_PLUGIN_05_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_06_DIR}" /var/www/html/wp-content/mu-plugins/"${MU_PLUGIN_06_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_07_DIR}" /var/www/html/wp-content/mu-plugins/"${MU_PLUGIN_07_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_08_DIR}" /var/www/html/wp-content/mu-plugins/"${MU_PLUGIN_08_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_09_DIR}" /var/www/html/wp-content/mu-plugins/"${MU_PLUGIN_09_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_10_DIR}" /var/www/html/wp-content/mu-plugins/"${MU_PLUGIN_10_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_11_DIR}" /var/www/html/wp-content/mu-plugins/"${MU_PLUGIN_11_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_12_DIR}" /var/www/html/wp-content/mu-plugins/"${MU_PLUGIN_12_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_13_DIR}" /var/www/html/wp-content/mu-plugins/"${MU_PLUGIN_13_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_14_DIR}" /var/www/html/wp-content/mu-plugins/"${MU_PLUGIN_14_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_15_DIR}" /var/www/html/wp-content/mu-plugins/"${MU_PLUGIN_15_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_16_DIR}" /var/www/html/wp-content/mu-plugins/"${MU_PLUGIN_16_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_17_DIR}" /var/www/html/wp-content/mu-plugins/"${MU_PLUGIN_17_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_18_DIR}" /var/www/html/wp-content/mu-plugins/"${MU_PLUGIN_18_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_19_DIR}" /var/www/html/wp-content/mu-plugins/"${MU_PLUGIN_19_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_20_DIR}" /var/www/html/wp-content/mu-plugins/"${MU_PLUGIN_20_DIR}"
+    
+    ## copy to destinations (staging subdirectory) ##
+    ss_cp /tmp/"${MU_PLUGIN_01_DIR}" /var/www/html/staging/wp-content/mu-plugins/"${MU_PLUGIN_01_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_02_DIR}" /var/www/html/staging/wp-content/mu-plugins/"${MU_PLUGIN_02_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_03_DIR}" /var/www/html/staging/wp-content/mu-plugins/"${MU_PLUGIN_03_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_04_DIR}" /var/www/html/staging/wp-content/mu-plugins/"${MU_PLUGIN_04_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_05_DIR}" /var/www/html/staging/wp-content/mu-plugins/"${MU_PLUGIN_05_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_06_DIR}" /var/www/html/staging/wp-content/mu-plugins/"${MU_PLUGIN_06_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_07_DIR}" /var/www/html/staging/wp-content/mu-plugins/"${MU_PLUGIN_07_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_08_DIR}" /var/www/html/staging/wp-content/mu-plugins/"${MU_PLUGIN_08_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_09_DIR}" /var/www/html/staging/wp-content/mu-plugins/"${MU_PLUGIN_09_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_10_DIR}" /var/www/html/staging/wp-content/mu-plugins/"${MU_PLUGIN_10_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_11_DIR}" /var/www/html/staging/wp-content/mu-plugins/"${MU_PLUGIN_11_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_12_DIR}" /var/www/html/staging/wp-content/mu-plugins/"${MU_PLUGIN_12_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_13_DIR}" /var/www/html/staging/wp-content/mu-plugins/"${MU_PLUGIN_13_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_14_DIR}" /var/www/html/staging/wp-content/mu-plugins/"${MU_PLUGIN_14_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_15_DIR}" /var/www/html/staging/wp-content/mu-plugins/"${MU_PLUGIN_15_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_16_DIR}" /var/www/html/staging/wp-content/mu-plugins/"${MU_PLUGIN_16_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_17_DIR}" /var/www/html/staging/wp-content/mu-plugins/"${MU_PLUGIN_17_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_18_DIR}" /var/www/html/staging/wp-content/mu-plugins/"${MU_PLUGIN_18_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_19_DIR}" /var/www/html/staging/wp-content/mu-plugins/"${MU_PLUGIN_19_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_20_DIR}" /var/www/html/staging/wp-content/mu-plugins/"${MU_PLUGIN_20_DIR}"
+    
+    ## copy to destinations (dev subdirectory) ##
+    ss_cp /tmp/"${MU_PLUGIN_01_DIR}" /var/www/html/dev/wp-content/mu-plugins/"${MU_PLUGIN_01_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_02_DIR}" /var/www/html/dev/wp-content/mu-plugins/"${MU_PLUGIN_02_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_03_DIR}" /var/www/html/dev/wp-content/mu-plugins/"${MU_PLUGIN_03_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_04_DIR}" /var/www/html/dev/wp-content/mu-plugins/"${MU_PLUGIN_04_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_05_DIR}" /var/www/html/dev/wp-content/mu-plugins/"${MU_PLUGIN_05_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_06_DIR}" /var/www/html/dev/wp-content/mu-plugins/"${MU_PLUGIN_06_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_07_DIR}" /var/www/html/dev/wp-content/mu-plugins/"${MU_PLUGIN_07_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_08_DIR}" /var/www/html/dev/wp-content/mu-plugins/"${MU_PLUGIN_08_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_09_DIR}" /var/www/html/dev/wp-content/mu-plugins/"${MU_PLUGIN_09_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_10_DIR}" /var/www/html/dev/wp-content/mu-plugins/"${MU_PLUGIN_10_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_11_DIR}" /var/www/html/dev/wp-content/mu-plugins/"${MU_PLUGIN_11_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_12_DIR}" /var/www/html/dev/wp-content/mu-plugins/"${MU_PLUGIN_12_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_13_DIR}" /var/www/html/dev/wp-content/mu-plugins/"${MU_PLUGIN_13_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_14_DIR}" /var/www/html/dev/wp-content/mu-plugins/"${MU_PLUGIN_14_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_15_DIR}" /var/www/html/dev/wp-content/mu-plugins/"${MU_PLUGIN_15_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_16_DIR}" /var/www/html/dev/wp-content/mu-plugins/"${MU_PLUGIN_16_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_17_DIR}" /var/www/html/dev/wp-content/mu-plugins/"${MU_PLUGIN_17_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_18_DIR}" /var/www/html/dev/wp-content/mu-plugins/"${MU_PLUGIN_18_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_19_DIR}" /var/www/html/dev/wp-content/mu-plugins/"${MU_PLUGIN_19_DIR}"
+    ss_cp /tmp/"${MU_PLUGIN_20_DIR}" /var/www/html/dev/wp-content/mu-plugins/"${MU_PLUGIN_20_DIR}"
+    
+else
+
+## cleanup to avoid conflicts ##
+ss_rm /tmp/disable-empty-trash*
+ss_rm /tmp/plugin-blacklist*
+
+## otherwise download default LittleBizzy MU plugins ##
+ss_wget /tmp/clear-caches.zip "${GITHUB_CLEAR_CACHES_ZIP}"
+ss_wget /tmp/disable-empty-trash.zip "${GITHUB_DISABLE_EMPTY_TRASH_ZIP}"
+ss_wget /tmp/disable-image-compression.zip "${GITHUB_DISABLE_IMAGE_COMPRESSION_ZIP}"
+ss_wget /tmp/disable-xml-rpc.zip "${GITHUB_DISABLE_XML_RPC_ZIP}"
+ss_wget /tmp/force-https.zip "${GITHUB_FORCE_HTTPS_ZIP}"
+ss_wget /tmp/plugin-blacklist.zip "${GITHUB_PLUGIN_BLACKLIST_ZIP}"
+ss_wget /tmp/repoman.zip "${GITHUB_REPOMAN_ZIP}"
+
+## new approach but unreliable due to GitHub API rate-limits ##
+# ss_wget /tmp/disable-empty-trash.zip "${GITHUB_DISABLE_EMPTY_TRASH_DOWNLOAD_URL}"
+# ss_wget /tmp/plugin-blacklist.zip "${GITHUB_PLUGIN_BLACKLIST_DOWNLOAD_URL}"
+
+## unzip them all ##
+ss_unzip /tmp/clear-caches.zip -d /tmp
+ss_unzip /tmp/disable-image-compression.zip -d /tmp
+ss_unzip /tmp/disable-xml-rpc.zip -d /tmp
+ss_unzip /tmp/force-https.zip -d /tmp
+ss_unzip /tmp/disable-empty-trash.zip -d /tmp
+ss_unzip /tmp/plugin-blacklist.zip -d /tmp
+ss_unzip /tmp/repoman.zip -d /tmp
+
+## force rename dirs from GitHub (not needed unless we go back to using the GitHub API approach) ##
+# ss_mv /tmp/disable-empty-trash-* /tmp/disable-empty-trash
+# ss_mv /tmp/plugin-blacklist-* /tmp/plugin-blacklist
+
+## delete plugins instances (conflicting namespaces or previous namespaces) ##
+ss_rm /var/www/html/wp-content/plugins/clear-caches*
+ss_rm /var/www/html/staging/wp-content/plugins/clear-caches*
+ss_rm /var/www/html/dev/wp-content/plugins/clear-caches*
+ss_rm /var/www/html/wp-content/plugins/disable-empty-trash*
+ss_rm /var/www/html/staging/wp-content/plugins/disable-empty-trash*
+ss_rm /var/www/html/dev/wp-content/plugins/disable-empty-trash*
+ss_rm /var/www/html/wp-content/plugins/disable-image-compression*
+ss_rm /var/www/html/staging/wp-content/plugins/disable-image-compression*
+ss_rm /var/www/html/dev/wp-content/plugins/disable-image-compression*
+ss_rm /var/www/html/wp-content/plugins/disable-xml-rpc*
+ss_rm /var/www/html/staging/wp-content/plugins/disable-xml-rpc*
+ss_rm /var/www/html/dev/wp-content/plugins/disable-xml-rpc*
+ss_rm /var/www/html/wp-content/plugins/force-https*
+ss_rm /var/www/html/staging/wp-content/plugins/force-https*
+ss_rm /var/www/html/dev/wp-content/plugins/force-https*
+ss_rm /var/www/html/wp-content/plugins/plugin-blacklist*
+ss_rm /var/www/html/staging/wp-content/plugins/plugin-blacklist*
+ss_rm /var/www/html/dev/wp-content/plugins/plugin-blacklist*
+ss_rm /var/www/html/wp-content/plugins/repo-man*
+ss_rm /var/www/html/staging/wp-content/plugins/repo-man*
+ss_rm /var/www/html/dev/wp-content/plugins/repo-man*
+ss_rm /var/www/html/wp-content/plugins/repoman*
+ss_rm /var/www/html/staging/wp-content/plugins/repoman*
+ss_rm /var/www/html/dev/wp-content/plugins/repoman*
+
+## copy to destination ##
+
+ss_cp /tmp/clear-caches /var/www/html/wp-content/mu-plugins/clear-caches
+ss_cp /tmp/disable-empty-trash /var/www/html/wp-content/mu-plugins/disable-empty-trash
+ss_cp /tmp/disable-image-compression /var/www/html/wp-content/mu-plugins/disable-image-compression
+ss_cp /tmp/disable-xml-rpc /var/www/html/wp-content/mu-plugins/disable-xml-rpc
+ss_cp /tmp/force-https /var/www/html/wp-content/mu-plugins/force-https
+ss_cp /tmp/plugin-blacklist /var/www/html/wp-content/mu-plugins/plugin-blacklist
+ss_cp /tmp/repoman /var/www/html/wp-content/mu-plugins/repoman
+
+    if [[ "${STAGING_SITE}" == "true" ]]; then
+        ss_cp /tmp/clear-caches /var/www/html/staging/wp-content/mu-plugins/clear-caches
+        ss_cp /tmp/disable-empty-trash /var/www/html/staging/wp-content/mu-plugins/disable-empty-trash
+        ss_cp /tmp/disable-image-compression /var/www/html/staging/wp-content/mu-plugins/disable-image-compression
+        ss_cp /tmp/disable-xml-rpc /var/www/html/staging/wp-content/mu-plugins/disable-xml-rpc
+        ss_cp /tmp/force-https /var/www/html/staging/wp-content/mu-plugins/force-https
+        ss_cp /tmp/plugin-blacklist /var/www/html/staging/wp-content/mu-plugins/plugin-blacklist
+        ss_cp /tmp/repoman /var/www/html/staging/wp-content/mu-plugins/repoman
+    fi
+
+    if [[ "${DEV_SITE}" == "true" ]]; then
+        ss_cp /tmp/clear-caches /var/www/html/dev/wp-content/mu-plugins/clear-caches
+        ss_cp /tmp/disable-empty-trash /var/www/html/dev/wp-content/mu-plugins/disable-empty-trash
+        ss_cp /tmp/disable-image-compression /var/www/html/dev/wp-content/mu-plugins/disable-image-compression
+        ss_cp /tmp/disable-xml-rpc /var/www/html/dev/wp-content/mu-plugins/disable-xml-rpc
+        ss_cp /tmp/force-https /var/www/html/dev/wp-content/mu-plugins/force-https
+        ss_cp /tmp/plugin-blacklist /var/www/html/dev/wp-content/mu-plugins/plugin-blacklist
+        ss_cp /tmp/repoman /var/www/html/dev/wp-content/mu-plugins/repoman
+    fi
+
+
+## end if ##
+fi
+
+####################################################################################################
+#### K. SS-Install-WordPress-MU-Plugins: Run SS-Worker ##################
+####################################################################################################
+
+## ensure ss-constants is populated with latest data for 000-common.php to use ##
+## run ss-worker ##
+source "${PATH_SS_WORKER}"
+
+####################################################################################################
+#### L. SS-Install-WordPress-MU-Plugins: Reset Permissions (WordPress MU Plugins) ##################
+####################################################################################################
+
+source "${PATH_SS_PERMS_WORDPRESS_MU_PLUGINS}"
+
+####################################################################################################
+#### M. SS-Install-WordPress-MU-Plugins: Purge Cache (PHP OPcache) #################################
+####################################################################################################
+
+source "${PATH_SS_PURGE_OPCACHE}"
+
+####################################################################################################
+#### N. SS-Install-WordPress-MU-Plugins: Cleanup Temporary Files ###################################
+####################################################################################################
+
+## delete tmp files ##
+ss_rm /tmp/000-*
+ss_rm /tmp/autoloader*
+ss_rm /tmp/custom-functions*
+ss_rm /tmp/functions*
+ss_rm /tmp/xxx-*
+ss_rm /tmp/object-cache*
+ss_rm /tmp/redis-cache*
+
+ss_rm /tmp/clear-caches*
+ss_rm /tmp/cloudflare*
+ss_rm /tmp/dashboard-cleanup*
+ss_rm /tmp/delete-expired-transients*
+ss_rm /tmp/disable-attachment-pages*
+ss_rm /tmp/disable-default-runner*
+ss_rm /tmp/disable-emails*
+ss_rm /tmp/disable-embeds*
+ss_rm /tmp/disable-emojis*
+ss_rm /tmp/disable-empty-trash*
+ss_rm /tmp/disable-gutenberg*
+ss_rm /tmp/disable-image-compression*
+ss_rm /tmp/disable-post-via-email*
+ss_rm /tmp/disable-xml-rpc*
+ss_rm /tmp/error-log-monitor*
+ss_rm /tmp/force-https*
+ss_rm /tmp/force-strong-hashing*
+ss_rm /tmp/header-cleanup*
+ss_rm /tmp/index-autoload*
+ss_rm /tmp/limit-heartbeat*
+ss_rm /tmp/maintenance-mode*
+ss_rm /tmp/minify-html*
+ss_rm /tmp/plugin-blacklist*
+ss_rm /tmp/remove-query-strings*
+ss_rm /tmp/repo-man*
+ss_rm /tmp/repoman*
+ss_rm /tmp/server-status*
+ss_rm /tmp/sftp-details*
+ss_rm /tmp/virtual-robotstxt*
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+
+## delete (custom) MU plugins temporary files ##
+# (coming soon)
+
+## fix bug 
+ss_rm /var/www/html/wp-content/mu-plugins/tmp/
+ss_rm /var/www/html/staging/wp-content/mu-plugins/tmp/
+ss_rm /var/www/html/dev/wp-content/mu-plugins/tmp/
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://unix.stackexchange.com/questions/368246/cant-use-alias-in-script-even-if-i-define-it-just-above
+## Ref: https://wordpress.stackexchange.com/questions/99248/disable-media-uploads-to-non-admin-users
+
+## SS_EOF

@@ -1,0 +1,123 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: https://mirrors.slickstack.io/bash/ss-perms-php-config.txt ############################
+#### path: /var/www/ss-perms-php-config ############################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Resets file and user permissions for PHP-FPM module configuration files ##############
+#### module version: PHP-FPM 8.1.x #################################################################
+#### sourced by: ss-install-php-config, ss-perms ###################################################
+#### bash aliases: ss perms [php|php-fpm] config ###################################################
+####################################################################################################
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Perms-PHP-Config) #######################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Touch Timestamp File
+## B. Message (Begin Script)
+## C. Reset Permissions (PHP-FPM)
+## D. Reset Permissions (Adminer.php)
+
+####################################################################################################
+#### A. SS-Perms-PHP-Config: Touch Timestamp File ##################################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_PERMS_PHP_CONFIG}"
+
+####################################################################################################
+#### B. SS-Perms-PHP-Config: Message (Begin Script) ################################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-perms-php-config... ${COLOR_RESET}"
+
+####################################################################################################
+#### C. SS-Perms-PHP-Config: Reset Permissions (PHP-FPM) ###########################################
+####################################################################################################
+
+## ensure directories exist ##
+ss_mkdir /var/run/php
+
+# chown www-data:www-data /var/run/php
+
+if [[ "${SYSTEM_UBUNTU_VERSION}" == "22.04" ]]; then
+    chown root:root /etc/php/8.1/fpm/php.ini
+    chown root:root /etc/php/8.1/fpm/php-fpm.conf
+    chown root:root /etc/php/8.1/cli/php.ini
+    chown root:root /etc/php/8.1/fpm/pool.d/www.conf
+fi
+
+if [[ "${SYSTEM_UBUNTU_VERSION}" == "20.04" ]]; then
+    chown root:root /etc/php/7.4/fpm/php.ini
+    chown root:root /etc/php/7.4/fpm/php-fpm.conf
+    chown root:root /etc/php/7.4/cli/php.ini
+    chown root:root /etc/php/7.4/fpm/pool.d/www.conf
+fi
+
+if [[ "${SYSTEM_UBUNTU_VERSION}" == "18.04" ]]; then
+    chown root:root /etc/php/7.2/fpm/php.ini
+    chown root:root /etc/php/7.2/fpm/php-fpm.conf
+    chown root:root /etc/php/7.2/cli/php.ini
+    chown root:root /etc/php/7.2/fpm/pool.d/www.conf
+fi
+
+if [ ! -f "/var/www/logs/php-error.log" ]; then ss_touch "/var/www/logs/php-error.log"; fi
+
+chown www-data:www-data /var/www/logs/php-error.log
+chmod 0644 /var/www/logs/php-error.log ## 6755 should also work
+
+####################################################################################################
+#### D. SS-Perms-PHP-Config: Reset Permissions (Adminer.php) #######################################
+####################################################################################################
+
+if [[ -f "${PATH_ADMINER_PHP}" ]]; then
+
+chown -R www-data:www-data "${PATH_ADMINER_PHP}"
+chmod 0664 "${PATH_ADMINER_PHP}"
+
+fi
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref:
+
+## SS_EOF

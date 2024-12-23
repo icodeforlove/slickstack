@@ -1,0 +1,214 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/bash/ss-push-staging.txt ###########################
+#### path: /var/www/ss-push-staging ################################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Pushes /wp-content/ and database from staging site to the production site ############
+#### module version: WordPress 6.6.x + MySQL 8.0.x #################################################
+#### sourced by: n/a ###############################################################################
+#### bash aliases: ss push staging #################################################################
+####################################################################################################
+
+## SS-PUSH-STAGING OVERWRITES PRODUCTION FILES AND DATABASE WITH THOSE FROM STAGING ##
+## ENSURE YOU HAVE BOTH LOCAL AND OFF-SERVER BACKUPS BEFORE RUNNING THIS ##
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Push-Staging) ###########################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Source SS-Config + SS-Functions
+## B. Touch Timestamp File
+## C. Message (Begin Script)
+## D. INTERACTIVE PROMPT CONFIRMATION
+## E. Run SS-Dump-Database
+## F. Import Staging Database To Production Database
+## G. Copy All Relevant Files From Staging To Production
+## H. Fix Incorrect URLs in Production Database
+## I. Fix Any Hardcoded Links In Production Theme Files
+## J. Purge Cache (OPcache)
+## K. Purge Cache (Transients)
+## L. Purge Cache (Memcached)
+## M. Purge Cache (Nginx)
+## N. INTERACTIVE PROMPT EXIT
+
+####################################################################################################
+#### A. SS-Push-Staging: Source SS-Config + SS-Functions ###########################################
+####################################################################################################
+
+## before anything else we must source the critical variables that power this script ##
+## ss-config is setup during ss-install wizard but ss-functions is hardcoded ##
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### B. SS-Push-Staging: Touch Timestamp File ######################################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_PUSH_STAGING}"
+
+####################################################################################################
+#### C. SS-Push-Staging: Message (Begin Script) ####################################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-push-staging... ${COLOR_RESET}"
+
+####################################################################################################
+#### D. SS-Push-Staging: INTERACTIVE PROMPT CONFIRMATION ###########################################
+####################################################################################################
+
+read -r -p "EXPERIMENTAL... BE CAREFUL... WILL OVERWRITE PRODUCTION... BACKUP FIRST: Push staging files (wp-content and database) to production, are you sure? [y/N]" response
+if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]
+then
+
+####################################################################################################
+#### E. SS-Push-Staging: Run SS-Dump-Database ######################################################
+####################################################################################################
+
+## first we need to dump the production database locally in case anything goes wrong ##
+## in case of emergency you can restore this dump to your live production site ##
+
+source "${PATH_SS_DUMP_DATABASE}"
+
+####################################################################################################
+#### F. SS-Push-Staging: Import Staging Database To Production Database ############################
+####################################################################################################
+
+## this snippet duplicates the dumped production database and imports it into MySQL ##
+## then it forecfully replaces the home/siteurl options to staging subdomain ##
+
+## import database ##
+ss_cp /var/www/backups/mysql/staging.sql /tmp/staging_push.sql
+chown mysql:mysql /tmp/staging_push.sql ## does not matter if -L flag used below
+chmod 0644 /tmp/staging_push.sql ## does not matter if -L flag used below
+ss_mysql_root "${DB_NAME}" < /tmp/staging_push.sql
+
+## fix domain in database ##
+if [[ "${SS_APP}" == "wordpress" ]]; then
+    if [[ -n $(ss_mysql_user --execute "SHOW TABLES FROM ${DB_NAME} WHERE Tables_in_${DB_NAME} LIKE '${DB_PREFIX}options';" 2> /dev/null) ]]; then
+    ss_mysql_user --execute="UPDATE ${DB_NAME}.${DB_PREFIX}options SET option_value='https://${SITE_FULL_DOMAIN}' WHERE option_name='home'";
+    ss_mysql_user --execute="UPDATE ${DB_NAME}.${DB_PREFIX}options SET option_value='https://${SITE_FULL_DOMAIN}' WHERE option_name='siteurl'";
+    fi
+fi
+
+ss_rm /tmp/staging_push.sql
+
+####################################################################################################
+#### G. SS-Push-Staging: Copy All Relevant Files From Staging To Production ########################
+####################################################################################################
+
+## here we copy over a limited array of files and folders from staging to production ##
+## keep in mind that both sites share the same uploads folder (so not copied) ##
+
+## copy wp-content files over (skips media uploads) ##
+ss_rsync --max-size=5mb --exclude 'blacklist.txt' --exclude mu-plugins --exclude temp --exclude upgrade --exclude uploads /var/www/html/staging/wp-content/ /var/www/html/wp-content
+
+## remove potential run-on subdirectories ##
+ss_rm /var/www/html/wp-content/wp-content*
+
+####################################################################################################
+#### H. SS-Push-Staging: Fix Incorrect URLs in Production Database #################################
+####################################################################################################
+
+## use WP-CLI to search/replace staging links in production database to avoid conflicts ##
+## this is much more effective than using WP plugins especially on large databases ##
+
+sudo -u "${SFTP_USER}" /usr/local/bin/wp --path=/var/www/html search-replace https://staging."${SITE_DOMAIN_EXCLUDING_WWW}" https://"${SITE_FULL_DOMAIN}" --all-tables
+
+####################################################################################################
+#### I. SS-Push-Staging: Fix Any Hardcoded Links In Production Theme Files #########################
+####################################################################################################
+
+## many themes (or custom-coded themes) often contain hardcoded HTML assets and links ##
+## here we forcefully fix these links to ensure production sites render properly ##
+
+## NEEDS WORK ##
+## fix hardcoded theme links ##
+# find /var/www/html/wp-content/themes/ -type f -exec ss_sed "s#https://staging.${SITE_DOMAIN_INCLUDING_WWW}#https://${SITE_DOMAIN_EXCLUDING_WWW}#g" {} +
+# find /var/www/html/wp-content/themes/ -type f -exec ss_sed "s#http://staging.${SITE_DOMAIN_INCLUDING_WWW}#https://${SITE_DOMAIN_EXCLUDING_WWW}#g" {} +
+# find /var/www/html/wp-content/themes/ -type f -exec ss_sed "s#https://staging.${SITE_DOMAIN_EXCLUDING_WWW}#https://${SITE_DOMAIN_EXCLUDING_WWW}#g" {} +
+# find /var/www/html/wp-content/themes/ -type f -exec ss_sed "s#http://staging.${SITE_DOMAIN_EXCLUDING_WWW}#https://${SITE_DOMAIN_EXCLUDING_WWW}#g" {} +
+
+####################################################################################################
+#### J. SS-Push-Staging: Purge Cache (OPcache) #####################################################
+####################################################################################################
+
+source "${PATH_SS_PURGE_OPCACHE}"
+
+####################################################################################################
+#### K. SS-Push-Staging: Purge Cache (Transients) ##################################################
+####################################################################################################
+
+source "${PATH_SS_PURGE_TRANSIENTS}"
+
+####################################################################################################
+#### L. SS-Push-Staging: Purge Cache (Memcached) ###################################################
+####################################################################################################
+
+source "${PATH_SS_PURGE_MEMCACHED}"
+
+####################################################################################################
+#### M. SS-Push-Staging: Purge Cache (Nginx) #######################################################
+####################################################################################################
+
+source "${PATH_SS_PURGE_NGINX}"
+
+####################################################################################################
+#### N. SS-Push-Staging: INTERACTIVE PROMPT EXIT ###################################################
+####################################################################################################
+
+else
+    ss_echo "${COLOR_WARN}Exited and skipped ss-push-staging because no confirmation... ${COLOR_RESET}"
+fi
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://stackoverflow.com/questions/16735344/mysql-import-database-but-ignore-specific-table
+## Ref: https://www.ibenic.com/manage-order-item-meta-woocommerce/
+## Ref: https://rudrastyh.com/woocommerce/order-items.html
+## Ref: https://usersinsights.com/woocommerce-customer-database/
+## Ref: https://github.com/woocommerce/woocommerce/wiki/Database-Description
+## Ref: https://www.sourcetable.com/integrations/woocommerce
+## Ref: https://stackoverflow.com/questions/62571601/in-which-table-can-i-find-payment-amount-information-in-woocommerce-database
+## Ref: https://stackoverflow.com/questions/425158/how-to-skip-certain-database-tables-with-mysqldump
+## Ref: https://unix.stackexchange.com/questions/392236/how-can-i-copy-a-directory-structure-but-ignore-symlinks
+## Ref: https://wordpress.stackexchange.com/questions/408756/best-way-to-search-and-replace-within-serialized-database-strings
+
+## SS_EOF

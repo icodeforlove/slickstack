@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<meta http-equiv="refresh" content="30">
+	<link rel="preconnect" href="https://fonts.gstatic.com">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+<style>
+html, body, div, span, h1, h2, h3, p, a, strong, ol, ul, li {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	font-size: 100%;
+	vertical-align: baseline;
+}
+
+@media screen and (max-width: 960px) {
+html, body {
+	line-height: 1;
+	font-family: 'Lato', sans-serif;
+	font-weight: 400;
+	background: #fff;
+	}
+}
+
+@media screen and (min-width: 960px) {
+html, body {
+	line-height: 1;
+	font-family: 'Lato', sans-serif;
+	font-weight: 400;
+	background: #fff;
+	}
+}
+
+@media screen and (max-width: 960px) {
+#splash {
+	margin: 0px;
+	padding: 60px 20px;
+ 	text-align: center;
+	background: #fff;
+	}
+}
+
+@media screen and (min-width: 960px) {
+#splash {
+	margin: 0px;
+	padding: 120px 60px;
+ 	text-align: center;
+	background: #fff;
+	}
+}
+
+#icon {
+	line-height: 1;
+	margin-bottom: 30px;
+	font-size: 60px;
+	font-weight: 700;
+	color: #00E676;
+}
+
+@media screen and (max-width: 960px) {
+h1 {
+	line-height: 1;
+	margin-bottom: 30px;
+	font-size: 24px;
+	font-weight: 700;
+	color: #00E676;
+	}
+}
+
+@media screen and (min-width: 960px) {
+h1 {
+	line-height: 1;
+	margin-bottom: 30px;
+	font-size: 36px;
+	font-weight: 700;
+	color: #00E676;
+	}
+}
+
+@media screen and (max-width: 960px) {
+h2 {
+	line-height: 1.5;
+	margin-bottom: 60px;
+	font-size: 18px;
+	font-weight: 400;
+	color: #424242;
+	}
+}
+
+@media screen and (min-width: 960px) {
+h2 {
+	line-height: 1.5;
+	margin-bottom: 120px;
+	font-size: 24px;
+	font-weight: 400;
+	color: #424242;
+	}
+}
+
+hr {
+	margin-bottom: 30px;
+	border-top: 1px solid #E0E0E0;
+}
+
+@media screen and (max-width: 960px) {
+p {
+	display: inline-block !important;
+	line-height: 1;
+	margin-bottom: 0px;
+	font-size: 14px;
+	font-weight: 400;
+	color: #BDBDBD;
+	}
+}
+
+@media screen and (min-width: 960px) {
+p {
+	display: block !important;
+	line-height: 1;
+	margin-bottom: 0px;
+	font-size: 16px;
+	font-weight: 400;
+	color: #BDBDBD;
+	}
+}
+
+a {
+	font-weight: 700;
+	text-decoration: none !important;
+	color: #9E9E9E !important;
+}
+
+@media screen and (max-width: 960px) {
+br.desktop {
+	display: none !important;
+	}
+}
+
+@media screen and (min-width: 960px) {
+br.mobile {
+	display: none !important;
+	}
+}
+</style>
+</head>
+  
+<body>
+<div id="splash">
+	<div id="icon"><i class="fas fa-tools"></i></div>
+	<h1>We'll be right back!<br class="mobile"> (Maintenance Mode)</h1>
+	<h2>Apologies for the inconvenience, our team is upgrading the server. Please check back shortly.</h2>
+	<hr>
+	<p>Are you the server admin? Simply delete maintenance.html to remove this message.<br class="desktop">
+	Robots see: HTTP Status Code 503 (Service Unavailable).<br class="desktop">
+	This page auto-refreshes every 30 seconds.</p>
+	<br>
+	<br>
+	<p>Powered by <a href="https://slickstack.io">SlickStack</a></p>
+</div><!-- splash -->
+</body>
+</html>

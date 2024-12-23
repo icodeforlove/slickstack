@@ -1,0 +1,45 @@
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: https://mirrors.slickstack.io/modules/rclone/rclone-conf.txt ##########################
+#### path: n/a (boilerplate) #######################################################################
+#### destination: /var/www/meta/rclone.conf (after install) ########################################
+#### purpose: Rclone configuration file boilerplate ################################################
+#### module version: Rclone 1.64.x #################################################################
+#### bash aliases: n/a #############################################################################
+####################################################################################################
+
+
+####################################################################################################
+#### Rclone.conf: Remote Settings (Only Single Remote Supported) ###################################
+####################################################################################################
+
+## for stability reasons SlickStack only supports a single Rclone remote backup instance ##
+## we hardcode the instance name for user friendliness and better predictability ##
+
+## leave versions disabled
+## upload_cutoff should be 5G to minimize API calls on b2
+
+[slickstack]
+type = @RCLONE_TYPE
+account = @RCLONE_CLIENT_ID
+key = @RCLONE_CLIENT_SECRET
+hard_delete = false
+versions = false
+upload_cutoff = 5G
+
+## other
+user = @RCLONE_USER
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://github.com/rclone/rclone/issues/572
+## Ref: https://rclone.org/commands/rclone_config_create/
+## Ref: https://forum.rclone.org/t/can-all-command-line-options-be-in-rclone-conf-file/7986/8
+## Ref: https://rclone.org/docs/#environment-variables
+## Ref: https://dev.to/hunterparks/backing-up-files-to-backblaze-b2-with-rclone
+## Ref: https://forum.rclone.org/t/overview-of-cloud-storage-systems-which-is-the-most-popular-among-rclone-users/3038
+
+## SS_EOF

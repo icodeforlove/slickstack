@@ -1,0 +1,119 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/bash/ss-install-fail2ban-config.txt ################
+#### path: /var/www/ss-install-fail2ban-config #####################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Reinstalls the Fail2ban module config files based on ss-config (idempotent) ##########
+#### module version: Fail2ban 1.0.x ################################################################
+#### sourced by: ss-install ########################################################################
+#### bash aliases: ss install fail2ban config ######################################################
+####################################################################################################
+
+## SS-CONFIG MUST BE PROPERLY CONFIGURED AND ON CURRENT BUILD BEFORE RUNNING SS-INSTALL ##
+## ENSURE YOUR SS-CONFIG BUILD REMAINS CURRENT BY RUNNING SS-UPDATE OCCASIONALLY ##
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Install-Fail2ban-Config) ################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Source SS-Config + SS-Functions
+## B. Touch Timestamp File
+## C. Message (Begin Script)
+## D. Install Jail.local
+## E. Reset Permissions (Fail2ban Config)
+## F. Restart Fail2ban
+
+####################################################################################################
+#### A. SS-Install-Fail2ban-Config: Source SS-Config + SS-Functions ################################
+####################################################################################################
+
+## before anything else we must source the critical variables that power this script ##
+## ss-config is setup during ss-install wizard but ss-functions is hardcoded ##
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### B. SS-Install-Fail2ban-Config: Touch Timestamp File ###########################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_INSTALL_FAIL2BAN_CONFIG}"
+
+####################################################################################################
+#### C. SS-Install-Fail2ban-Config: Message (Begin Script) #########################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-install-fail2ban-config... ${COLOR_RESET}"
+
+####################################################################################################
+#### D. SS-Install-Fail2ban-Config: Install Jail.local #############################################
+####################################################################################################
+
+## here we install an optimized Nginx config designed for high traffic and CloudFlare ##
+## this step is critical to setting up caching, SSL certs, and HTTP headers ##
+
+ss_wget /etc/fail2ban/jail.local https://raw.githubusercontent.com/littlebizzy/slickstack/master/modules/fail2ban/jail-local.txt
+ss_wget /etc/fail2ban/filter.d/nginx-get-dos.conf https://raw.githubusercontent.com/littlebizzy/slickstack/master/modules/fail2ban/filters/nginx-get-dos-conf.txt
+ss_wget /etc/fail2ban/filter.d/nginx-post-dos.conf https://raw.githubusercontent.com/littlebizzy/slickstack/master/modules/fail2ban/filters/nginx-post-dos-conf.txt
+ss_wget /etc/fail2ban/filter.d/nginx-4xx.conf https://raw.githubusercontent.com/littlebizzy/slickstack/master/modules/fail2ban/filters/nginx-4xx-conf.txt
+
+# ss_wget /etc/fail2ban/filter.d/nginx-5xx.conf https://raw.githubusercontent.com/littlebizzy/slickstack/master/modules/fail2ban/filters/nginx-5xx-conf.txt
+
+ss_sed "s/@FAIL2BAN_GET_DOS_FINDTIME/${FAIL2BAN_GET_DOS_FINDTIME}/g" /etc/fail2ban/jail.local
+ss_sed "s/@FAIL2BAN_GET_DOS_MAXRETRY/${FAIL2BAN_GET_DOS_MAXRETRY}/g" /etc/fail2ban/jail.local
+ss_sed "s/@FAIL2BAN_GET_DOS_BANTIME/${FAIL2BAN_GET_DOS_BANTIME}/g" /etc/fail2ban/jail.local
+
+ss_sed "s/@FAIL2BAN_POST_DOS_FINDTIME/${FAIL2BAN_POST_DOS_FINDTIME}/g" /etc/fail2ban/jail.local
+ss_sed "s/@FAIL2BAN_POST_DOS_MAXRETRY/${FAIL2BAN_POST_DOS_MAXRETRY}/g" /etc/fail2ban/jail.local
+ss_sed "s/@FAIL2BAN_POST_DOS_BANTIME/${FAIL2BAN_POST_DOS_BANTIME}/g" /etc/fail2ban/jail.local
+
+ss_sed "s/@FAIL2BAN_4XX_FINDTIME/${FAIL2BAN_4XX_FINDTIME}/g" /etc/fail2ban/jail.local
+ss_sed "s/@FAIL2BAN_4XX_MAXRETRY/${FAIL2BAN_4XX_MAXRETRY}/g" /etc/fail2ban/jail.local
+ss_sed "s/@FAIL2BAN_4XX_BANTIME/${FAIL2BAN_4XX_BANTIME}/g" /etc/fail2ban/jail.local
+
+# ss_sed "s/@FAIL2BAN_5XX_FINDTIME/${FAIL2BAN_5XX_FINDTIME}/g" /etc/fail2ban/jail.local
+# ss_sed "s/@FAIL2BAN_5XX_MAXRETRY/${FAIL2BAN_5XX_MAXRETRY}/g" /etc/fail2ban/jail.local
+# ss_sed "s/@FAIL2BAN_5XX_BANTIME/${FAIL2BAN_5XX_BANTIME}/g" /etc/fail2ban/jail.local
+
+####################################################################################################
+#### E. SS-Install-Fail2ban-Config: Reset Permissions (Fail2ban Config) ############################
+####################################################################################################
+
+source "${PATH_SS_PERMS_FAIL2BAN_CONFIG}"
+
+####################################################################################################
+#### F. SS-Install-Fail2ban-Config: Restart Fail2ban ###############################################
+####################################################################################################
+
+source "${PATH_SS_RESTART_FAIL2BAN}"
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://gist.github.com/JulienBlancher/48852f9d0b0ef7fd64c3
+## Ref: https://easyengine.io/tutorials/nginx/fail2ban/
+## Ref: https://www.oodlestechnologies.com/blogs/nginx-ddos-protection-by-fail2ban/
+## Ref: https://sysopstechnix.com/protect-web-servers-from-ddos-attacks-using-fail2ban/
+## Ref: https://serverfault.com/questions/849854/fail2ban-blocking-behaviours-depending-on-the-status-code
+## Ref: https://stackoverflow.com/questions/36132803/nginx-req-limit-fail2ban-cloudflare-large-attacks
+## Ref: https://scalastic.io/en/ufw-fail2ban-nginx/
+
+## SS_EOF

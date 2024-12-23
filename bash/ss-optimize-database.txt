@@ -1,0 +1,259 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/bash/ss-optimize-database.txt ######################
+#### path: /var/www/ss-optimize-database ###########################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Force converts any MyISAM tables to InnoDB and optimizes the database ################
+#### module version: MySQL 8.0.x ###################################################################
+#### sourced by: n/a ###############################################################################
+#### bash aliases: ss optimize database|db #########################################################
+####################################################################################################
+
+## WE RECOMMEND RUNNING SS-OPTIMIZE MANUALLY OR NOT OFTEN IN CASE RESTORATION IS NEEDED ##
+## UNLIKE SS-CLEAN (PHYSICAL FILES) THIS SCRIPT IS FOCUSED ONLY ON THE DATABASE ##
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Optimize-Database) ######################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Source SS-Config + SS-Functions
+## B. Touch Timestamp File
+## C. Message (Begin Script)
+## D. Run SS-Dump-Database
+## E. Convert Any MyISAM Tables To InnoDB Engine
+## F. Purge Cache (Memcached)
+
+####################################################################################################
+#### A. SS-Optimize-Database: Source SS-Config + SS-Functions ######################################
+####################################################################################################
+
+## before anything else we must source the critical variables that power this script ##
+## ss-config is setup during ss-install wizard but ss-functions is hardcoded ##
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### B. SS-Optimize-Database: Touch Timestamp File #################################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_OPTIMIZE_DATABASE}"
+
+####################################################################################################
+#### C. SS-Optimize-Database: Message (Begin Script) ###############################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-optimize-database... ${COLOR_RESET}"
+
+####################################################################################################
+#### D. SS-Optimize-Database: Run SS-Dump-Database #################################################
+####################################################################################################
+
+## here we first dump the live production database to /var/www/meta/ before proceeding ##
+## this ensures a recent backup exists in case any database corruption occurs ##
+
+source "${PATH_SS_DUMP_DATABASE}"
+
+####################################################################################################
+#### SS-Optimize-Database: Delete Junk Tables From MySQL Database ##################################
+####################################################################################################
+
+# move to clean-database script
+
+## delete junk WordPress core tables ##
+# ss_mysql_root --database="$DB_NAME" --execute="DROP TABLE IF EXISTS ${DB_PREFIX}links;" ## wp_links virtually deprecated
+
+## delete blacklisted plugins tables (etc) ##
+
+# coming soon (depends on ss-config settings to avoid data loss)
+
+
+## cleans up various erroneous and junk tables from staging due to past testing (etc) ##
+## also a cool example of batch table cleanup that we might use in the future ##
+
+## DROP RUN-ON STAGING TABLES ##
+
+## null previous data ##
+cat /dev/null > /var/www/meta/drop_tables.txt
+cat /dev/null > /var/www/meta/drop_tables.sql
+
+## generate list of run-on staging tables ##
+ss_mysql_root --database="${DB_NAME}" --execute="SHOW TABLES LIKE 'staging\_staging%';" > /var/www/meta/drop_tables.txt
+
+## cleanup file output ##
+ss_sed '/Tables_in/d' /var/www/meta/drop_tables.txt
+
+## add DROP and semicolon to each line ##
+ss_sed 's/^/DROP TABLE IF EXISTS /' /var/www/meta/drop_tables.txt
+ss_sed 's/$/\;/' /var/www/meta/drop_tables.txt
+
+## import the SQL query ##
+ss_cp /var/www/meta/drop_tables.txt /var/www/meta/drop_tables.sql
+ss_mysql_root "${DB_NAME}" < /var/www/meta/drop_tables.sql
+
+
+## DROP OUTDATED STAGING TABLES ##
+
+## escape DB_PREFIX ##
+DB_PREFIX_ESCAPED=${DB_PREFIX/_/\\_}
+
+## null previous data ##
+cat /dev/null > /var/www/meta/drop_tables.txt
+cat /dev/null > /var/www/meta/drop_tables.sql
+
+## generate list of outdated staging tables ##
+ss_mysql_root --database="${DB_NAME}" --execute="SHOW TABLES LIKE 'staging\_${DB_PREFIX_ESCAPED}%';" > /var/www/meta/drop_tables.txt
+
+## cleanup file output ##
+ss_sed '/Tables_in/d' /var/www/meta/drop_tables.txt
+
+## add DROP and semicolon to each line ##
+ss_sed 's/^/DROP TABLE IF EXISTS /' /var/www/meta/drop_tables.txt
+ss_sed 's/$/\;/' /var/www/meta/drop_tables.txt
+
+## import the SQL query ##
+ss_cp /var/www/meta/drop_tables.txt /var/www/meta/drop_tables.sql
+ss_mysql_root "${DB_NAME}" < /var/www/meta/drop_tables.sql
+
+
+
+## DROP DEV PREFIX (NO LONGER USED) ##
+
+## null previous data ##
+cat /dev/null > /var/www/meta/drop_tables.txt
+cat /dev/null > /var/www/meta/drop_tables.sql
+
+## generate list of outdated staging tables ##
+ss_mysql_root --database="${DB_NAME}" --execute="SHOW TABLES LIKE 'dev\_%';" > /var/www/meta/drop_tables.txt
+
+## cleanup file output ##
+ss_sed '/Tables_in/d' /var/www/meta/drop_tables.txt
+
+## add DROP and semicolon to each line ##
+ss_sed 's/^/DROP TABLE IF EXISTS /' /var/www/meta/drop_tables.txt
+ss_sed 's/$/\;/' /var/www/meta/drop_tables.txt
+
+## import the SQL query ##
+ss_cp /var/www/meta/drop_tables.txt /var/www/meta/drop_tables.sql
+ss_mysql_root "${DB_NAME}" < /var/www/meta/drop_tables.sql
+
+
+
+
+## TEMP REFERENCE ##
+# ss_sed '$!s/$/\;/' /var/www/meta/drop_tables.txt
+# ss_sed '$!s/$/,/' /var/www/meta/drop_tables.txt
+# ss_sed '$s/$/\;/' /var/www/meta/drop_tables.txt
+## ss_sed '$s/,$/[;]/' /var/www/meta/drop_tables.txt
+
+
+####################################################################################################
+# fix incorrect data values before converting to MyISAM
+####################################################################################################
+
+# eg. Incorrect datetime value: '0000-00-00 00:00:00'
+# Invalid default value for 'date_created'
+
+####################################################################################################
+#### E. SS-Optimize-Database: Convert Any MyISAM Tables To InnoDB Engine ###########################
+####################################################################################################
+
+## the InnoDB engine is infinitely more robust for scaling and stability of LEMP stacks ##
+## this force-converts MyISAM tables (fulltext indexes are no longer a concern) ##
+
+## CONVERT MYISAM TABLES TO INNODB ##
+
+## null previous data ##
+cat /dev/null > /var/www/meta/myisam_tables.txt
+cat /dev/null > /var/www/meta/myisam_tables.sql
+
+## generate list of MyISAM tables ##
+ss_mysql_root --database="${DB_NAME}" --silent --batch --skip-column-names --execute="SELECT table_name FROM information_schema.tables WHERE engine='MyISAM' AND table_schema='${DB_NAME}';" > /var/www/meta/myisam_tables.txt
+
+## cleanup file output ##
+ss_sed '/TABLE_NAME/d' /var/www/meta/myisam_tables.txt
+
+## add ALTER TABLE and semicolon to each line ##
+ss_sed 's/^/ALTER TABLE /' /var/www/meta/myisam_tables.txt
+ss_sed 's/$/ ENGINE=InnoDB\;/' /var/www/meta/myisam_tables.txt
+
+## import the SQL query ##
+ss_cp /var/www/meta/myisam_tables.txt /var/www/meta/myisam_tables.sql
+
+# ss_mysql_root "${DB_NAME}" < /var/www/meta/myisam_tables.sql
+ss_mysql_root --init-command="SET SQL_MODE='ALLOW_INVALID_DATES';" $DB_NAME < /var/www/meta/myisam_tables.sql
+# https://stackoverflow.com/a/52334132/1718491
+
+####################################################################################################
+#### F. SS-Optimize-Database: Purge Cache (Memcached) ##############################################
+####################################################################################################
+
+source "${PATH_SS_PURGE_MEMCACHED}"
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://dba.stackexchange.com/questions/56804/mysql-how-to-drop-all-tables-starting-with-a-prefix/56806
+## Ref: https://azimyasin.wordpress.com/2007/08/11/mysql-dropping-multiple-tables/
+## Ref: https://stackoverflow.com/questions/19283740/save-mysql-query-results-into-a-text-file
+## Ref: https://stackoverflow.com/questions/21253704/how-to-save-mysql-query-output-to-excel-or-txt-file
+## Ref: https://stackoverflow.com/questions/5410757/how-to-delete-from-a-text-file-all-lines-that-contain-a-specific-string
+## Ref: https://blog.sqlauthority.com/2018/10/23/sql-server-how-to-drop-multiple-tables-using-single-drop-statement/
+## Ref: https://stackoverflow.com/questions/11245144/replace-whole-line-containing-a-string-using-sed
+## Ref: https://stackoverflow.com/questions/3657860/bash-append-text-to-last-line-of-file
+## Ref: https://stackoverflow.com/questions/35021524/how-can-i-add-a-comma-at-the-end-of-every-line-except-the-last-line/35021663
+## Ref: https://stackoverflow.com/questions/17075837/append-space-and-character-to-each-line-except-the-last
+## Ref: https://stackoverflow.com/questions/49169243/add-comma-at-end-of-all-lines-except-1-2-3-and-last-line
+## Ref: https://stackoverflow.com/questions/17666249/how-do-i-import-an-sql-file-using-the-command-line-in-mysql/56250785
+## Ref: https://www.unix.com/unix-for-dummies-questions-and-answers/69518-removing-semicolon-using-sed-aix-urgent.html
+## Ref: https://stackoverflow.com/questions/5833086/shell-script-variable-replacing-characters
+## Ref: https://unix.stackexchange.com/questions/162221/shortest-way-to-replace-characters-in-a-variable
+## Ref: https://stackoverflow.com/questions/6744006/can-i-use-sed-to-manipulate-a-variable-in-bash
+## Ref: https://silicondales.com/tutorials/wordpress/convert-wordpress-mysql-database-tables-myisam-innodb-better-scale/
+## Ref: https://stackoverflow.com/questions/4107599/show-a-tables-fulltext-indexed-columns
+## Ref: https://stackoverflow.com/questions/4898653/mysql-to-find-all-tables-with-a-full-text-indexed-column-in-them
+## Ref: https://stackoverflow.com/questions/1718126/show-tables-by-engine-in-mysql
+## Ref: http://redino.net/blog/2016/12/mysql-find-myisam-tables/
+## Ref: https://stackoverflow.com/questions/16711598/get-the-sql-query-result-without-the-table-format
+## Ref: https://dev.mysql.com/doc/refman/8.0/en/option-modifiers.html
+## Ref: https://alvinalexander.com/mysql/how-to-list-mysql-table-column-field-names-without-table-formatting-headers/
+## Ref: https://dev.mysql.com/doc/refman/8.0/en/mysql-command-options.html
+## Ref: https://stackoverflow.com/questions/35565128/mysql-incorrect-datetime-value-0000-00-00-000000
+
+## SS_EOF

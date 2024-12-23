@@ -1,0 +1,103 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/bash/ss-maintenance-disable.txt ####################
+#### path: /var/www/ss-maintenance-disable #########################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Deletes /var/www/html/maintenance.html to reallow access to the frontend #############
+#### module version: Nginx 1.18.x ##################################################################
+#### sourced by: n/a ###############################################################################
+#### bash aliases: ss main disable|off, ss maintenance disable|off #################################
+####################################################################################################
+
+## SS-CONFIG MUST BE PROPERLY CONFIGURED AND ON CURRENT BUILD BEFORE RUNNING SS-INSTALL ##
+## ENSURE YOUR SS-CONFIG BUILD REMAINS CURRENT BY RUNNING SS-UPDATE OCCASIONALLY ##
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Maintenance-Disable) ####################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Source SS-Config + SS-Functions
+## B. Touch Timestamp File
+## C. Message (Begin Script)
+## D. Disable Maintenance Mode (Delete Maintenance.html)
+## E. Purge Cache (Nginx)
+
+####################################################################################################
+#### A. SS-Maintenance-Disable: Source SS-Config + SS-Functions ####################################
+####################################################################################################
+
+## before anything else we must source the critical variables that power this script ##
+## ss-config is setup during ss-install wizard but ss-functions is hardcoded ##
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### B. SS-Maintenance-Disable: Touch Timestamp File ###############################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_MAINTENANCE_DISABLE}"
+
+####################################################################################################
+#### C. SS-Maintenance-Disable: Message (Begin Script) #############################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-maintenance-disable... ${COLOR_RESET}"
+
+####################################################################################################
+#### D. SS-Maintenance-Disable: Disable Maintenance Mode (Delete Maintenance.html) #################
+####################################################################################################
+
+## here we delete the active maintenance.html file (if exists) under /var/www/html ##
+## keep in mind a copy of the file should always exist under /var/www/meta ##
+
+ss_rm "${PATH_MAINTENANCE_HTML_LIVE}"
+
+####################################################################################################
+### E. SS-Maintenance-Disable: Purge Cache (Nginx) #################################################
+####################################################################################################
+
+source "${PATH_SS_PURGE_NGINX}"
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: 
+
+## SS_EOF

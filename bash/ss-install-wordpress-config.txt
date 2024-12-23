@@ -1,0 +1,601 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/bash/ss-install-wordpress-config.txt ###############
+#### path: /var/www/ss-install-wordpress-config ####################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Reinstalls WordPress module (CMS) config files based on ss-config (idempotent) #######
+#### module version: WordPress 6.6.x ###############################################################
+#### sourced by: ss-install, ss-install-nginx-config ###############################################
+#### bash aliases: ss install wordpress|wp config ##################################################
+####################################################################################################
+
+## SS-CONFIG MUST BE PROPERLY CONFIGURED AND ON CURRENT BUILD BEFORE RUNNING SS-INSTALL ##
+## ENSURE YOUR SS-CONFIG BUILD REMAINS CURRENT BY RUNNING SS-UPDATE OCCASIONALLY ##
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Install-WordPress-Config) ###############################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Touch Timestamp File
+## B. Message (Begin Script)
+## C. Install WP-Config.php (Production)
+## D. Install WP-Config.php (Staging)
+## E. Install WP-Config.php (Development)
+## F. Modify Site Domains In Database
+## G. Reset Permissions (WordPress Config)
+## H. Purge Cache (PHP OPcache)
+
+####################################################################################################
+#### A. SS-Install-WordPress-Config: Touch Timestamp File ##########################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_INSTALL_WORDPRESS_CONFIG}"
+
+####################################################################################################
+#### B. SS-Install-WordPress-Config: Message (Begin Script) ########################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-install-wordpress-config... ${COLOR_RESET}"
+
+####################################################################################################
+#### X. Change To Default Directory #####################################
+####################################################################################################
+
+ss_cd_default
+
+####################################################################################################
+#### SS-Worker: Install Latest SS-Constants.php Boilerplate ########################################
+####################################################################################################
+
+## move to ss-install-php-config ??
+
+## run this because ss-constants.php has some temp fixes to replaced @placeholders ##
+
+## run ss-worker ##
+source "${PATH_SS_WORKER}"
+
+## remove this after above snippet synced with snippet in ss-worker
+
+####################################################################################################
+#### C. SS-Install-WordPress-Config: Install WP-Config.php (Production) ############################
+####################################################################################################
+
+## here we retrieve latest wp-config.php boilerplate and customize per ss-config settings ##
+## you should never make changes directly to wp-config.php on SlickStack servers ##
+
+## retrieve latest boilerplate (production) ##
+if [[ "${WP_MULTISITE}" == "true" ]] && [[ "${WP_MULTISITE_SUBDOMAINS}" != "false" ]]; then 
+ss_wget "${TMP_WP_CONFIG_PHP}" "${GITHUB_WP_CONFIG_PHP_PRODUCTION_MULTISITE_SUBDOMAINS}"
+else
+ss_wget "${TMP_WP_CONFIG_PHP}" "${GITHUB_WP_CONFIG_PHP_PRODUCTION_SINGLE_SITE}"
+fi
+
+## THIS MUST COME BEFORE WP_MULTISITE REPLACEMENTS OTHERWISE IT WILL BE OVERWRITTEN ##
+## in the future fix this to have a more unique set of placeholders ##
+
+## set multisite subdomains ##
+if [[ "${WP_MULTISITE_SUBDOMAINS}" == "false" ]]; then 
+    ss_sed "s/@WP_MULTISITE_SUBDOMAINS/false/g" "${TMP_WP_CONFIG_PHP}"
+else 
+    ss_sed "s/@WP_MULTISITE_SUBDOMAINS/true/g" "${TMP_WP_CONFIG_PHP}"
+fi
+
+## set multisite ##
+if [[ "$WP_MULTISITE" == "true" ]]; then 
+    ss_sed "s/@WP_MULTISITE/true/g" "${TMP_WP_CONFIG_PHP}"
+else 
+    ss_sed "s/@WP_MULTISITE/false/g" "${TMP_WP_CONFIG_PHP}"
+fi
+
+## replace database placeholders ##
+ss_sed "s/@DB_NAME/${DB_NAME}/g" "${TMP_WP_CONFIG_PHP}"
+ss_sed "s/@DB_USER/${DB_USER}/g" "${TMP_WP_CONFIG_PHP}"
+ss_sed "s/@DB_PASSWORD/${DB_PASSWORD}/g" "${TMP_WP_CONFIG_PHP}"
+ss_sed "s/@DB_HOST/${DB_HOST}/g" "${TMP_WP_CONFIG_PHP}"
+
+if [[ "${DB_REMOTE}" == "true" ]]; then 
+    ss_sed "s/@DB_PORT/${DB_PORT}/g" "${TMP_WP_CONFIG_PHP}"
+else
+    ss_sed "s/@DB_PORT/3306/g" "${TMP_WP_CONFIG_PHP}"
+fi
+
+ss_sed "s/@DB_CHARSET/${DB_CHARSET}/g" "${TMP_WP_CONFIG_PHP}"
+ss_sed "s/@DB_COLLATE/${DB_COLLATE}/g" "${TMP_WP_CONFIG_PHP}"
+ss_sed "s/@DB_PREFIX/${DB_PREFIX}/g" "${TMP_WP_CONFIG_PHP}"
+
+## set object cache (optional) ##
+if [[ -z "$OBJECT_CACHE" ]]; then 
+    ss_sed "s/@OBJECT_CACHE/true/g" "${TMP_WP_CONFIG_PHP}"
+else 
+    ss_sed "s/@OBJECT_CACHE/${OBJECT_CACHE}/g" "${TMP_WP_CONFIG_PHP}"
+fi
+
+## set domains ##
+ss_sed "s/@SITE_DOMAIN_EXCLUDING_WWW/${SITE_DOMAIN_EXCLUDING_WWW}/g" "${TMP_WP_CONFIG_PHP}" ## must be first
+ss_sed "s/@SITE_FULL_DOMAIN/${SITE_FULL_DOMAIN}/g" "${TMP_WP_CONFIG_PHP}"
+ss_sed "s/@SITE_ROOT_DOMAIN/${SITE_ROOT_DOMAIN}/g" "${TMP_WP_CONFIG_PHP}"
+
+## set SFTP ##
+ss_sed "s/@SFTP_USER/${SFTP_USER}/g" "${TMP_WP_CONFIG_PHP}"
+ss_sed "s/@SFTP_PASSWORD/${SFTP_PASSWORD}/g" "${TMP_WP_CONFIG_PHP}"
+if [[ -z "$SSH_PORT" ]]; then 
+    ss_sed "s/@SSH_PORT/6969/g" "${TMP_WP_CONFIG_PHP}"
+else 
+    ss_sed "s/@SSH_PORT/${SSH_PORT}/g" "${TMP_WP_CONFIG_PHP}"
+fi
+
+## set salts ##
+ss_sed "s/@AUTHKEY/$(openssl rand -hex 48)/g" "${TMP_WP_CONFIG_PHP}"
+ss_sed "s/@SECUREAUTHKEY/$(openssl rand -hex 48)/g" "${TMP_WP_CONFIG_PHP}"
+ss_sed "s/@LOGGEDINKEY/$(openssl rand -hex 48)/g" "${TMP_WP_CONFIG_PHP}"
+ss_sed "s/@NONCEKEY/$(openssl rand -hex 48)/g" "${TMP_WP_CONFIG_PHP}"
+ss_sed "s/@AUTHSALT/$(openssl rand -hex 48)/g" "${TMP_WP_CONFIG_PHP}"
+ss_sed "s/@SECUREAUTHSALT/$(openssl rand -hex 48)/g" "${TMP_WP_CONFIG_PHP}"
+ss_sed "s/@LOGGEDINSALT/$(openssl rand -hex 48)/g" "${TMP_WP_CONFIG_PHP}"
+ss_sed "s/@NONCESALT/$(openssl rand -hex 48)/g" "${TMP_WP_CONFIG_PHP}"
+
+## environment ##
+ss_sed "s/@WP_LOCAL_DEV/false/g" "${TMP_WP_CONFIG_PHP}"
+
+## core auto updates ##
+if [[ -z "$WP_AUTO_UPDATE_CORE" ]]; then 
+    ss_sed "s/@WP_AUTO_UPDATE_CORE/minor/g" "${TMP_WP_CONFIG_PHP}"
+else 
+    ss_sed "s/@WP_AUTO_UPDATE_CORE/${WP_AUTO_UPDATE_CORE}/g" "${TMP_WP_CONFIG_PHP}"
+fi
+
+## autosave (drafts) ##
+if [[ -z "$WP_AUTOSAVE_INTERVAL" ]]; then 
+    ss_sed "s/@WP_AUTOSAVE_INTERVAL/60/g" "${TMP_WP_CONFIG_PHP}"
+else 
+    ss_sed "s/@WP_AUTOSAVE_INTERVAL/${WP_AUTOSAVE_INTERVAL}/g" "${TMP_WP_CONFIG_PHP}"
+fi
+
+## default theme ##
+if [[ -z "${WP_DEFAULT_THEME}" ]]; then 
+    ss_sed "s/@WP_DEFAULT_THEME/twentytwenty/g" "${TMP_WP_CONFIG_PHP}"
+else 
+    ss_sed "s/@WP_DEFAULT_THEME/${WP_DEFAULT_THEME}/g" "${TMP_WP_CONFIG_PHP}"
+fi
+
+## revisions ##
+if [[ -z "$WP_POST_REVISIONS" ]]; then 
+    ss_sed "s/@WP_POST_REVISIONS/5/g" "${TMP_WP_CONFIG_PHP}"
+else 
+    ss_sed "s/@WP_POST_REVISIONS/${WP_POST_REVISIONS}/g" "${TMP_WP_CONFIG_PHP}"
+fi
+
+## block external requests ##
+if [[ -z "$WP_HTTP_BLOCK_EXTERNAL" ]]; then 
+    ss_sed "s/@WP_HTTP_BLOCK_EXTERNAL/false/g" "${TMP_WP_CONFIG_PHP}"
+else 
+    ss_sed "s/@WP_HTTP_BLOCK_EXTERNAL/${WP_HTTP_BLOCK_EXTERNAL}/g" "${TMP_WP_CONFIG_PHP}"
+fi
+
+## allowed hosts ##
+if [[ -z "$WP_ACCESSIBLE_HOSTS" ]]; then 
+    ss_sed "s/@WP_ACCESSIBLE_HOSTS/api.wordpress.org/g" "${TMP_WP_CONFIG_PHP}"
+else 
+    ss_sed "s/@WP_ACCESSIBLE_HOSTS/${WP_ACCESSIBLE_HOSTS}/g" "${TMP_WP_CONFIG_PHP}"
+fi
+
+## file edits ##
+if [[ -z "$WP_DISALLOW_FILE_EDIT" ]]; then 
+    ss_sed "s/@WP_DISALLOW_FILE_EDIT/false/g" "${TMP_WP_CONFIG_PHP}"
+else 
+    ss_sed "s/@WP_DISALLOW_FILE_EDIT/${WP_DISALLOW_FILE_EDIT}/g" "${TMP_WP_CONFIG_PHP}"
+fi
+
+## file mods ##
+if [[ -z "$WP_DISALLOW_FILE_MODS" ]]; then 
+    ss_sed "s/@WP_DISALLOW_FILE_MODS/false/g" "${TMP_WP_CONFIG_PHP}"
+else 
+    ss_sed "s/@WP_DISALLOW_FILE_MODS/${WP_DISALLOW_FILE_MODS}/g" "${TMP_WP_CONFIG_PHP}"
+fi
+
+## file uploads ##
+if [[ -z "$WP_ALLOW_UNFILTERED_UPLOADS" ]]; then 
+    ss_sed "s/@WP_ALLOW_UNFILTERED_UPLOADS/true/g" "${TMP_WP_CONFIG_PHP}"
+else 
+    ss_sed "s/@WP_ALLOW_UNFILTERED_UPLOADS/${WP_ALLOW_UNFILTERED_UPLOADS}/g" "${TMP_WP_CONFIG_PHP}"
+fi
+
+## for fresh (virgin) WP installs enable certain items ##
+if [ ! -f "/var/www/meta/.cherry" ]; then 
+    ss_sed "s#//VIRGIN//##g" "${TMP_WP_CONFIG_PHP}"
+fi
+
+## copy files to destinations (if valid) ##
+VALIDATE_TMP_WP_CONFIG_PHP=$(grep 'SS_EOF' "${TMP_WP_CONFIG_PHP}")
+if [[ -n "$VALIDATE_TMP_WP_CONFIG_PHP" ]]; then
+   ss_mv "${TMP_WP_CONFIG_PHP}" "${PATH_WP_CONFIG_PHP}"
+else
+    echo -e "${COLOR_ERROR}wp config temp file for production damaged so not installing... ${COLOR_RESET}"
+fi
+
+####################################################################################################
+#### D. SS-Install-WordPress-Config: Install WP-Config.php (Staging) ###############################
+####################################################################################################
+
+## here we retrieve latest wp-config.php boilerplate and customize per ss-config settings ##
+## you should never make changes directly to wp-config.php in SlickStack servers ##
+
+if [[ "${STAGING_SITE}" == "true" ]]; then 
+
+## retrieve latest boilerplate (staging) ##
+ss_wget "${TMP_WORDPRESS_CONFIG_STAGING}" "${GITHUB_WP_CONFIG_STAGING}"
+
+###### WP Multisite settings ########
+
+## set multisite subdomains ##
+if [[ "$WP_MULTISITE_SUBDOMAINS" == "false" ]]; then 
+    ss_sed "s/@WP_MULTISITE_SUBDOMAINS/false/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+else 
+    ss_sed "s/@WP_MULTISITE_SUBDOMAINS/true/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+fi
+
+## set multisite ##
+if [[ "$WP_MULTISITE" == "true" ]]; then 
+    ss_sed "s/@WP_MULTISITE/true/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+else 
+    ss_sed "s/@WP_MULTISITE/false/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+fi
+
+
+####### other WP Config settings ##########
+
+## replace database placeholders ##
+# ss_sed "s/@DB_NAME/${DB_NAME}/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+ss_sed "s/@DB_USER/${DB_USER}/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+ss_sed "s/@DB_PASSWORD/${DB_PASSWORD}/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+ss_sed "s/@DB_HOST/${DB_HOST}/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+
+if [[ "${DB_REMOTE}" == "true" ]]; then 
+    ss_sed "s/@DB_PORT/${DB_PORT}/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+else
+    ss_sed "s/@DB_PORT/3306/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+fi
+
+ss_sed "s/@DB_CHARSET/${DB_CHARSET}/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+ss_sed "s/@DB_COLLATE/${DB_COLLATE}/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+ss_sed "s/@DB_PREFIX/${DB_PREFIX}/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+
+## disable object cache (staging) ##
+ss_sed "s/@OBJECT_CACHE/false/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+
+
+## replace domain placeholders ##
+ss_sed "s/@SITE_DOMAIN_EXCLUDING_WWW/${SITE_DOMAIN_EXCLUDING_WWW}/g" "${TMP_WORDPRESS_CONFIG_STAGING}" ## must be first
+ss_sed "s#@SITE_FULL_DOMAIN#${SITE_DOMAIN_EXCLUDING_WWW}#g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+ss_sed "s/@SITE_ROOT_DOMAIN/${SITE_ROOT_DOMAIN}/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+
+## replace SFTP Details placeholders ##
+ss_sed "s/@SFTP_USER/${SFTP_USER}/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+ss_sed "s/@SFTP_PASSWORD/${SFTP_PASSWORD}/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+if [[ -z "$SSH_PORT" ]]; then 
+    ss_sed "s/@SSH_PORT/6969/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+else 
+    ss_sed "s/@SSH_PORT/${SSH_PORT}/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+fi
+
+## replace salt keys ##
+ss_sed "s/@AUTHKEY/$(openssl rand -hex 48)/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+ss_sed "s/@SECUREAUTHKEY/$(openssl rand -hex 48)/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+ss_sed "s/@LOGGEDINKEY/$(openssl rand -hex 48)/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+ss_sed "s/@NONCEKEY/$(openssl rand -hex 48)/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+ss_sed "s/@AUTHSALT/$(openssl rand -hex 48)/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+ss_sed "s/@SECUREAUTHSALT/$(openssl rand -hex 48)/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+ss_sed "s/@LOGGEDINSALT/$(openssl rand -hex 48)/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+ss_sed "s/@NONCESALT/$(openssl rand -hex 48)/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+
+## environment ##
+ss_sed "s/@WP_LOCAL_DEV/false/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+
+## core auto updates ##
+if [[ -z "$WP_AUTO_UPDATE_CORE" ]]; then 
+    ss_sed "s/@WP_AUTO_UPDATE_CORE/minor/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+else 
+    ss_sed "s/@WP_AUTO_UPDATE_CORE/${WP_AUTO_UPDATE_CORE}/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+fi
+
+## autosave (drafts) ##
+if [[ -z "$WP_AUTOSAVE_INTERVAL" ]]; then 
+    ss_sed "s/@WP_AUTOSAVE_INTERVAL/60/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+else 
+    ss_sed "s/@WP_AUTOSAVE_INTERVAL/${WP_AUTOSAVE_INTERVAL}/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+fi
+
+## default theme ##
+if [[ -z "${WP_DEFAULT_THEME}" ]]; then 
+    ss_sed "s/@WP_DEFAULT_THEME/twentytwenty/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+else 
+    ss_sed "s/@WP_DEFAULT_THEME/${WP_DEFAULT_THEME}/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+fi
+
+
+## revisions ##
+if [[ -z "$WP_POST_REVISIONS" ]]; then 
+    ss_sed "s/@WP_POST_REVISIONS/5/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+else 
+    ss_sed "s/@WP_POST_REVISIONS/${WP_POST_REVISIONS}/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+fi
+
+## block external requests ##
+if [[ -z "$WP_HTTP_BLOCK_EXTERNAL" ]]; then 
+    ss_sed "s/@WP_HTTP_BLOCK_EXTERNAL/false/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+else 
+    ss_sed "s/@WP_HTTP_BLOCK_EXTERNAL/${WP_HTTP_BLOCK_EXTERNAL}/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+fi
+
+## allowed hosts ##
+if [[ -z "$WP_ACCESSIBLE_HOSTS" ]]; then 
+    ss_sed "s/@WP_ACCESSIBLE_HOSTS/api.wordpress.org/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+else 
+    ss_sed "s/@WP_ACCESSIBLE_HOSTS/${WP_ACCESSIBLE_HOSTS}/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+fi
+
+## file edits ##
+ss_sed "s/@WP_DISALLOW_FILE_EDIT/false/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+
+## file mods ##
+ss_sed "s/@WP_DISALLOW_FILE_MODS/false/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+
+## file uploads ##
+if [[ -z "$WP_ALLOW_UNFILTERED_UPLOADS" ]]; then 
+    ss_sed "s/@WP_ALLOW_UNFILTERED_UPLOADS/true/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+else 
+    ss_sed "s/@WP_ALLOW_UNFILTERED_UPLOADS/${WP_ALLOW_UNFILTERED_UPLOADS}/g" "${TMP_WORDPRESS_CONFIG_STAGING}"
+fi
+
+## install files ##
+ss_mv "${TMP_WORDPRESS_CONFIG_STAGING}" /var/www/html/staging/wp-config.php
+
+fi
+
+####################################################################################################
+#### E. SS-Install-WordPress-Config: Install WP-Config.php (Development) ###########################
+####################################################################################################
+
+## here we retrieve latest wp-config.php boilerplate and customize per ss-config settings ##
+## you should never make changes directly to wp-config.php in SlickStack servers ##
+
+
+if [[ "${DEV_SITE}" == "true" ]]; then 
+
+## retrieve latest boilerplate (dev) ##
+ss_wget "${TMP_WORDPRESS_CONFIG_DEV}" "${GITHUB_WP_CONFIG_DEV}"
+
+###### WP Multisite settings ########
+
+## set multisite subdomains ##
+if [[ "$WP_MULTISITE_SUBDOMAINS" == "false" ]]; then 
+    ss_sed "s/@WP_MULTISITE_SUBDOMAINS/false/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+else 
+    ss_sed "s/@WP_MULTISITE_SUBDOMAINS/true/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+fi
+
+## set multisite ##
+if [[ "$WP_MULTISITE" == "true" ]]; then 
+    ss_sed "s/@WP_MULTISITE/true/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+else 
+    ss_sed "s/@WP_MULTISITE/false/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+fi
+
+
+####### other WP Config settings ##########
+
+## replace database placeholders ##
+# ss_sed "s/@DB_NAME/${DB_NAME}/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+ss_sed "s/@DB_USER/${DB_USER}/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+ss_sed "s/@DB_PASSWORD/${DB_PASSWORD}/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+ss_sed "s/@DB_HOST/${DB_HOST}/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+
+if [[ "${DB_REMOTE}" == "true" ]]; then 
+    ss_sed "s/@DB_PORT/${DB_PORT}/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+else
+    ss_sed "s/@DB_PORT/3306/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+fi
+
+ss_sed "s/@DB_CHARSET/${DB_CHARSET}/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+ss_sed "s/@DB_COLLATE/${DB_COLLATE}/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+ss_sed "s/@DB_PREFIX/${DB_PREFIX}/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+
+## disable object cache (staging) ##
+ss_sed "s/@OBJECT_CACHE/false/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+
+
+## replace domain placeholders ##
+ss_sed "s/@SITE_DOMAIN_EXCLUDING_WWW/${SITE_DOMAIN_EXCLUDING_WWW}/g" "${TMP_WORDPRESS_CONFIG_DEV}" ## must be first
+ss_sed "s#@SITE_FULL_DOMAIN#${SITE_FULL_DOMAIN}#g" "${TMP_WORDPRESS_CONFIG_DEV}"
+ss_sed "s/@SITE_ROOT_DOMAIN/${SITE_ROOT_DOMAIN}/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+
+## replace SFTP Details placeholders ##
+ss_sed "s/@SFTP_USER/${SFTP_USER}/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+ss_sed "s/@SFTP_PASSWORD/${SFTP_PASSWORD}/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+if [[ -z "$SSH_PORT" ]]; then 
+    ss_sed "s/@SSH_PORT/6969/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+else 
+    ss_sed "s/@SSH_PORT/${SSH_PORT}/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+fi
+
+## replace salt keys ##
+ss_sed "s/@AUTHKEY/$(openssl rand -hex 48)/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+ss_sed "s/@SECUREAUTHKEY/$(openssl rand -hex 48)/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+ss_sed "s/@LOGGEDINKEY/$(openssl rand -hex 48)/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+ss_sed "s/@NONCEKEY/$(openssl rand -hex 48)/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+ss_sed "s/@AUTHSALT/$(openssl rand -hex 48)/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+ss_sed "s/@SECUREAUTHSALT/$(openssl rand -hex 48)/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+ss_sed "s/@LOGGEDINSALT/$(openssl rand -hex 48)/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+ss_sed "s/@NONCESALT/$(openssl rand -hex 48)/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+
+## environment ##
+ss_sed "s/@WP_LOCAL_DEV/false/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+
+## core auto updates ##
+if [[ -z "$WP_AUTO_UPDATE_CORE" ]]; then 
+    ss_sed "s/@WP_AUTO_UPDATE_CORE/minor/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+else 
+    ss_sed "s/@WP_AUTO_UPDATE_CORE/${WP_AUTO_UPDATE_CORE}/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+fi
+
+## autosave (drafts) ##
+if [[ -z "$WP_AUTOSAVE_INTERVAL" ]]; then 
+    ss_sed "s/@WP_AUTOSAVE_INTERVAL/60/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+else 
+    ss_sed "s/@WP_AUTOSAVE_INTERVAL/${WP_AUTOSAVE_INTERVAL}/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+fi
+
+## default theme ##
+if [[ -z "${WP_DEFAULT_THEME}" ]]; then 
+    ss_sed "s/@WP_DEFAULT_THEME/twentytwenty/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+else 
+    ss_sed "s/@WP_DEFAULT_THEME/${WP_DEFAULT_THEME}/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+fi
+
+## revisions ##
+if [[ -z "$WP_POST_REVISIONS" ]]; then 
+    ss_sed "s/@WP_POST_REVISIONS/5/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+else 
+    ss_sed "s/@WP_POST_REVISIONS/${WP_POST_REVISIONS}/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+fi
+
+## block external requests ##
+if [[ -z "$WP_HTTP_BLOCK_EXTERNAL" ]]; then 
+    ss_sed "s/@WP_HTTP_BLOCK_EXTERNAL/false/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+else 
+    ss_sed "s/@WP_HTTP_BLOCK_EXTERNAL/${WP_HTTP_BLOCK_EXTERNAL}/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+fi
+
+## allowed hosts ##
+if [[ -z "$WP_ACCESSIBLE_HOSTS" ]]; then 
+    ss_sed "s/@WP_ACCESSIBLE_HOSTS/api.wordpress.org/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+else 
+    ss_sed "s/@WP_ACCESSIBLE_HOSTS/${WP_ACCESSIBLE_HOSTS}/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+fi
+
+## file edits ##
+ss_sed "s/@WP_DISALLOW_FILE_EDIT/false/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+
+## file mods ##
+ss_sed "s/@WP_DISALLOW_FILE_MODS/false/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+
+## file uploads ##
+if [[ -z "$WP_ALLOW_UNFILTERED_UPLOADS" ]]; then 
+    ss_sed "s/@WP_ALLOW_UNFILTERED_UPLOADS/true/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+else 
+    ss_sed "s/@WP_ALLOW_UNFILTERED_UPLOADS/${WP_ALLOW_UNFILTERED_UPLOADS}/g" "${TMP_WORDPRESS_CONFIG_DEV}"
+fi
+
+## copy files to destinations ##
+ss_cp "${TMP_WORDPRESS_CONFIG_DEV}" /var/www/html/dev/wp-config.php
+
+fi
+
+####################################################################################################
+#### F. SS-Install-WordPress-Config: Modify Site Domains In Database ###############################
+####################################################################################################
+
+## here we manually fix certain fields in the database to ensure proper functionality ##
+## this fix required for WP Multisite (wp-config.php enough for single sites) ##
+
+## SNIPPET: ss-install-wordpress-config, ss-install-wordpress-core
+## UPDATED: 05JUN2022
+
+## production ##
+if [[ -n $(ss_mysql_root --execute "SHOW TABLES FROM ${DB_NAME} WHERE Tables_in_${DB_NAME} LIKE '${DB_PREFIX}options';" 2> /dev/null) ]]; then
+    
+    ss_mysql_root --execute="UPDATE ${DB_NAME}.${DB_PREFIX}options SET option_value='https://${SITE_FULL_DOMAIN}' WHERE option_name='home'";
+    ss_mysql_root --execute="UPDATE ${DB_NAME}.${DB_PREFIX}options SET option_value='https://${SITE_FULL_DOMAIN}' WHERE option_name='siteurl'";
+    
+fi
+
+## staging ##
+if [[ "${STAGING_SITE}" == "true" ]]; then 
+    
+    if [[ -n $(ss_mysql_root --execute "SHOW TABLES FROM staging WHERE Tables_in_staging LIKE '${DB_PREFIX}options';" 2> /dev/null) ]]; then
+    
+        ss_mysql_root --execute="UPDATE staging.${DB_PREFIX}options SET option_value='https://staging.${SITE_DOMAIN_EXCLUDING_WWW}' WHERE option_name='home'";
+        ss_mysql_root --execute="UPDATE staging.${DB_PREFIX}options SET option_value='https://staging.${SITE_DOMAIN_EXCLUDING_WWW}' WHERE option_name='siteurl'";
+    fi
+    
+fi
+
+## development ##
+if [[ "${DEV_SITE}" == "true" ]]; then 
+    
+    if [[ -n $(ss_mysql_root --execute "SHOW TABLES FROM development WHERE Tables_in_development LIKE '${DB_PREFIX}options';" 2> /dev/null) ]]; then
+    
+        ss_mysql_root --execute="UPDATE development.${DB_PREFIX}options SET option_value='https://dev.${SITE_DOMAIN_EXCLUDING_WWW}' WHERE option_name='home'";
+        ss_mysql_root --execute="UPDATE development.${DB_PREFIX}options SET option_value='https://dev.${SITE_DOMAIN_EXCLUDING_WWW}' WHERE option_name='siteurl'";
+    fi
+
+fi
+
+####################################################################################################
+#### G. SS-Install-WordPress-Config: Reset Permissions (WordPress Config) ##########################
+####################################################################################################
+
+## here we briefly reset permissions for the wp-config.php file and related dirs only ##
+## keep in mind that general WordPress Core and other files are not affected ##
+
+## run ss-perms-wordpress-config ##
+source "${PATH_SS_PERMS_WORDPRESS_CONFIG}"
+
+####################################################################################################
+#### H. SS-Install-WordPress-Config: Purge Cache (PHP OPcache) #####################################
+####################################################################################################
+
+## run ss-purge-opcache ##
+source "${PATH_SS_PURGE_OPCACHE}"
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://wordpress.stackexchange.com/questions/281814/why-is-wordpress-multisite-redirecting-to-wp-signup-php-and-how-to-fix-it
+## Ref: https://stackoverflow.com/questions/9366816/sed-fails-with-unknown-option-to-s-error
+## Ref: https://superuser.com/questions/393812/supresss-the-no-such-file-or-directory-message-from-find
+## Ref: https://stackoverflow.com/questions/45575021/find-suppress-no-such-file-or-directory-errors
+## Ref: https://github.com/littlebizzy/slickstack/issues/100
+## Ref: https://www.mysqltutorial.org/mysql-show-tables/
+## Ref: https://stackoverflow.com/questions/32523635/two-wordpress-sites-using-diiferent-themes-on-the-same-database
+
+## SS_EOF

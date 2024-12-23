@@ -1,0 +1,209 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/bash/ss-install-ubuntu-ssh.txt #####################
+#### path: /var/www/ss-install-ubuntu-ssh ##########################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Reinstalls the Ubuntu SSH daemon for SlickStack servers (idempotent) #################
+#### module version: Ubuntu 24.04 LTS ##############################################################
+#### sourced by: ss-install ########################################################################
+#### bash aliases: ss install ssh, ss install ubuntu ssh ###########################################
+####################################################################################################
+
+## SS-CONFIG MUST BE PROPERLY CONFIGURED AND ON CURRENT BUILD BEFORE RUNNING SS-INSTALL ##
+## ENSURE YOUR SS-CONFIG BUILD REMAINS CURRENT BY RUNNING SS-UPDATE OCCASIONALLY ##
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Install-Ubuntu-SSH) #####################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Source SS-Config + SS-Functions
+## B. Touch Timestamp File
+## C. Message (Begin Script)
+## C. Install SSH Daemon
+## D. Generate Key Pair (If Not Exists)
+## E. Reset Permissions (SSH)
+## F. Restart Modules (SSH)
+
+####################################################################################################
+#### A. SS-Install-Ubuntu-SSH: Source SS-Config + SS-Functions #####################################
+####################################################################################################
+
+## before anything else we must source the critical variables that power this script ##
+## ss-config is setup during ss-install wizard but ss-functions is hardcoded ##
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### B. SS-Install-Ubuntu-SSH: Touch Timestamp File ################################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_INSTALL_UBUNTU_SSH}"
+
+####################################################################################################
+#### C. SS-Install-Ubuntu-SSH: Message (Begin Script) ##############################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-install-ubuntu-ssh... ${COLOR_RESET}"
+
+####################################################################################################
+#### D. SS-Install-Ubuntu-SSH: Install SSH Daemon ##################################################
+####################################################################################################
+
+## here we use an optimized boilerplate to reinstall the SSH/SFTP daemon to your server ##
+## keep in mind that the port number will change (and root disabled) after this ##
+
+## ubuntu 24.04 ##
+if [[ "${SYSTEM_UBUNTU_VERSION}" == "24.04" ]]; then 
+     ss_wget "${TMP_SSHD_CONFIG}" "${GITHUB_SSHD_CONFIG_2404}"
+fi
+
+## ubuntu 22.04 ##
+if [[ "${SYSTEM_UBUNTU_VERSION}" == "22.04" ]]; then 
+    ss_wget "${TMP_SSHD_CONFIG}" "${GITHUB_SSHD_CONFIG_2204}"
+fi
+    
+## ubuntu 20.04 ##
+if [[ "${SYSTEM_UBUNTU_VERSION}" == "20.04" ]]; then 
+    ss_wget "${TMP_SSHD_CONFIG}" "${GITHUB_SSHD_CONFIG_2004}"
+fi
+    
+## ubuntu 18.04 ##
+if [[ "${SYSTEM_UBUNTU_VERSION}" == "18.04" ]]; then
+    ss_wget "${TMP_SSHD_CONFIG}" "${GITHUB_SSHD_CONFIG_1804}"
+fi
+
+## replace variables ##
+ss_sed "s/@SUDO_USER/${SUDO_USER}/g" "${TMP_SSHD_CONFIG}"
+ss_sed "s/@SFTP_USER/${SFTP_USER}/g" "${TMP_SSHD_CONFIG}"
+
+## set SSH port number (optional) ##
+ss_sed "s/@SSH_PORT/22/g" "${TMP_SSHD_CONFIG}"
+
+ss_sed "s|@PATH_SSH_AUTHORIZED_KEYS_FILE|${PATH_SSH_AUTHORIZED_KEYS_FILE}|g" "${TMP_SSHD_CONFIG}"
+
+## restrict sudo ip address if desired (we do not use hosts.allow file in case SFTP user wants to login from anywhere) ##
+if [[ "${SSH_RESTRICT_IP}" == "true" ]]; then
+    ss_sed "s|@SSH_IPV4|@${SSH_IPV4}|g" "${TMP_SSHD_CONFIG}"
+else
+    ss_sed "s|@SSH_IPV4||g" "${TMP_SSHD_CONFIG}"
+fi
+
+## enable/disable password authentication (depending on if SSH_KEYS is enabled) ##
+if [[ "${SSH_KEYS}" == "true" ]]; then 
+    ss_sed "s/@SSH_PASSWORD_AUTHENTICATION/no/g" "${TMP_SSHD_CONFIG}"
+else 
+    ss_sed "s/@SSH_PASSWORD_AUTHENTICATION/yes/g" "${TMP_SSHD_CONFIG}"
+fi
+
+## enable/disable public key authentication (depending on if SSH_KEYS is enabled) ##
+if [[ "${SSH_KEYS}" == "true" ]]; then 
+    ss_sed "s/@SSH_PUBKEY_AUTHENTICATION/yes/g" "${TMP_SSHD_CONFIG}"
+else 
+    ss_sed "s/@SSH_PUBKEY_AUTHENTICATION/no/g" "${TMP_SSHD_CONFIG}"
+fi
+
+## allow IPv6 SSH sessions (any) if no IPv4 address is detected on the server ##
+# if [[ CURRENT IP ADDRESS IS IPV6 ONLY ]]; then 
+#    ss_sed "s/AddressFamily inet/AddressFamily any/g" "${TMP_SSHD_CONFIG}"
+# fi
+## Ref: https://stackoverflow.com/questions/5281341/get-local-network-interface-addresses-using-only-proc
+## Ref: https://stackoverflow.com/questions/39983121/how-to-detect-if-system-has-ipv6-enabled-in-a-unix-shell-script
+## Ref: https://www.cyberciti.biz/faq/bash-shell-command-to-find-get-ip-address/
+
+## copy files to their destinations ##
+ss_mv "${TMP_SSHD_CONFIG}" "${PATH_SSHD_CONFIG}"
+
+####################################################################################################
+#### D. SS-Install-Ubuntu-SSH: Generate Key Pair (If Not Exists) ###################################
+####################################################################################################
+
+## SlickStack will automatically generate a public/private SSH key pair if you want it ##
+## if you already have a preferred key pair then you must manually append it ##
+
+## generate key pair (if not exists) ##
+if [[ "${SSH_KEYS}" == "true" ]] && [[ ! -f "${PATH_SSH_PUBLIC_KEY_FILE}" ]]; then
+    ssh-keygen -f "${PATH_SSH_PRIVATE_KEY_FILE}" -b 4096 -t rsa -q -N ""
+fi
+
+## append any public key found to authorized_keys list ##
+if [[ "${SSH_KEYS}" == "true" ]] && [[ -f "${PATH_SSH_PUBLIC_KEY_FILE}" ]]; then
+    cat "${PATH_SSH_PUBLIC_KEY_FILE}" >> "${PATH_SSH_AUTHORIZED_KEYS_FILE}"
+fi
+
+####################################################################################################
+#### E. SS-Install-Ubuntu-SSH: Reset Permissions (SSH) #############################################
+####################################################################################################
+
+source "${PATH_SS_PERMS_UBUNTU_SSH}"
+
+####################################################################################################
+#### F. SS-Install-Ubuntu-SSH: Restart Modules (SSH) ###############################################
+####################################################################################################
+
+ss_restart ssh
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://stackoverflow.com/questions/10767488/automate-ssh-keygen-t-rsa-so-it-does-not-ask-for-a-passphrase/39939070
+## Ref: https://linuxize.com/post/how-to-set-up-ssh-keys-on-ubuntu-20-04/
+## Ref: https://stackoverflow.com/questions/12392598/how-to-add-rsa-key-to-authorized-keys-file
+## Ref: https://askubuntu.com/questions/46424/how-do-i-add-ssh-keys-to-authorized-keys-file
+## Ref: https://www.redhat.com/sysadmin/passwordless-ssh
+## Ref: https://unix.stackexchange.com/questions/69314/automated-ssh-keygen-without-passphrase-how
+## Ref: https://www.fastly.com/blog/key-size-for-tls
+## Ref: https://www.yubico.com/blog/big-debate-2048-4096-yubicos-stand/
+## Ref: https://security.stackexchange.com/questions/65174/4096-bit-rsa-encryption-keys-vs-2048
+## Ref: https://superuser.com/questions/421997/what-is-a-ssh-key-fingerprint-and-how-is-it-generated
+## Ref: https://en.wikipedia.org/wiki/Public_key_fingerprint
+## Ref: https://docs.rackspace.com/support/how-to/log-into-a-linux-server-with-an-ssh-private-key-on-windows/
+## Ref: https://support.hostway.com/hc/en-us/articles/115001509884-How-To-Use-SSH-Keys-on-Windows-Clients-with-PuTTY-
+## Ref: https://devops.ionos.com/tutorials/use-ssh-keys-with-putty-on-windows/
+## Ref: https://gist.github.com/jesugmz/03951b52e9777edf2d4aed62cf003273
+## Ref: https://www.digitalocean.com/community/questions/how-to-switch-from-password-to-ssh-key-authentication
+## Ref: https://askubuntu.com/questions/311558/ssh-permission-denied-publickey
+## Ref: https://linuxize.com/post/how-to-setup-passwordless-ssh-login/
+## Ref: http://manpages.ubuntu.com/manpages/bionic/man1/ssh-keygen.1.html
+## Ref: https://serverfault.com/questions/854208/ssh-suddenly-returning-invalid-format/960647
+## Ref: https://jonmccune.wordpress.com/2017/07/09/setting-up-ssh-keys-with-the-chrome-os-secure-shell-extension/
+## Ref: https://unix.stackexchange.com/questions/406245/limit-ssh-access-to-specific-clients-by-ip-address
+## Ref: https://www.linuxquestions.org/questions/linux-security-4/can-i-allow-sftp-for-any-but-ssh-for-some-ip-address-820900/
+
+## SS_EOF

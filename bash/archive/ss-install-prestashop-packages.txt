@@ -1,0 +1,141 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: https://mirrors.slickstack.io/bash/ss-install-prestashop-packages.txt #################
+#### path: /var/www/ss-install-prestashop-packages #################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Reinstalls the PrestaShop module packages and non-config files (idempotent) ##########
+#### module version: PrestaShop 1.7.x.x ############################################################
+#### sourced by: ss-install ########################################################################
+#### bash aliases: ss install prestashop core|packages #############################################
+####################################################################################################
+
+## SS-CONFIG MUST BE PROPERLY CONFIGURED AND ON CURRENT BUILD BEFORE RUNNING SS-INSTALL ##
+## ENSURE YOUR SS-CONFIG BUILD REMAINS CURRENT BY RUNNING SS-UPDATE OCCASIONALLY ##
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Install-PrestaShop-Packages) ############################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Touch Timestamp File
+## B. Message (Begin Script)
+
+####################################################################################################
+#### A. SS-Install-PrestaShop-Packages: Touch Timestamp File #######################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_INSTALL_PRESTASHOP_PACKAGES}"
+
+####################################################################################################
+#### B. SS-Install-PrestaShop-Packages: Message (Begin Script) #####################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-install-prestashop-packages... ${COLOR_RESET}"
+
+####################################################################################################
+#### SS-Install-PrestaShop-Packages: Install Ubuntu Utils ##########################################
+####################################################################################################
+
+## after trial and error we have realized that installing Ubuntu utils first is good ##
+## this is because sometimes zip or other utilities are missing or so forth ##
+
+## run ss-install-ubuntu-utils ##
+source "$PATH_SS_INSTALL_UBUNTU_UTILS"
+
+####################################################################################################
+#### SS-Install-PrestaShop-Packages: Install Latest Stable (Minor) PrestaShop Version ##############
+####################################################################################################
+
+if [[ "$SS_APP" == "prestashop" ]]; then
+
+## cleanup files ##
+ss_rm /tmp/prestashop.zip*
+ss_rm /var/www/html/prestashop*
+ss_rm /var/www/html/staging/prestashop*
+
+## make dirs ##
+mkdir /var/www/html
+mkdir /var/www/html/staging
+
+## brief permissions reset ##
+chown -R $SFTP_USER:slickstack /var/www/html
+chown -R $SFTP_USER:slickstack /var/www/html/staging
+chmod 6775 /var/www/html
+chmod 6775 /var/www/html/staging
+
+## download latest (patched) WordPress version ##
+ss_wget "${TMP_PRESTASHOP_ZIP}" "${GITHUB_PRESTASHOP_ZIP}"
+
+## install WordPress to web directory ##
+ss_cp "${TMP_PRESTASHOP_ZIP}" /var/www/html
+ss_unzip /var/www/html/prestashop.zip -d /var/www/html
+chown -R www-data:slickstack /var/www/html/prestashop
+chmod 775 /var/www/html/prestashop
+ss_rsync /var/www/html/prestashop/* /var/www/html
+
+## install WordPress to staging subdirectory ##
+ss_cp "${TMP_PRESTASHOP_ZIP}" /var/www/html/staging
+ss_unzip /var/www/html/staging/prestashop.zip -d /var/www/html/staging
+chown -R www-data:slickstack /var/www/html/staging/prestashop
+chmod 775 /var/www/html/staging/prestashop
+ss_rsync /var/www/html/staging/prestashop/* /var/www/html/staging
+
+## cleanup files ##
+ss_rm "$TMP_PRESTASHOP_ZIP"
+ss_rm /var/www/html/prestashop*
+ss_rm /var/www/html/staging/prestashop*
+
+else
+    echo -e "${PURPLE}Exiting ss-install-prestashop-packages: It appears your SlickStack is configured to use a CMS other than Prestashop... ${NOCOLOR}"
+fi
+
+####################################################################################################
+#### SS-Install-PrestaShop-Packages: Reset Permissions (PrestaShop Packages) #######################
+####################################################################################################
+
+source "${PATH_SS_PERMS_PRESTASHOP_PACKAGES}"
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://stackoverflow.com/questions/24987542/is-there-a-link-to-github-for-downloading-a-file-in-the-latest-release-of-a-repo
+
+## SS_EOF

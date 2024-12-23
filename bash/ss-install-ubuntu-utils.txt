@@ -1,0 +1,207 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/bash/ss-install-ubuntu-utils.txt ###################
+#### path: /var/www/ss-install-ubuntu-utils ########################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Reinstalls various Linux utilities (etc) for SlickStack servers (idempotent) #########
+#### module version: Ubuntu 24.04 LTS ##############################################################
+#### sourced by: ss-install ########################################################################
+#### bash aliases: ss install ubuntu utils, ss install utils #######################################
+####################################################################################################
+
+## SS-CONFIG MUST BE PROPERLY CONFIGURED AND ON CURRENT BUILD BEFORE RUNNING SS-INSTALL ##
+## ENSURE YOUR SS-CONFIG BUILD REMAINS CURRENT BY RUNNING SS-UPDATE OCCASIONALLY ##
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Install-Ubuntu-Utils) ###################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Source SS-Config + SS-Functions
+## B. Touch Timestamp File
+## C. Message (Begin Script)
+## D. Prettify The Shell Prompt
+## E. Update Existing Packages
+## F. Update System Timezone
+## G. Install Various Linux Utilities
+## H. Reset Permissions (Ubuntu Utils)
+
+####################################################################################################
+#### A. SS-Install-Nginx-Config: Source SS-Config + SS-Functions ###################################
+####################################################################################################
+
+## before anything else we must source the critical variables that power this script ##
+## ss-config is setup during ss-install wizard but ss-functions is hardcoded ##
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### B. SS-Install-Ubuntu-Utils: Touch Timestamp File ##############################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_INSTALL_UBUNTU_UTILS}"
+
+####################################################################################################
+#### C. SS-Install-Ubuntu-Utils: Message (Begin Script) ############################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-install-ubuntu-utils... ${COLOR_RESET}"
+
+####################################################################################################
+#### D. SS-Install-Ubuntu-Utils: Prettify The Shell Prompt #########################################
+####################################################################################################
+
+## download latest versions ##
+ss_wget /tmp/custom-shell-prompt "${GITHUB_CUSTOM_SHELL_PROMPT}"
+
+## delete old one ##
+ss_rm /etc/profile.d/custom-shell-prompt
+
+## copy files to their destinations ##
+ss_cp /tmp/custom-shell-prompt /etc/profile.d/custom-shell-prompt.sh
+
+####################################################################################################
+#### E. SS-Install-Ubuntu-Utils: Update Existing Packages ##########################################
+####################################################################################################
+
+## SNIPPET: ss-install-*-packages bash scripts
+## UPDATED: 30MAR2022
+
+## we must include the standard apt update/upgrade in case script is called directly ##
+## this helps to avoid conflicts and outdated packages during installation ##
+
+## update apt cache ##
+ss_apt_update
+
+## upgrade packages ##
+ss_apt_upgrade
+
+####################################################################################################
+#### F. SS-Install-Ubuntu-Utils: Update System Timezone ############################################
+####################################################################################################
+
+## set timezone ##
+if [[ -z "${SS_TIMEZONE}" ]]; then 
+    timedatectl set-timezone UTC
+else 
+    timedatectl set-timezone ${SS_TIMEZONE}
+fi
+
+####################################################################################################
+#### G. SS-Install-Ubuntu-Utils: Install Various Linux Utilities ###################################
+####################################################################################################
+
+## https://unix.stackexchange.com/questions/493187/systemd-under-ubuntu-18-04-1-fails-with-failed-to-create-user-slice-serv
+## https://slickstack.io/forum/topic/php-fpm-fails-on-openvz-server-from-dedipath
+ss_apt_install libpam-cgfs
+
+## install update-manager-core ##
+ss_apt_install update-manager-core
+
+## dnsutils ##
+## https://www.cyberciti.biz/faq/ubuntu-dig-command-not-found-install-digonubuntu/
+ss_apt_install dnsutils
+
+## install nano ##
+ss_apt_install nano
+
+## set default editor to nano ##
+update-alternatives --set editor /bin/nano
+
+## install Linux utilities (Zip, Unzip, DOS2Unix) ##
+ss_apt_install zip
+ss_apt_install unzip
+ss_apt_install dos2unix
+ss_apt_install gzip
+ss_apt_install tar
+
+## install rsync (some cloud networks apparently remove it from Ubuntu ISO for some reason as per GitHub issues) ##
+ss_apt_install rsync
+
+## magento ##
+ss_apt_install bash
+ss_apt_install curl
+ss_apt_install software-properties-common
+ss_apt_install openssl
+ss_apt_install sed
+
+## install debconf-utils for some APT debug tools (move this to ss-install-misc) ##
+ss_apt_install debconf-utils
+
+## virt-what ##
+ss_apt_install virt-what
+
+## exiftool ##
+ss_apt_install "${PACKAGE_EXIFTOOL}"
+
+## sshpass ##
+ss_apt_install sshpass
+
+## add more ??
+# https://www.makeuseof.com/best-networking-tools-replace-old-net-tools-linux/
+
+####################################################################################################
+#### H. SS-Install-Ubuntu-Utils: Reset Permissions (Ubuntu Utils) ##################################
+####################################################################################################
+
+source "${PATH_SS_PERMS_UBUNTU_UTILS}"
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://github.com/littlebizzy/slickstack/issues/77
+## Ref: https://help.ubuntu.com/community/rsync
+## Ref: http://people.redhat.com/~rjones/virt-what/
+## Ref: https://unix.stackexchange.com/questions/89714/easy-way-to-determine-virtualization-technology
+## Ref: https://linuxnightly.com/how-to-remove-exif-data-via-linux-command-line/
+
+## Ref: https://linuxpip.org/install-rclone/
+## Ref: http://manpages.ubuntu.com/manpages/cosmic/man1/rclone.1.html
+## Ref: https://help.backblaze.com/hc/en-us/articles/1260804565710-How-to-use-rclone-with-Backblaze-B2-Cloud-Storage
+## Ref: https://devdocs.magento.com/guides/v2.4/install-gde/system-requirements.html
+## Ref: https://github.com/frdmn/minebackup.sh/issues/5
+## Ref: https://howtoinstall.co/en/nice
+## Ref: https://askubuntu.com/questions/733169/how-to-install-libxml2-in-ubuntu-15-10
+## Ref: https://stackoverflow.com/questions/41887754/why-apt-get-install-openssl-did-not-install-last-version-of-openssl
+## Ref: https://slickstack.io/forum/topic/installing-slickstack-on-1gb-ram-openvz-from-dedipath
+## Ref: https://www.cyberciti.biz/faq/check-ram-speed-linux/
+## Ref: https://www.makeuseof.com/best-networking-tools-replace-old-net-tools-linux/
+## Ref: https://www.cyberciti.biz/faq/ubuntu-dig-command-not-found-install-digonubuntu/
+
+## SS_EOF

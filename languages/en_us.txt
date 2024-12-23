@@ -1,0 +1,27 @@
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/languages/en_us.txt ################################
+#### path: /etc/nginx/conf.d/en_us.conf ####################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Nginx language file to skip caching on specific URL slugs listed in this file ########
+#### module version: Nginx 1.18.x ##################################################################
+#### sourced by: nginx.conf ########################################################################
+#### bash aliases: n/a (ss-install-nginx-config) ###################################################
+####################################################################################################
+
+## notes for future: hardcoding nginx skip cache rules per each language is too limiting...
+## we probably need centralized language files like WordPress Core does, to be used for whatever purposes 
+## need to decide on a format and how to extract various terms
+    
+## ENGLISH (UNITED STATES) ##
+    
+## skip Nginx cache ##
+if ($request_uri ~* "index.php|/account.*|/cart.*|/checkout.*|/contact.*|/dashboard.*|/login.*|/my-.*|/order.*|/profile.*|/register.*|/settings.*|/view.*|/wc-api.*|/wp-admin.*|wp-.*.php") {
+    set $skip_cache 1;
+}
+
+SS_TERM_ACCOUNT="account"
+SS_TERM_CART="cart"
+SS_TERM_CHECKOUT="checkout"
+SS_TERM_CONTACT="contact"

@@ -1,0 +1,163 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/bash/ss-dump-database.txt ##########################
+#### path: /var/www/ss-dump-database ###############################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Dumps the database(s) to /var/www/backups/mysql/ (SFTP user can access) ##############
+#### module version: MySQL 8.0.x ###################################################################
+#### sourced by: n/a ###############################################################################
+#### bash aliases: ss dump database|db #############################################################
+####################################################################################################
+
+## KEEP IN MIND SS-DUMP-DATABASE MIGHT ONLY FUNCTION PROPERLY ON LOCALHOST DATABASES ##
+## REMOTE DATABASE SETTINGS MIGHT PREVENT DUMPING FROM THE MYSQLDUMP COMMAND ##
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Dump-Database) ##########################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Source SS-Config + SS-Functions
+## B. Touch Timestamp File
+## C. Message (Begin Script)
+## D. Dump MySQL Database(s)
+## E. Reset Permissions (Database Dump Files)
+
+####################################################################################################
+#### A. SS-Dump-Database: Source SS-Config + SS-Functions ##########################################
+####################################################################################################
+
+## before anything else we must source the critical variables that power this script ##
+## ss-config is setup during ss-install wizard but ss-functions is hardcoded ##
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### B. SS-Dump-Database: Touch Timestamp File #####################################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_DUMP_DATABASE}"
+
+####################################################################################################
+#### C. SS-Dump-Database: Message (Begin Script) ###################################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-dump-database... ${COLOR_RESET}"
+
+####################################################################################################
+#### D. SS-Dump-Database: Dump MySQL Database(s) ###################################################
+####################################################################################################
+
+## here we use mysqldump to dump the various databases under /var/www/backups/mysql/ ##
+## to support remote database servers we force the TCP protocol (not sockets) ##
+
+## production ##
+if [[ "${DB_REMOTE}" == "true" ]]; then
+    ss_mysqldump_user "${DB_NAME}" > "${PATH_DUMP_DATABASE_PRODUCTION}" 2> /dev/null
+else
+    ss_mysqldump_admin "${DB_NAME}" > "${PATH_DUMP_DATABASE_PRODUCTION}" 2> /dev/null
+fi
+
+## staging ##
+if [[ "${STAGING_SITE}" == "true" ]] && [[ "${DB_REMOTE}" == "true" ]]; then
+    ss_mysqldump_user staging > "${PATH_DUMP_DATABASE_STAGING}" 2> /dev/null
+elif [[ "${STAGING_SITE}" == "true" ]] && [[ "${DB_REMOTE}" != "true" ]]; then
+    ss_mysqldump_admin staging > "${PATH_DUMP_DATABASE_STAGING}" 2> /dev/null
+fi
+
+## development ##
+if [[ "${DEV_SITE}" == "true" ]] && [[ "${DB_REMOTE}" == "true" ]]; then
+    ss_mysqldump_user development > "${PATH_DUMP_DATABASE_DEVELOPMENT}" 2> /dev/null
+elif [[ "${DEV_SITE}" == "true" ]] && [[ "${DB_REMOTE}" != "true" ]]; then
+    ss_mysqldump_admin development > "${PATH_DUMP_DATABASE_DEVELOPMENT}" 2> /dev/null
+fi
+
+####################################################################################################
+#### E. SS-Dump-Database: Reset Permissions (Database Dump Files) ##################################
+####################################################################################################
+
+## here we do a quick permissions reset to ensure SFTP users can access the dump file ##
+## keep in mind that root/sudo users will have access to this file regardless ##
+
+## production ##
+chown -R "${SFTP_USER}":www-data "${PATH_DUMP_DATABASE_PRODUCTION}"
+chmod 0440 "${PATH_DUMP_DATABASE_PRODUCTION}"
+
+## staging ##
+if [[ "${STAGING_SITE}" == "true" ]]; then
+    chown -R "${SFTP_USER}":www-data "${PATH_DUMP_DATABASE_STAGING}"
+    chmod 0440 "${PATH_DUMP_DATABASE_STAGING}"
+fi
+
+## development ##
+if [[ "${DEV_SITE}" == "true" ]]; then
+    chown -R "${SFTP_USER}":www-data "${PATH_DUMP_DATABASE_DEVELOPMENT}"
+    chmod 0440 "${PATH_DUMP_DATABASE_DEVELOPMENT}"
+fi
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://dev.mysql.com/doc/refman/5.7/en/mysqldump.html
+## Ref: https://unix.stackexchange.com/questions/293966/suppress-warning-messages-from-mysql-in-shell-script-but-allow-errors
+## Ref: https://github.com/cytopia/devilbox/issues/212
+## Ref: https://stackoverflow.com/questions/32133353/unable-to-connect-to-mysql-database-in-ubuntu
+## Ref: https://dba.stackexchange.com/questions/35847/mysqldump-flush-privileges-option
+## Ref: https://www.sqlshack.com/how-to-install-mysql-on-ubuntu-18-04/
+## Ref: https://stackoverflow.com/questions/2989724/how-to-mysqldump-remote-db-from-local-machine
+## Ref: https://dev.mysql.com/doc/refman/8.0/en/transport-protocols.html
+## Ref: https://dev.mysql.com/doc/refman/8.0/en/mysqldump.html
+## Ref: https://snapshooter.io/learn/mysqldump-ultimate-guide
+## Ref: https://www.interserver.net/tips/kb/ultimate-guide-mysqldump-database-backup-program/
+## Ref: https://serverfault.com/questions/547438/mysqldump-has-a-quick-option-why-isnt-this-enabled-by-default
+## Ref: https://bugs.mysql.com/bug.php?id=100219
+## Ref: https://serversforhackers.com/c/mysqldump-with-modern-mysql
+## Ref: https://dan.langille.org/2020/07/21/mysqldump-error-access-denied-you-need-at-least-one-of-the-process-privileges-for-this-operation-when-trying-to-dump-tablespaces/
+## Ref: https://forums.cpanel.net/threads/cpanel-33473-mysql-dump-process-privilege-error-after-5-7-31-update.675657/
+## Ref: https://dba.stackexchange.com/questions/271981/access-denied-you-need-at-least-one-of-the-process-privileges-for-this-ope
+## Ref: https://stackoverflow.com/questions/37805316/what-is-a-tablespace-and-why-is-it-used
+## Ref: https://stackoverflow.com/questions/2482491/is-copying-var-lib-mysql-a-good-alterntive-to-mysqldump
+## Ref: https://serverfault.com/questions/659048/can-i-copy-the-entire-var-lib-mysql-folder-to-a-different-server-mysql-vs-mar/659049
+## Ref: https://serverfault.com/questions/81241/making-backup-by-copying-mysql-data-folder-is-ok-as-long-as-both-source-and-tar
+## Ref: https://stackoverflow.com/questions/30835874/how-to-avoid-use-database-statement-on-mysqldump-backups
+## Ref: https://forums.asp.net/t/1534483.aspx?mysql+dump+don+t+generate+USE+database+
+## Ref: https://anothercoffee.net/how-to-fix-the-mysqldump-access-denied-process-privilege-error/
+## Ref: https://stackoverflow.com/questions/37740062/mysql-user-privilege-for-restore-from-mysqldump
+
+## SS_EOF

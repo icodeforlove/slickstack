@@ -1,0 +1,106 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: https://mirrors.slickstack.io/bash/ss-perms-ubuntu-users.txt ##########################
+#### path: /var/www/ss-perms-ubuntu-users ##########################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Resets all file and user permissions for Ubuntu system users (sudo, SFTP, etc) #######
+#### module version: Ubuntu 22.04 LTS ##############################################################
+#### sourced by: ss-install-ubuntu-users, ss-perms #################################################
+#### bash aliases: ss perms ubuntu users, ss perms users ###########################################
+####################################################################################################
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Perms-Ubuntu-Users) #####################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Touch Timestamp File
+## B. Message (Begin Script)
+
+####################################################################################################
+#### A. SS-Perms-Ubuntu-Users: Touch Timestamp File ################################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_PERMS_UBUNTU_USERS}"
+
+####################################################################################################
+#### B. SS-Perms-Ubuntu-Users: Message (Begin Script) ##############################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-perms-ubuntu-users... ${COLOR_RESET}"
+
+####################################################################################################
+#### SS-Perms-Ubuntu-Users: Reset Permissions (Ubuntu Users) #######################################
+####################################################################################################
+
+## reset permissions ##
+chown root:root /etc/sudoers ## must be root:root
+chmod 0440 /etc/sudoers ## 0440 Ubuntu default
+
+## call all below be deleted??? ##
+## moved from ss-install
+## we need to do the chown for SFTP_USER down here because this account does not exist before
+## if staging enabled
+if [[ "${STAGING_SITE}" != "false" ]]; then 
+    ss_mkdir /var/www/html/staging
+    ss_mkdir /var/www/html/staging/.well-known
+    ss_mkdir /var/www/html/staging/.well-known/acme-challenge
+    chown -R "${SFTP_USER}":www-data /var/www/html/staging/.well-known ## accessed by server for e.g. Cerbot but also by SFTP user for things like Stripe ##
+    chown -R "${SFTP_USER}":www-data /var/www/html/staging/.well-known/acme-challenge ## accessed by server for e.g. Cerbot but also by SFTP user for things like Stripe ##
+fi
+
+## if dev enabled
+if [[ "${DEV_SITE}" != "false" ]]; then 
+    ss_mkdir /var/www/html/dev
+    ss_mkdir /var/www/html/dev/.well-known
+    ss_mkdir /var/www/html/dev/.well-known/acme-challenge
+    chown -R "${SFTP_USER}":www-data /var/www/html/dev/.well-known ## accessed by server for e.g. Cerbot but also by SFTP user for things like Stripe ##
+    chown -R "${SFTP_USER}":www-data /var/www/html/dev/.well-known/acme-challenge ## accessed by server for e.g. Cerbot but also by SFTP user for things like Stripe ##
+fi
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://unix.stackexchange.com/questions/55564/addgroup-vs-groupadd
+## Ref: https://unix.stackexchange.com/questions/145348/short-simple-command-to-create-a-group-if-it-doesnt-already-exist
+## Ref: https://www.howtogeek.com/50787/add-a-user-to-a-group-or-second-group-on-linux/
+
+## SS_EOF

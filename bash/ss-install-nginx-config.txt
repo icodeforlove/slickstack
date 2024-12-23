@@ -1,0 +1,1287 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/bash/ss-install-nginx-config.txt ###################
+#### path: /var/www/ss-install-nginx-config ########################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Reinstalls the Nginx module config files based on ss-config (idempotent) #############
+#### module version: Nginx 1.18.x ##################################################################
+#### sourced by: ss-install ########################################################################
+#### bash aliases: ss install nginx config #########################################################
+####################################################################################################
+
+## SS-CONFIG MUST BE PROPERLY CONFIGURED AND ON CURRENT BUILD BEFORE RUNNING SS-INSTALL ##
+## ENSURE YOUR SS-CONFIG BUILD REMAINS CURRENT BY RUNNING SS-UPDATE OCCASIONALLY ##
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Install-Nginx-Config) ###################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Source SS-Config + SS-Functions
+## B. Touch Timestamp File
+## C. Message (Begin Script)
+## D. Reset Permissions (Nginx Config)
+## E. Generate DH Parameters (Conditional)
+## F. Run SS-Encrypt-OpenSSL
+## G. Generate Htpasswd File
+## H. Install Nginx.conf
+## I. Install Server Block (Development)
+## J. Install Server Block (Staging)
+## K. Install Server Block (Production)
+## L. Run SS-Encrypt-Certbot
+## M. Run SS-Install-Nginx-SSL
+## N. Install Cloudflare.conf (Conditional)
+## O. Install Authenticated-Origin.conf (Optional)
+## P. Install Adminer.conf (Optional)
+## Q. Enable TMPFS Mount (Conditional)
+## R. Reset Permissions (Nginx Config)
+## S. Restart Modules (Nginx)
+## T. Install WordPress Config
+## U. Cleanup Temporary Files
+
+####################################################################################################
+#### A. SS-Install-Nginx-Config: Source SS-Config + SS-Functions ###################################
+####################################################################################################
+
+## before anything else we must source the critical variables that power this script ##
+## ss-config is setup during ss-install wizard but ss-functions is hardcoded ##
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### B. SS-Install-Nginx-Config: Touch Timestamp File ##############################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_INSTALL_NGINX_CONFIG}"
+
+####################################################################################################
+#### C. SS-Install-Nginx-Config: Message (Begin Script) ############################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-install-nginx-config... ${COLOR_RESET}"
+
+####################################################################################################
+#### D. SS-Install-Nginx-Config: Reset Permissions (Nginx Config) ##################################
+####################################################################################################
+
+## ensures folders exist first ... improve this later? ##
+
+source "${PATH_SS_PERMS_NGINX_CONFIG}"
+
+####################################################################################################
+#### E. SS-Install-Nginx-Config: Generate DH Parameters (Conditional) ##############################
+####################################################################################################
+
+## this will generate DH parameters using OpenSSL for use by Lets Encrypt certificates ##
+## by maintaining this file we are able to strengthen the security of the SSL ##
+
+if [[ ! -f "${PATH_DHPARAM_PEM}" ]]; then 
+    ss_dhparam "${PATH_DHPARAM_PEM}"
+fi
+
+####################################################################################################
+#### F. SS-Install-Nginx-Config: Run SS-Encrypt-OpenSSL ############################################
+####################################################################################################
+
+## here we generate slickstack.crt and slickstack.key as the backup SSL for Nginx ##
+## this approach is extremely stable and works fantastic with Cloudflare ##
+
+source "${PATH_SS_ENCRYPT_OPENSSL}"
+
+if [[ ! -f "${PATH_OPENSSL_CONF}" ]] && [[ ! -f "${PATH_LETSENCRYPT_CONF}" ]] && [[ ! -f "${PATH_THIRDPARTY_CONF}" ]]; then 
+
+    ## retrieve OpenSSL submodule file ##
+    ss_wget "${TMP_OPENSSL_CONF}" "${GITHUB_OPENSSL_CONF}"
+    VALIDATE_TMP_OPENSSL_CONF=$(grep 'SS_EOF' "${TMP_OPENSSL_CONF}" 2> /dev/null)
+    if [[ -z "${VALIDATE_TMP_OPENSSL_CONF}" ]]; then
+        ss_wget "${TMP_OPENSSL_CONF}" "${GITLAB_OPENSSL_CONF}"
+    fi
+
+    ## protocols ##
+    if [[ -z "$SSL_PROTOCOLS" ]]; then 
+        ss_sed "s/@SSL_PROTOCOLS/TLSv1.2 TLSv1.3/g" "${TMP_OPENSSL_CONF}"
+    else 
+        ss_sed "s/@SSL_PROTOCOLS/${SSL_PROTOCOLS}/g" "${TMP_OPENSSL_CONF}"
+    fi
+
+    ## ciphers ##
+    if [[ -z "$SSL_CIPHERS" ]]; then 
+        ss_sed "s/@SSL_CIPHERS/ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384/g" "${TMP_OPENSSL_CONF}"
+    else 
+        ss_sed "s/@SSL_CIPHERS/${SSL_CIPHERS}/g" "${TMP_OPENSSL_CONF}"
+    fi
+
+    ## session timeout ##
+    if [[ -z "$SSL_SESSION_TIMEOUT" ]]; then 
+        ss_sed "s/@SSL_SESSION_TIMEOUT/1d/g" "${TMP_OPENSSL_CONF}"
+    else 
+        ss_sed "s/@SSL_SESSION_TIMEOUT/${SSL_SESSION_TIMEOUT}/g" "${TMP_OPENSSL_CONF}"
+    fi
+
+    ## session cache ##
+    if [[ -z "$SSL_SESSION_CACHE" ]]; then 
+        ss_sed "s/@SSL_SESSION_CACHE/shared:SSL:64m/g" "${TMP_OPENSSL_CONF}"
+    else 
+        ss_sed "s/@SSL_SESSION_CACHE/${SSL_SESSION_CACHE}/g" "${TMP_OPENSSL_CONF}"
+    fi
+
+    ## buffer size ##
+    if [[ -z "$SSL_BUFFER_SIZE" ]]; then 
+        ss_sed "s/@SSL_BUFFER_SIZE/16k/g" "${TMP_OPENSSL_CONF}"
+    else 
+        ss_sed "s/@SSL_BUFFER_SIZE/${SSL_BUFFER_SIZE}/g" "${TMP_OPENSSL_CONF}"
+    fi
+
+    ## move over and remove conflicting files ##
+    ss_mv "${TMP_OPENSSL_CONF}" "${PATH_OPENSSL_CONF}"
+    ss_rm "${PATH_LETSENCRYPT_CONF}"
+    ss_rm "${PATH_THIRDPARTY_CONF}"
+    
+fi
+
+
+####################################################################################################
+#### G. SS-Install-Nginx-Config: Generate Htpasswd File ############################################
+####################################################################################################
+
+## null file contents ##
+cat /dev/null > "${PATH_HTPASSWD}"
+
+## copy guest user credentials ##
+ENCRYPTED_GUEST_PASSWORD=$(openssl passwd -apr1 "${GUEST_PASSWORD}")
+printf "${GUEST_USER}:${ENCRYPTED_GUEST_PASSWORD}\n" >> "${PATH_HTPASSWD}"
+
+####################################################################################################
+#### H. SS-Install-Nginx-Config: Install Nginx.conf ################################################
+####################################################################################################
+
+## here we install an optimized Nginx config designed for high traffic and CloudFlare ##
+## this step is critical to setting up caching, SSL certs, and HTTP headers ##
+
+## download latest Nginx config boilerplate ##
+ss_wget "${TMP_NGINX_CONF}" "${GITHUB_NGINX_CONF}"
+VALIDATE_TMP_NGINX_CONF=$(grep 'SS_EOF' "${TMP_NGINX_CONF}" 2> /dev/null)
+if [[ -z "${VALIDATE_TMP_NGINX_CONF}" ]]; then
+    ss_wget "${TMP_NGINX_CONF}" "${GITLAB_NGINX_CONF}"
+fi
+
+## replace site domain and tld ##
+ss_sed "s/@SITE_FULL_DOMAIN/${SITE_FULL_DOMAIN}/g" "${TMP_NGINX_CONF}"
+ss_sed "s/@SITE_ROOT_DOMAIN/${SITE_ROOT_DOMAIN}/g" "${TMP_NGINX_CONF}"
+
+## noindex entire server using HTTP headers (if enabled) ##
+if [[ "${SS_NOINDEX}" == "true" ]]; then 
+    ss_sed "s/#@NOINDEX# //g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "/#@NOINDEX# /d" "${TMP_NGINX_CONF}"
+fi
+
+## remove content-security-policy for WP Multisite installations (causes conflict because proper domain can't be determined) ##
+if [[ "${WP_MULTISITE}" == "true" ]]; then 
+    ss_sed "/#@NOT_FOR_MULTISITE# /d" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/#@NOT_FOR_MULTISITE# //g" "${TMP_NGINX_CONF}"
+fi
+
+## access log ##
+## force enabled for now ##
+# if [[ -z "${NGINX_ACCESS_LOG}" ]]; then 
+#    ss_sed "s/@NGINX_ACCESS_LOG/off/g" "${TMP_NGINX_CONF}"
+# else 
+#    ss_sed "s|@NGINX_ACCESS_LOG|/var/www/logs/nginx-access.log|g" "${TMP_NGINX_CONF}"
+# fi
+
+
+## FASTCGI CACHE ##
+
+## FCGI Cache memory ##
+if [[ -z "${FCGI_CACHE_MEMORY}" ]]; then 
+    ss_sed "s/@FCGI_CACHE_MEMORY/256m/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@FCGI_CACHE_MEMORY/${FCGI_CACHE_MEMORY}/g" "${TMP_NGINX_CONF}"
+fi
+
+## FCGI Cache inactive ##
+if [[ -z "${FCGI_CACHE_INACTIVE}" ]]; then 
+    ss_sed "s/@FCGI_CACHE_INACTIVE/1440m/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@FCGI_CACHE_INACTIVE/${FCGI_CACHE_INACTIVE}/g" "${TMP_NGINX_CONF}"
+fi
+
+## FCGI Cache max size ##
+if [[ -z "${FCGI_CACHE_MAX_SIZE}" ]]; then 
+    ss_sed "s/@FCGI_CACHE_MAX_SIZE/4096m/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@FCGI_CACHE_MAX_SIZE/${FCGI_CACHE_MAX_SIZE}/g" "${TMP_NGINX_CONF}"
+fi
+
+
+## FCGI Cache connect timeout ##
+if [[ -z "${FCGI_CONNECT_TIMEOUT}" ]]; then 
+    ss_sed "s/@FCGI_CONNECT_TIMEOUT/60s/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@FCGI_CONNECT_TIMEOUT/${FCGI_CONNECT_TIMEOUT}/g" "${TMP_NGINX_CONF}"
+fi
+
+## FCGI Cache read timeout ##
+if [[ -z "${FCGI_READ_TIMEOUT}" ]]; then 
+    ss_sed "s/@FCGI_READ_TIMEOUT/60s/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@FCGI_READ_TIMEOUT/${FCGI_READ_TIMEOUT}/g" "${TMP_NGINX_CONF}"
+fi
+
+## FCGI Cache send timeout ##
+if [[ -z "${FCGI_SEND_TIMEOUT}" ]]; then 
+    ss_sed "s/@FCGI_SEND_TIMEOUT/60s/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@FCGI_SEND_TIMEOUT/${FCGI_SEND_TIMEOUT}/g" "${TMP_NGINX_CONF}"
+fi
+
+
+## FCGI Cache buffers ##
+if [[ -z "${FCGI_BUFFERS}" ]]; then 
+    ss_sed "s/@FCGI_BUFFERS/32 32k/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@FCGI_BUFFERS/${FCGI_BUFFERS}/g" "${TMP_NGINX_CONF}"
+fi
+
+## FCGI Cache buffer size ##
+if [[ -z "${FCGI_BUFFER_SIZE}" ]]; then 
+    ss_sed "s/@FCGI_BUFFER_SIZE/32k/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@FCGI_BUFFER_SIZE/${FCGI_BUFFER_SIZE}/g" "${TMP_NGINX_CONF}"
+fi
+
+## FCGI Cache busy buffers size ##
+if [[ -z "${FCGI_BUSY_BUFFERS_SIZE}" ]]; then 
+    ss_sed "s/@FCGI_BUSY_BUFFERS_SIZE/256k/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@FCGI_BUSY_BUFFERS_SIZE/${FCGI_BUSY_BUFFERS_SIZE}/g" "${TMP_NGINX_CONF}"
+fi
+
+## FCGI Cache temp file write size ##
+if [[ -z "${FCGI_TEMP_FILE_WRITE_SIZE}" ]]; then 
+    ss_sed "s/@FCGI_TEMP_FILE_WRITE_SIZE/256k/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@FCGI_TEMP_FILE_WRITE_SIZE/${FCGI_TEMP_FILE_WRITE_SIZE}/g" "${TMP_NGINX_CONF}"
+fi
+
+
+
+## Nginx worker rlimit nofile ##
+if [[ -z "${NGINX_WORKER_RLIMIT_NOFILE}" ]]; then 
+    ss_sed "s/@NGINX_WORKER_RLIMIT_NOFILE/65535/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@NGINX_WORKER_RLIMIT_NOFILE/${NGINX_WORKER_RLIMIT_NOFILE}/g" "${TMP_NGINX_CONF}"
+fi
+
+## Nginx worker connections ##
+if [[ -z "${NGINX_WORKER_CONNECTIONS}" ]]; then 
+    ss_sed "s/@NGINX_WORKER_CONNECTIONS/8192/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@NGINX_WORKER_CONNECTIONS/${NGINX_WORKER_CONNECTIONS}/g" "${TMP_NGINX_CONF}"
+fi
+
+if [[ -z "${NGINX_WORKER_PRIORITY}" ]]; then 
+    ss_sed "s/@NGINX_WORKER_PRIORITY/-5/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@NGINX_WORKER_PRIORITY/${NGINX_WORKER_PRIORITY}/g" "${TMP_NGINX_CONF}"
+fi
+
+## Nginx server names hash bucket size ##
+if [[ -z "${NGINX_SERVER_NAMES_HASH_BUCKET_SIZE}" ]]; then 
+    ss_sed "s/@NGINX_SERVER_NAMES_HASH_BUCKET_SIZE/64/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@NGINX_SERVER_NAMES_HASH_BUCKET_SIZE/${NGINX_SERVER_NAMES_HASH_BUCKET_SIZE}/g" "${TMP_NGINX_CONF}"
+fi
+
+## Nginx server names max hash size ##
+if [[ -z "${NGINX_SERVER_NAMES_MAX_HASH_SIZE}" ]]; then 
+    ss_sed "s/@NGINX_SERVER_NAMES_MAX_HASH_SIZE/64/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@NGINX_SERVER_NAMES_MAX_HASH_SIZE/${NGINX_SERVER_NAMES_MAX_HASH_SIZE}/g" "${TMP_NGINX_CONF}"
+fi
+
+## Nginx types max hash size ##
+if [[ -z "${NGINX_TYPES_MAX_HASH_SIZE}" ]]; then 
+    ss_sed "s/@NGINX_TYPES_MAX_HASH_SIZE/2048/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@NGINX_TYPES_MAX_HASH_SIZE/${NGINX_TYPES_MAX_HASH_SIZE}/g" "${TMP_NGINX_CONF}"
+fi
+
+## Nginx variables hash max size ##
+if [[ -z "${NGINX_VARIABLES_HASH_MAX_SIZE}" ]]; then 
+    ss_sed "s/@NGINX_VARIABLES_HASH_MAX_SIZE/2048/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@NGINX_VARIABLES_HASH_MAX_SIZE/${NGINX_VARIABLES_HASH_MAX_SIZE}/g" "${TMP_NGINX_CONF}"
+fi
+
+## Nginx variables hash bucket size ##
+if [[ -z "${NGINX_VARIABLES_HASH_BUCKET_SIZE}" ]]; then 
+    ss_sed "s/@NGINX_VARIABLES_HASH_BUCKET_SIZE/64/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@NGINX_VARIABLES_HASH_BUCKET_SIZE/${NGINX_VARIABLES_HASH_BUCKET_SIZE}/g" "${TMP_NGINX_CONF}"
+fi
+
+## Nginx client max body size ##
+if [[ -z "${NGINX_CLIENT_MAX_BODY_SIZE}" ]]; then 
+    ss_sed "s/@NGINX_CLIENT_MAX_BODY_SIZE/512M/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@NGINX_CLIENT_MAX_BODY_SIZE/${NGINX_CLIENT_MAX_BODY_SIZE}/g" "${TMP_NGINX_CONF}"
+fi
+
+## Nginx client body buffer size ##
+if [[ -z "${NGINX_CLIENT_BODY_BUFFER_SIZE}" ]]; then 
+    ss_sed "s/@NGINX_CLIENT_BODY_BUFFER_SIZE/16k/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@NGINX_CLIENT_BODY_BUFFER_SIZE/${NGINX_CLIENT_BODY_BUFFER_SIZE}/g" "${TMP_NGINX_CONF}"
+fi
+
+## Nginx client header buffer size ##
+if [[ -z "${NGINX_CLIENT_HEADER_BUFFER_SIZE}" ]]; then 
+    ss_sed "s/@NGINX_CLIENT_HEADER_BUFFER_SIZE/4k/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@NGINX_CLIENT_HEADER_BUFFER_SIZE/${NGINX_CLIENT_HEADER_BUFFER_SIZE}/g" "${TMP_NGINX_CONF}"
+fi
+
+## Nginx large client header buffers ##
+if [[ -z "${NGINX_LARGE_CLIENT_HEADER_BUFFERS}" ]]; then 
+    ss_sed "s/@NGINX_LARGE_CLIENT_HEADER_BUFFERS/4 64k/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@NGINX_LARGE_CLIENT_HEADER_BUFFERS/${NGINX_LARGE_CLIENT_HEADER_BUFFERS}/g" "${TMP_NGINX_CONF}"
+fi
+
+## Nginx client body timeout ##
+if [[ -z "${NGINX_CLIENT_BODY_TIMEOUT}" ]]; then 
+    ss_sed "s/@NGINX_CLIENT_BODY_TIMEOUT/15s/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@NGINX_CLIENT_BODY_TIMEOUT/${NGINX_CLIENT_BODY_TIMEOUT}/g" "${TMP_NGINX_CONF}"
+fi
+
+## Nginx client header timeout ##
+if [[ -z "${NGINX_CLIENT_HEADER_TIMEOUT}" ]]; then 
+    ss_sed "s/@NGINX_CLIENT_HEADER_TIMEOUT/15s/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@NGINX_CLIENT_HEADER_TIMEOUT/${NGINX_CLIENT_HEADER_TIMEOUT}/g" "${TMP_NGINX_CONF}"
+fi
+
+## Nginx keepalive timeout ##
+if [[ -z "${NGINX_KEEPALIVE_TIMEOUT}" ]]; then 
+    ss_sed "s/@NGINX_KEEPALIVE_TIMEOUT/15s/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@NGINX_KEEPALIVE_TIMEOUT/${NGINX_KEEPALIVE_TIMEOUT}/g" "${TMP_NGINX_CONF}"
+fi
+
+## Nginx keepalive requests ##
+if [[ -z "${NGINX_KEEPALIVE_REQUESTS}" ]]; then 
+    ss_sed "s/@NGINX_KEEPALIVE_REQUESTS/65535/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@NGINX_KEEPALIVE_REQUESTS/${NGINX_KEEPALIVE_REQUESTS}/g" "${TMP_NGINX_CONF}"
+fi
+
+## Nginx send timeout ##
+if [[ -z "${NGINX_SEND_TIMEOUT}" ]]; then 
+    ss_sed "s/@NGINX_SEND_TIMEOUT/15s/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@NGINX_SEND_TIMEOUT/${NGINX_SEND_TIMEOUT}/g" "${TMP_NGINX_CONF}"
+fi
+
+## Open File Cache max files ##
+if [[ -z "${OPEN_FILE_CACHE_MAX}" ]]; then 
+    ss_sed "s/@OPEN_FILE_CACHE_MAX/200000/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@OPEN_FILE_CACHE_MAX/${OPEN_FILE_CACHE_MAX}/g" "${TMP_NGINX_CONF}"
+fi
+
+## Open File Cache inactive ##
+if [[ -z "${OPEN_FILE_CACHE_INACTIVE}" ]]; then 
+    ss_sed "s/@OPEN_FILE_CACHE_INACTIVE/20s/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@OPEN_FILE_CACHE_INACTIVE/${OPEN_FILE_CACHE_INACTIVE}/g" "${TMP_NGINX_CONF}"
+fi
+
+## Open File Cache valid ##
+if [[ -z "${OPEN_FILE_CACHE_VALID}" ]]; then 
+    ss_sed "s/@OPEN_FILE_CACHE_VALID/30s/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@OPEN_FILE_CACHE_VALID/${OPEN_FILE_CACHE_VALID}/g" "${TMP_NGINX_CONF}"
+fi
+
+## Open File Cache min uses ##
+if [[ -z "${OPEN_FILE_CACHE_MIN_USES}" ]]; then 
+    ss_sed "s/@OPEN_FILE_CACHE_MIN_USES/2/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@OPEN_FILE_CACHE_MIN_USES/${OPEN_FILE_CACHE_MIN_USES}/g" "${TMP_NGINX_CONF}"
+fi
+
+## Open File Cache errors ##
+if [[ -z "${OPEN_FILE_CACHE_ERRORS}" ]]; then 
+    ss_sed "s/@OPEN_FILE_CACHE_ERRORS/on/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@OPEN_FILE_CACHE_ERRORS/${OPEN_FILE_CACHE_ERRORS}/g" "${TMP_NGINX_CONF}"
+fi
+
+## new ##
+if [[ -z "${LIMIT_REQUESTS_SERVER_SECOND_BURST}" ]]; then 
+    ss_sed "s/@LIMIT_REQUESTS_SERVER_SECOND_BURST/300/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@LIMIT_REQUESTS_SERVER_SECOND_BURST/${LIMIT_REQUESTS_SERVER_SECOND_BURST}/g" "${TMP_NGINX_CONF}"
+fi
+
+if [[ -z "${LIMIT_REQUESTS_SERVER_SECOND}" ]]; then 
+    ss_sed "s/@LIMIT_REQUESTS_SERVER_SECOND/300/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@LIMIT_REQUESTS_SERVER_SECOND/${LIMIT_REQUESTS_SERVER_SECOND}/g" "${TMP_NGINX_CONF}"
+fi
+
+if [[ -z "${LIMIT_REQUESTS_SERVER_MINUTE_BURST}" ]]; then 
+    ss_sed "s/@LIMIT_REQUESTS_SERVER_MINUTE_BURST/5000/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@LIMIT_REQUESTS_SERVER_MINUTE_BURST/${LIMIT_REQUESTS_SERVER_MINUTE_BURST}/g" "${TMP_NGINX_CONF}"
+fi
+
+if [[ -z "${LIMIT_REQUESTS_SERVER_MINUTE}" ]]; then 
+    ss_sed "s/@LIMIT_REQUESTS_SERVER_MINUTE/5000/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@LIMIT_REQUESTS_SERVER_MINUTE/${LIMIT_REQUESTS_SERVER_MINUTE}/g" "${TMP_NGINX_CONF}"
+fi
+
+if [[ -z "${LIMIT_REQUESTS_PHP_SECOND}" ]]; then 
+    ss_sed "s/@LIMIT_REQUESTS_PHP_SECOND/30/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@LIMIT_REQUESTS_PHP_SECOND/${LIMIT_REQUESTS_PHP_SECOND}/g" "${TMP_NGINX_CONF}"
+fi
+
+if [[ -z "${LIMIT_REQUESTS_PHP_MINUTE}" ]]; then 
+    ss_sed "s/@LIMIT_REQUESTS_PHP_MINUTE/100/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@LIMIT_REQUESTS_PHP_MINUTE/${LIMIT_REQUESTS_PHP_MINUTE}/g" "${TMP_NGINX_CONF}"
+fi
+
+if [[ -z "${LIMIT_REQUESTS_WPSEARCH_SECOND}" ]]; then 
+    ss_sed "s/@LIMIT_REQUESTS_WPSEARCH_SECOND/100/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@LIMIT_REQUESTS_WPSEARCH_SECOND/${LIMIT_REQUESTS_WPSEARCH_SECOND}/g" "${TMP_NGINX_CONF}"
+fi
+
+if [[ -z "${LIMIT_REQUESTS_WPSEARCH_MINUTE}" ]]; then 
+    ss_sed "s/@LIMIT_REQUESTS_WPSEARCH_MINUTE/500/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@LIMIT_REQUESTS_WPSEARCH_MINUTE/${LIMIT_REQUESTS_WPSEARCH_MINUTE}/g" "${TMP_NGINX_CONF}"
+fi
+
+if [[ -z "${LIMIT_REQUESTS_WPLOGIN_SECOND}" ]]; then 
+    ss_sed "s/@LIMIT_REQUESTS_WPLOGIN_SECOND/1/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@LIMIT_REQUESTS_WPLOGIN_SECOND/${LIMIT_REQUESTS_WPLOGIN_SECOND}/g" "${TMP_NGINX_CONF}"
+fi
+
+if [[ -z "${LIMIT_REQUESTS_WPLOGIN_MINUTE}" ]]; then 
+    ss_sed "s/@LIMIT_REQUESTS_WPLOGIN_MINUTE/5/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@LIMIT_REQUESTS_WPLOGIN_MINUTE/${LIMIT_REQUESTS_WPLOGIN_MINUTE}/g" "${TMP_NGINX_CONF}"
+fi
+
+if [[ -z "${LIMIT_REQUESTS_ADMINER_SECOND}" ]]; then 
+    ss_sed "s/@LIMIT_REQUESTS_ADMINER_SECOND/300/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@LIMIT_REQUESTS_ADMINER_SECOND/${LIMIT_REQUESTS_ADMINER_SECOND}/g" "${TMP_NGINX_CONF}"
+fi
+
+if [[ -z "${LIMIT_REQUESTS_ADMINER_MINUTE}" ]]; then 
+    ss_sed "s/@LIMIT_REQUESTS_ADMINER_MINUTE/5000/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@LIMIT_REQUESTS_ADMINER_MINUTE/${LIMIT_REQUESTS_ADMINER_MINUTE}/g" "${TMP_NGINX_CONF}"
+fi
+
+## connections ##
+if [[ -z "${LIMIT_CONNECTIONS_PER_IP}" ]]; then 
+    ss_sed "s/@LIMIT_CONNECTIONS_PER_IP/10/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@LIMIT_CONNECTIONS_PER_IP/${LIMIT_CONNECTIONS_PER_IP}/g" "${TMP_NGINX_CONF}"
+fi
+
+if [[ -z "${LIMIT_CONNECTIONS_SERVER}" ]]; then 
+    ss_sed "s/@LIMIT_CONNECTIONS_SERVER/100/g" "${TMP_NGINX_CONF}"
+else 
+    ss_sed "s/@LIMIT_CONNECTIONS_SERVER/${LIMIT_CONNECTIONS_SERVER}/g" "${TMP_NGINX_CONF}"
+fi
+
+## copy files to their destinations ##
+ss_mv "${TMP_NGINX_CONF}" "${PATH_NGINX_CONF}"
+
+####################################################################################################
+#### I. SS-Install-Nginx-Config: Install Server Block (Development) ################################
+####################################################################################################
+
+## here we install the Nginx server block for dev subdomain if enabled in ss-config ##
+## this block is independent and distinct from other Nginx server blocks ##
+
+if [[ "${DEV_SITE}" == "true" ]]; then 
+
+## download server block boilerplate (dev site) ##
+ss_wget "${TMP_NGINX_BLOCK_DEVELOPMENT}" "${GITHUB_NGINX_BLOCK_DEVELOPMENT}"
+VALIDATE_TMP_NGINX_BLOCK_DEVELOPMENT=$(grep 'SS_EOF' "${TMP_NGINX_BLOCK_DEVELOPMENT}" 2> /dev/null)
+if [[ -z "${VALIDATE_TMP_NGINX_BLOCK_DEVELOPMENT}" ]]; then
+    ss_wget "${TMP_NGINX_BLOCK_DEVELOPMENT}" "${GITLAB_SS_NGINX_BLOCK_DEVELOPMENT}"
+fi
+
+    ## replace site variables ##
+
+    SITE_DOMAIN_EXCLUDING_WWW=$(echo "${SITE_FULL_DOMAIN/www./}")
+
+    ss_sed "s/@SITE_DOMAIN_EXCLUDING_WWW/${SITE_DOMAIN_EXCLUDING_WWW}/g" "${TMP_NGINX_BLOCK_DEVELOPMENT}"
+    ss_sed "s/@SITE_DOMAIN_INCLUDING_WWW/${SITE_DOMAIN_INCLUDING_WWW}/g" "${TMP_NGINX_BLOCK_DEVELOPMENT}"
+    ss_sed "s/@SITE_FULL_DOMAIN/${SITE_FULL_DOMAIN}/g" "${TMP_NGINX_BLOCK_DEVELOPMENT}"
+    ss_sed "s/@SITE_FULL_DOMAIN/${SITE_FULL_DOMAIN}/g" "${TMP_NGINX_BLOCK_DEVELOPMENT}"
+    ss_sed "s/@DOMAIN/${SITE_FULL_DOMAIN}/g" "${TMP_NGINX_BLOCK_DEVELOPMENT}"
+    ss_sed "s/@CACHEVALID/${FCGI_CACHE_VALID}/g" "${TMP_NGINX_BLOCK_DEVELOPMENT}"
+
+    ## Multisite domain mapping (optional) ##
+    if [[ "$WP_MULTISITE_DOMAIN_MAPPING" == "true" ]]; then 
+        ss_sed "s/#@WP_MULTISITE_DOMAIN_MAPPING# //g" "${TMP_NGINX_BLOCK_DEVELOPMENT}"
+    else
+        ss_sed "s/#@WP_MULTISITE_DOMAIN_MAPPING_FALSE# //g" "${TMP_NGINX_BLOCK_DEVELOPMENT}"
+    fi
+
+    ## Multisite subdomains (optional) ##
+    if [[ "$WP_MULTISITE_SUBDOMAINS" == "true" ]]; then 
+        ss_sed "s/#@WP_MULTISITE_SUBDOMAINS# //g" "${TMP_NGINX_BLOCK_DEVELOPMENT}"
+    fi
+
+    ## FastCGI Cache ##
+    if [[ "$FCGI_CACHE" == "false" ]]; then 
+        ss_sed "s/@FCGI_CACHE/1/g" "${TMP_NGINX_BLOCK_DEVELOPMENT}"
+    else 
+        ss_sed "s/@FCGI_CACHE/0/g" "${TMP_NGINX_BLOCK_DEVELOPMENT}"
+    fi
+    
+     ## password protect ##
+    if [[ "$DEV_SITE_PROTECT" != "true" ]]; then 
+        ss_sed "/auth_basic/d" "${TMP_NGINX_BLOCK_DEVELOPMENT}"
+    fi
+
+    ## copy files to destinations ##
+    if [[ "${SS_LOCKDOWN}" != "true" ]]; then 
+    ss_mv "${TMP_NGINX_BLOCK_DEVELOPMENT}" "${PATH_NGINX_BLOCK_DEVELOPMENT}"
+    fi
+
+elif [[ "${DEV_SITE}" == "false" ]]; then 
+    ss_rm "${PATH_NGINX_BLOCK_DEVELOPMENT}"
+fi
+
+####################################################################################################
+#### J. SS-Install-Nginx-Config: Install Server Block (Staging) ####################################
+####################################################################################################
+
+## here we install the Nginx server block for staging subdomain if enabled in ss-config ##
+## this block is independent and distinct from other Nginx server blocks ##
+
+if [[ "${STAGING_SITE}" == "true" ]]; then 
+
+## download server block boilerplate (staging site) ##
+ss_wget "${TMP_NGINX_BLOCK_STAGING}" "${GITHUB_NGINX_BLOCK_STAGING}"
+VALIDATE_TMP_NGINX_BLOCK_STAGING=$(grep 'SS_EOF' "${TMP_NGINX_BLOCK_STAGING}" 2> /dev/null)
+if [[ -z "${VALIDATE_TMP_NGINX_BLOCK_STAGING}" ]]; then
+    ss_wget "${TMP_NGINX_BLOCK_STAGING}" "${GITLAB_SS_NGINX_BLOCK_STAGING}"
+fi
+
+    ## replace site variables ##
+    SITE_DOMAIN_EXCLUDING_WWW=$(echo "${SITE_FULL_DOMAIN/www./}")
+
+    ss_sed "s/@SITE_DOMAIN_EXCLUDING_WWW/${SITE_DOMAIN_EXCLUDING_WWW}/g" "${TMP_NGINX_BLOCK_STAGING}"
+    ss_sed "s/@SITE_DOMAIN_INCLUDING_WWW/${SITE_DOMAIN_INCLUDING_WWW}/g" "${TMP_NGINX_BLOCK_STAGING}"
+    ss_sed "s/@SITE_FULL_DOMAIN/${SITE_FULL_DOMAIN}/g" "${TMP_NGINX_BLOCK_STAGING}"
+    ss_sed "s/@SITE_FULL_DOMAIN/${SITE_FULL_DOMAIN}/g" "${TMP_NGINX_BLOCK_STAGING}"
+    ss_sed "s/@DOMAIN/${SITE_FULL_DOMAIN}/g" "${TMP_NGINX_BLOCK_STAGING}"
+    ss_sed "s/@CACHEVALID/${FCGI_CACHE_VALID}/g" "${TMP_NGINX_BLOCK_STAGING}"
+
+    ## Multisite domain mapping (optional) ##
+    if [[ "${WP_MULTISITE_DOMAIN_MAPPING}" == "true" ]]; then 
+        ss_sed "s/#@WP_MULTISITE_DOMAIN_MAPPING# //g" "${TMP_NGINX_BLOCK_STAGING}"
+    else
+        ss_sed "s/#@WP_MULTISITE_DOMAIN_MAPPING_FALSE# //g" "${TMP_NGINX_BLOCK_STAGING}"
+    fi
+
+    ## Multisite subdomains (optional) ##
+    if [[ "${WP_MULTISITE_SUBDOMAINS}" == "true" ]]; then 
+        ss_sed "s/#@WP_MULTISITE_SUBDOMAINS# //g" "${TMP_NGINX_BLOCK_STAGING}"
+    fi
+
+    ## FastCGI Cache ##
+    if [[ "${FCGI_CACHE}" == "false" ]]; then 
+        ss_sed "s/@FCGI_CACHE/1/g" "${TMP_NGINX_BLOCK_STAGING}"
+    else 
+        ss_sed "s/@FCGI_CACHE/0/g" "${TMP_NGINX_BLOCK_STAGING}"
+    fi
+
+    ## password protect ##
+    if [[ "${STAGING_SITE_PROTECT}" != "true" ]]; then 
+        ss_sed "/auth_basic/d" "${TMP_NGINX_BLOCK_STAGING}"
+    fi
+    
+    ## copy files to destinations ##
+    if [[ "${SS_LOCKDOWN}" != "true" ]]; then 
+    ss_mv "${TMP_NGINX_BLOCK_STAGING}" "${PATH_NGINX_BLOCK_STAGING}"
+    fi
+
+elif [[ "${STAGING_SITE}" == "false" ]]; then 
+    ss_rm "${PATH_NGINX_BLOCK_STAGING}"
+fi
+
+####################################################################################################
+#### K. SS-Install-Nginx-Config: Install Server Block (Production) #################################
+####################################################################################################
+
+## here we install the Nginx server block for production (default) site no matter what ##
+## this block is independent and distinct from other Nginx server blocks ##
+
+## download server block boilerplate (production site) ##
+if [[ "${WP_MULTISITE}" == "true" ]] && [[ "${WP_MULTISITE_SUBDOMAINS}" == "true" ]]; then 
+    ss_wget "${TMP_NGINX_BLOCK_PRODUCTION}" "${GITHUB_NGINX_BLOCK_PRODUCTION_MULTISITE}"
+    VALIDATE_TMP_NGINX_BLOCK_PRODUCTION=$(grep 'SS_EOF' "${TMP_NGINX_BLOCK_PRODUCTION}" 2> /dev/null)
+    if [[ -z "${VALIDATE_TMP_NGINX_BLOCK_PRODUCTION}" ]]; then
+        ss_wget "${TMP_NGINX_BLOCK_PRODUCTION}" "${GITLAB_NGINX_BLOCK_PRODUCTION_MULTISITE}"
+    fi
+elif [[ "${WP_MULTISITE}" == "true" ]] && [[ "${WP_MULTISITE_SUBDOMAINS}" == "false" ]]; then 
+    ss_wget "${TMP_NGINX_BLOCK_PRODUCTION}" "${GITHUB_NGINX_BLOCK_PRODUCTION_MULTISITE_SUBDIRECTORIES}"
+    VALIDATE_TMP_NGINX_BLOCK_PRODUCTION=$(grep 'SS_EOF' "${TMP_NGINX_BLOCK_PRODUCTION}" 2> /dev/null)
+    if [[ -z "${VALIDATE_TMP_NGINX_BLOCK_PRODUCTION}" ]]; then
+        ss_wget "${TMP_NGINX_BLOCK_PRODUCTION}" "${GITLAB_NGINX_BLOCK_PRODUCTION_MULTISITE_SUBDIRECTORIES}"
+    fi
+else 
+    ss_wget "${TMP_NGINX_BLOCK_PRODUCTION}" "${GITHUB_NGINX_BLOCK_PRODUCTION}"
+    VALIDATE_TMP_NGINX_BLOCK_PRODUCTION=$(grep 'SS_EOF' "${TMP_NGINX_BLOCK_PRODUCTION}" 2> /dev/null)
+    if [[ -z "${VALIDATE_TMP_NGINX_BLOCK_PRODUCTION}" ]]; then
+        ss_wget "${TMP_NGINX_BLOCK_PRODUCTION}" "${GITLAB_SS_NGINX_BLOCK_PRODUCTION}"
+    fi
+fi
+
+## replace site variables ##
+SITE_DOMAIN_EXCLUDING_WWW=$(echo "${SITE_FULL_DOMAIN/www./}")
+
+ss_sed "s/@SITE_DOMAIN_EXCLUDING_WWW/${SITE_DOMAIN_EXCLUDING_WWW}/g" "${TMP_NGINX_BLOCK_PRODUCTION}"
+ss_sed "s/@SITE_DOMAIN_INCLUDING_WWW/${SITE_DOMAIN_INCLUDING_WWW}/g" "${TMP_NGINX_BLOCK_PRODUCTION}"
+ss_sed "s/@SITE_FULL_DOMAIN/${SITE_FULL_DOMAIN}/g" "${TMP_NGINX_BLOCK_PRODUCTION}"
+ss_sed "s/@SITE_FULL_DOMAIN/${SITE_FULL_DOMAIN}/g" "${TMP_NGINX_BLOCK_PRODUCTION}"
+ss_sed "s/@DOMAIN/${SITE_FULL_DOMAIN}/g" "${TMP_NGINX_BLOCK_PRODUCTION}"
+ss_sed "s/@CACHEVALID/${FCGI_CACHE_VALID}/g" "${TMP_NGINX_BLOCK_PRODUCTION}"
+
+## RATE LIMIT ##
+
+if [[ -z "${LIMIT_REQUESTS_PHP_SECOND_BURST}" ]]; then 
+    ss_sed "s/@LIMIT_REQUESTS_PHP_SECOND_BURST/5000/g" "${TMP_NGINX_BLOCK_PRODUCTION}"
+else 
+    ss_sed "s/@LIMIT_REQUESTS_PHP_SECOND_BURST/${LIMIT_REQUESTS_PHP_SECOND_BURST}/g" "${TMP_NGINX_BLOCK_PRODUCTION}"
+fi
+
+if [[ -z "${LIMIT_REQUESTS_PHP_MINUTE_BURST}" ]]; then 
+    ss_sed "s/@LIMIT_REQUESTS_PHP_MINUTE_BURST/5000/g" "${TMP_NGINX_BLOCK_PRODUCTION}"
+else 
+    ss_sed "s/@LIMIT_REQUESTS_PHP_MINUTE_BURST/${LIMIT_REQUESTS_PHP_MINUTE_BURST}/g" "${TMP_NGINX_BLOCK_PRODUCTION}"
+fi
+
+if [[ -z "${LIMIT_REQUESTS_WPLOGIN_SECOND_BURST}" ]]; then 
+    ss_sed "s/@LIMIT_REQUESTS_WPLOGIN_SECOND_BURST/5000/g" "${TMP_NGINX_BLOCK_PRODUCTION}"
+else 
+    ss_sed "s/@LIMIT_REQUESTS_WPLOGIN_SECOND_BURST/${LIMIT_REQUESTS_WPLOGIN_SECOND_BURST}/g" "${TMP_NGINX_BLOCK_PRODUCTION}"
+fi
+
+if [[ -z "${LIMIT_REQUESTS_WPLOGIN_MINUTE_BURST}" ]]; then 
+    ss_sed "s/@LIMIT_REQUESTS_WPLOGIN_MINUTE_BURST/5000/g" "${TMP_NGINX_BLOCK_PRODUCTION}"
+else 
+    ss_sed "s/@LIMIT_REQUESTS_WPLOGIN_MINUTE_BURST/${LIMIT_REQUESTS_WPLOGIN_MINUTE_BURST}/g" "${TMP_NGINX_BLOCK_PRODUCTION}"
+fi
+
+if [[ -z "${LIMIT_REQUESTS_WPSEARCH_SECOND_BURST}" ]]; then 
+    ss_sed "s/@LIMIT_REQUESTS_WPSEARCH_SECOND_BURST/5000/g" "${TMP_NGINX_BLOCK_PRODUCTION}"
+else 
+    ss_sed "s/@LIMIT_REQUESTS_WPSEARCH_SECOND_BURST/${LIMIT_REQUESTS_WPSEARCH_SECOND_BURST}/g" "${TMP_NGINX_BLOCK_PRODUCTION}"
+fi
+
+if [[ -z "${LIMIT_REQUESTS_WPSEARCH_MINUTE_BURST}" ]]; then 
+    ss_sed "s/@LIMIT_REQUESTS_WPSEARCH_MINUTE_BURST/5000/g" "${TMP_NGINX_BLOCK_PRODUCTION}"
+else 
+    ss_sed "s/@LIMIT_REQUESTS_WPSEARCH_MINUTE_BURST/${LIMIT_REQUESTS_WPSEARCH_MINUTE_BURST}/g" "${TMP_NGINX_BLOCK_PRODUCTION}"
+fi
+
+
+
+## Multisite domain mapping (optional) ##
+if [[ "${WP_MULTISITE_DOMAIN_MAPPING}" == "true" ]]; then 
+   ss_sed "s/#@WP_MULTISITE_DOMAIN_MAPPING# //g" "${TMP_NGINX_BLOCK_PRODUCTION}"
+else
+    ss_sed "s/#@WP_MULTISITE_DOMAIN_MAPPING_FALSE# //g" "${TMP_NGINX_BLOCK_PRODUCTION}"
+fi
+
+## Multisite subdomains (optional) ##
+if [[ "${WP_MULTISITE_SUBDOMAINS}" == "true" ]]; then 
+    ss_sed "s/#@WP_MULTISITE_SUBDOMAINS# //g" "${TMP_NGINX_BLOCK_PRODUCTION}"
+fi
+
+## FastCGI Cache ##
+if [[ "${FCGI_CACHE}" == "false" ]]; then 
+    ss_sed "s/@FCGI_CACHE/1/g" "${TMP_NGINX_BLOCK_PRODUCTION}"
+else 
+    ss_sed "s/@FCGI_CACHE/0/g" "${TMP_NGINX_BLOCK_PRODUCTION}"
+fi
+
+    ## copy files to destinations ##
+    if [[ "${SS_LOCKDOWN}" != "true" ]]; then 
+        ss_mv "${TMP_NGINX_BLOCK_PRODUCTION}" "${PATH_NGINX_BLOCK_PRODUCTION}"
+    fi
+
+####################################################################################################
+#### L. SS-Install-Nginx-Config: Run SS-Encrypt-Certbot ############################################
+####################################################################################################
+
+## here we generate slickstack.crt and slickstack.key as the default SSL for Nginx ##
+## this approach is extremely stable and works fantastic with CloudFlare ##
+
+source "${PATH_SS_RESTART_NGINX}"
+source "${PATH_SS_ENCRYPT_CERTBOT}"
+
+####################################################################################################
+#### M. SS-Install-Nginx-Config: Run SS-Install-Nginx-SSL ##########################################
+####################################################################################################
+
+## here we update the Nginx config files to activate either OpenSSL or Lets Encrypt SSL ##
+## this depends on your ss-config settings (both certs should exist regardless) ##
+
+## here we update the Nginx config files to activate either OpenSSL or Lets Encrypt SSL ##
+## this depends on your ss-config settings (both certs should exist regardless) ##
+
+if [[ "${SSL_TYPE}" == "letsencrypt" ]] || [[ "${SSL_TYPE}" == "certbot" ]]; then 
+
+    ## retrieve boilerplate ##
+    ss_wget "${TMP_LETSENCRYPT_CONF}" "${GITHUB_LETSENCRYPT_CONF}"
+    VALIDATE_TMP_LETSENCRYPT_CONF=$(grep 'SS_EOF' "${TMP_LETSENCRYPT_CONF}" 2> /dev/null)
+    if [[ -z "${VALIDATE_TMP_LETSENCRYPT_CONF}" ]]; then
+        ss_wget "${TMP_LETSENCRYPT_CONF}" "${GITLAB_LETSENCRYPT_CONF}"
+    fi
+
+    ## protocols ##
+    if [[ -z "$SSL_PROTOCOLS" ]]; then 
+        ss_sed "s/@SSL_PROTOCOLS/TLSv1.2 TLSv1.3/g" "${TMP_LETSENCRYPT_CONF}"
+    else 
+        ss_sed "s/@SSL_PROTOCOLS/${SSL_PROTOCOLS}/g" "${TMP_LETSENCRYPT_CONF}"
+    fi
+
+    ## ciphers ##
+    if [[ -z "$SSL_CIPHERS" ]]; then 
+        ss_sed "s/@SSL_CIPHERS/ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384/g" "${TMP_LETSENCRYPT_CONF}"
+    else 
+        ss_sed "s/@SSL_CIPHERS/${SSL_CIPHERS}/g" "${TMP_LETSENCRYPT_CONF}"
+    fi
+
+    ## session timeout ##
+    if [[ -z "$SSL_SESSION_TIMEOUT" ]]; then 
+        ss_sed "s/@SSL_SESSION_TIMEOUT/1d/g" "${TMP_LETSENCRYPT_CONF}"
+    else 
+        ss_sed "s/@SSL_SESSION_TIMEOUT/${SSL_SESSION_TIMEOUT}/g" "${TMP_LETSENCRYPT_CONF}"
+    fi
+
+    ## session cache ##
+    if [[ -z "$SSL_SESSION_CACHE" ]]; then 
+        ss_sed "s/@SSL_SESSION_CACHE/shared:SSL:64m/g" "${TMP_LETSENCRYPT_CONF}"
+    else 
+        ss_sed "s/@SSL_SESSION_CACHE/${SSL_SESSION_CACHE}/g" "${TMP_LETSENCRYPT_CONF}"
+    fi
+
+    ## buffer size ##
+    if [[ -z "$SSL_BUFFER_SIZE" ]]; then 
+        ss_sed "s/@SSL_BUFFER_SIZE/16k/g" "${TMP_LETSENCRYPT_CONF}"
+    else 
+        ss_sed "s/@SSL_BUFFER_SIZE/${SSL_BUFFER_SIZE}/g" "${TMP_LETSENCRYPT_CONF}"
+    fi
+    
+    ## move file ##
+
+    if [[ -f "${PATH_LETSENCRYPT_CERT_CERT}" ]]; then
+        ss_mv "${TMP_LETSENCRYPT_CONF}" "${PATH_LETSENCRYPT_CONF}"
+        ss_rm "${PATH_OPENSSL_CONF}"
+        ss_rm "${PATH_THIRDPARTY_CONF}"
+        echo "lets encrypt cert found so installing letsencrypt.conf"
+    elif [[ ! -f "${PATH_LETSENCRYPT_CERT_CERT}" ]]; then
+
+
+## retrieve OpenSSL submodule file ##
+    ss_wget "${TMP_OPENSSL_CONF}" "${GITHUB_OPENSSL_CONF}"
+    VALIDATE_TMP_OPENSSL_CONF=$(grep 'SS_EOF' "${TMP_OPENSSL_CONF}" 2> /dev/null)
+    if [[ -z "${VALIDATE_TMP_OPENSSL_CONF}" ]]; then
+        ss_wget "${TMP_OPENSSL_CONF}" "${GITLAB_OPENSSL_CONF}"
+    fi
+
+    ## protocols ##
+    if [[ -z "$SSL_PROTOCOLS" ]]; then 
+        ss_sed "s/@SSL_PROTOCOLS/TLSv1.2 TLSv1.3/g" "${TMP_OPENSSL_CONF}"
+    else 
+        ss_sed "s/@SSL_PROTOCOLS/${SSL_PROTOCOLS}/g" "${TMP_OPENSSL_CONF}"
+    fi
+
+    ## ciphers ##
+    if [[ -z "$SSL_CIPHERS" ]]; then 
+        ss_sed "s/@SSL_CIPHERS/ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384/g" "${TMP_OPENSSL_CONF}"
+    else 
+        ss_sed "s/@SSL_CIPHERS/${SSL_CIPHERS}/g" "${TMP_OPENSSL_CONF}"
+    fi
+
+    ## session timeout ##
+    if [[ -z "$SSL_SESSION_TIMEOUT" ]]; then 
+        ss_sed "s/@SSL_SESSION_TIMEOUT/1d/g" "${TMP_OPENSSL_CONF}"
+    else 
+        ss_sed "s/@SSL_SESSION_TIMEOUT/${SSL_SESSION_TIMEOUT}/g" "${TMP_OPENSSL_CONF}"
+    fi
+
+    ## session cache ##
+    if [[ -z "$SSL_SESSION_CACHE" ]]; then 
+        ss_sed "s/@SSL_SESSION_CACHE/shared:SSL:64m/g" "${TMP_OPENSSL_CONF}"
+    else 
+        ss_sed "s/@SSL_SESSION_CACHE/${SSL_SESSION_CACHE}/g" "${TMP_OPENSSL_CONF}"
+    fi
+
+    ## buffer size ##
+    if [[ -z "$SSL_BUFFER_SIZE" ]]; then 
+        ss_sed "s/@SSL_BUFFER_SIZE/16k/g" "${TMP_OPENSSL_CONF}"
+    else 
+        ss_sed "s/@SSL_BUFFER_SIZE/${SSL_BUFFER_SIZE}/g" "${TMP_OPENSSL_CONF}"
+    fi
+
+
+
+        ss_mv "${TMP_OPENSSL_CONF}" "${PATH_OPENSSL_CONF}"
+        ss_rm "${PATH_LETSENCRYPT_CONF}"
+        ss_rm "${PATH_THIRDPARTY_CONF}"
+        echo "SSL_TYPE set to letsencrypt but cert file not found so reverting to openssl.conf instead"
+    fi
+
+fi
+
+
+if [[ "${SSL_TYPE}" == "openssl" ]] || [[ -z "${SSL_TYPE}" ]]; then 
+
+    ## retrieve OpenSSL submodule file ##
+    ss_wget "${TMP_OPENSSL_CONF}" "${GITHUB_OPENSSL_CONF}"
+    VALIDATE_TMP_OPENSSL_CONF=$(grep 'SS_EOF' "${TMP_OPENSSL_CONF}" 2> /dev/null)
+    if [[ -z "${VALIDATE_TMP_OPENSSL_CONF}" ]]; then
+        ss_wget "${TMP_OPENSSL_CONF}" "${GITLAB_OPENSSL_CONF}"
+    fi
+
+    ## protocols ##
+    if [[ -z "$SSL_PROTOCOLS" ]]; then 
+        ss_sed "s/@SSL_PROTOCOLS/TLSv1.2 TLSv1.3/g" "${TMP_OPENSSL_CONF}"
+    else 
+        ss_sed "s/@SSL_PROTOCOLS/${SSL_PROTOCOLS}/g" "${TMP_OPENSSL_CONF}"
+    fi
+
+    ## ciphers ##
+    if [[ -z "$SSL_CIPHERS" ]]; then 
+        ss_sed "s/@SSL_CIPHERS/ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384/g" "${TMP_OPENSSL_CONF}"
+    else 
+        ss_sed "s/@SSL_CIPHERS/${SSL_CIPHERS}/g" "${TMP_OPENSSL_CONF}"
+    fi
+
+    ## session timeout ##
+    if [[ -z "$SSL_SESSION_TIMEOUT" ]]; then 
+        ss_sed "s/@SSL_SESSION_TIMEOUT/1d/g" "${TMP_OPENSSL_CONF}"
+    else 
+        ss_sed "s/@SSL_SESSION_TIMEOUT/${SSL_SESSION_TIMEOUT}/g" "${TMP_OPENSSL_CONF}"
+    fi
+
+    ## session cache ##
+    if [[ -z "$SSL_SESSION_CACHE" ]]; then 
+        ss_sed "s/@SSL_SESSION_CACHE/shared:SSL:64m/g" "${TMP_OPENSSL_CONF}"
+    else 
+        ss_sed "s/@SSL_SESSION_CACHE/${SSL_SESSION_CACHE}/g" "${TMP_OPENSSL_CONF}"
+    fi
+
+    ## buffer size ##
+    if [[ -z "$SSL_BUFFER_SIZE" ]]; then 
+        ss_sed "s/@SSL_BUFFER_SIZE/16k/g" "${TMP_OPENSSL_CONF}"
+    else 
+        ss_sed "s/@SSL_BUFFER_SIZE/${SSL_BUFFER_SIZE}/g" "${TMP_OPENSSL_CONF}"
+    fi
+
+
+    ## move over and remove conflicting files ##
+    ss_mv "${TMP_OPENSSL_CONF}" "${PATH_OPENSSL_CONF}"
+    ss_rm "${PATH_LETSENCRYPT_CONF}"
+    ss_rm "${PATH_THIRDPARTY_CONF}"
+    
+fi
+
+
+if [[ "${SSL_TYPE}" == "thirdparty" ]]; then 
+
+    ## retrieve boilerplate ##
+    ss_wget "${TMP_THIRDPARTY_CONF}" "${GITHUB_THIRDPARTY_CONF}"
+    VALIDATE_TMP_THIRDPARTY_CONF=$(grep 'SS_EOF' "${TMP_THIRDPARTY_CONF}" 2> /dev/null)
+    if [[ -z "${VALIDATE_TMP_THIRDPARTY_CONF}" ]]; then
+        ss_wget "${TMP_THIRDPARTY_CONF}" "${GITLAB_THIRDPARTY_CONF}"
+    fi
+
+    ## protocols ##
+    if [[ -z "$SSL_PROTOCOLS" ]]; then 
+        ss_sed "s/@SSL_PROTOCOLS/TLSv1.2 TLSv1.3/g" "${TMP_THIRDPARTY_CONF}"
+    else 
+        ss_sed "s/@SSL_PROTOCOLS/${SSL_PROTOCOLS}/g" "${TMP_THIRDPARTY_CONF}"
+    fi
+
+    ## ciphers ##
+    if [[ -z "$SSL_CIPHERS" ]]; then 
+        ss_sed "s/@SSL_CIPHERS/ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384/g" "${TMP_THIRDPARTY_CONF}"
+    else 
+        ss_sed "s/@SSL_CIPHERS/${SSL_CIPHERS}/g" "${TMP_THIRDPARTY_CONF}"
+    fi
+
+    ## session timeout ##
+    if [[ -z "$SSL_SESSION_TIMEOUT" ]]; then 
+        ss_sed "s/@SSL_SESSION_TIMEOUT/1d/g" "${TMP_THIRDPARTY_CONF}"
+    else 
+        ss_sed "s/@SSL_SESSION_TIMEOUT/${SSL_SESSION_TIMEOUT}/g" "${TMP_THIRDPARTY_CONF}"
+    fi
+
+    ## session cache ##
+    if [[ -z "$SSL_SESSION_CACHE" ]]; then 
+        ss_sed "s/@SSL_SESSION_CACHE/shared:SSL:64m/g" "${TMP_THIRDPARTY_CONF}"
+    else 
+        ss_sed "s/@SSL_SESSION_CACHE/${SSL_SESSION_CACHE}/g" "${TMP_THIRDPARTY_CONF}"
+    fi
+
+    ## buffer size ##
+    if [[ -z "$SSL_BUFFER_SIZE" ]]; then 
+        ss_sed "s/@SSL_BUFFER_SIZE/16k/g" "${TMP_THIRDPARTY_CONF}"
+    else 
+        ss_sed "s/@SSL_BUFFER_SIZE/${SSL_BUFFER_SIZE}/g" "${TMP_THIRDPARTY_CONF}"
+    fi
+    
+    ## move file ##
+    ss_mv "${TMP_THIRDPARTY_CONF}" "${PATH_THIRDPARTY_CONF}"
+    ss_rm "${PATH_LETSENCRYPT_CONF}"
+    ss_rm "${PATH_OPENSSL_CONF}"
+
+fi
+
+####################################################################################################
+#### N. SS-Install-Nginx-Config: Install Cloudflare.conf (Conditional) #############################
+####################################################################################################
+
+## if cloudflare ips true ##
+if [[ "${CLOUDFLARE_REAL_IPS}" != "false" ]]; then 
+
+## retrieve cloudflare.conf boilerplate ##
+ss_wget "${TMP_CLOUDFLARE_CONF}" "${GITHUB_CLOUDFLARE_CONF}"
+VALIDATE_TMP_CLOUDFLARE_CONF=$(grep 'SS_EOF' "${TMP_CLOUDFLARE_CONF}" 2> /dev/null)
+if [[ -z "${VALIDATE_TMP_CLOUDFLARE_CONF}" ]]; then
+    ss_wget "${TMP_CLOUDFLARE_CONF}" "${GITLAB_CLOUDFLARE_CONF}"
+fi
+
+ss_touch /tmp/ips-v4.txt
+ss_null /tmp/ips-v4.txt
+
+ss_touch /tmp/ips-v6.txt
+ss_null /tmp/ips-v6.txt
+
+## ipv4 list ##
+CLOUDFLARE_IPV4_LIST=$(for i in `curl -s -L https://www.cloudflare.com/ips-v4`; do
+    echo "set_real_ip_from $i;" >> /tmp/ips-v4.txt;
+done)
+
+sed -i -e '/@CLOUDFLARE_IPV4_LIST/{r /tmp/ips-v4.txt' -e 'd' -e '}' "${TMP_CLOUDFLARE_CONF}"
+
+## ipv6 list ##
+CLOUDFLARE_IPV6_LIST=$(for i in `curl -s -L https://www.cloudflare.com/ips-v6`; do
+    echo "set_real_ip_from $i;" >> /tmp/ips-v6.txt;
+done)
+
+sed -i -e '/@CLOUDFLARE_IPV6_LIST/{r /tmp/ips-v6.txt' -e 'd' -e '}' "${TMP_CLOUDFLARE_CONF}"
+
+## install cloudflare.conf if valid ##
+VALIDATE_TMP_CLOUDFLARE_CONF=$(grep 'set_real_ip_from' "${TMP_CLOUDFLARE_CONF}" 2> /dev/null)
+if [[ -n "${VALIDATE_TMP_CLOUDFLARE_CONF}" ]]; then
+    ss_mv "${TMP_CLOUDFLARE_CONF}" "${PATH_CLOUDFLARE_CONF}"
+    ss_reload nginx
+    ss_echo "${COLOR_INFO}ss-install-nginx-cloudflare-ips: Successfully installed cloudflare.conf and reloaded Nginx... ${COLOR_RESET}"
+elif [[ -z "${VALIDATE_TMP_CLOUDFLARE_CONF}" ]]; then
+    ss_echo "${COLOR_WARN}ss-install-nginx-cloudflare-ips: latest cloudflare.conf boilerplate appears corrupt so skipping install (old version remains installed if exists)... ${COLOR_RESET}"
+fi
+
+
+#### else if cloudflare ips false #####
+elif [[ "${NGINX_CLOUDFLARE_IPS}" == "false" ]]; then
+    ss_rm "${PATH_CLOUDFLARE_CONF}"
+    ## no need to reload nginx here... ##
+    ss_echo "${COLOR_WARN}ss-install-nginx-cloudflare-ips: cloudflare.conf is disabled in your ss-config so installation skipped... ${COLOR_RESET}"
+
+
+## end if parent #####
+fi
+
+ss_rm "${TMP_CLOUDFLARE_CONF}"
+ss_rm /tmp/ips-v4.txt
+ss_rm /tmp/ips-v6.txt
+
+####################################################################################################
+#### N. SS-Install-Nginx-Config: Install Allowed-IPs.conf (Conditional) ############################
+####################################################################################################
+
+if [[ "${CLOUDFLARE_IPS_ONLY}" == "true" ]]; then 
+
+## retrieve allowed-ips.conf boilerplate ##
+ss_wget "${TMP_ALLOWED_IPS_CONF}" "${GITHUB_ALLOWED_IPS_CONF}"
+VALIDATE_TMP_ALLOWED_IPS_CONF=$(grep 'SS_EOF' "${TMP_ALLOWED_IPS_CONF}" 2> /dev/null)
+if [[ -z "${VALIDATE_TMP_ALLOWED_IPS_CONF}" ]]; then
+    ss_wget "${TMP_ALLOWED_IPS_CONF}" "${GITLAB_ALLOWED_IPS_CONF}"
+fi
+
+ss_touch /tmp/ips-v4.txt
+ss_null /tmp/ips-v4.txt
+
+ss_touch /tmp/ips-v6.txt
+ss_null /tmp/ips-v6.txt
+
+## ipv4 list ##
+CLOUDFLARE_IPV4_LIST=$(for i in `curl -s -L https://www.cloudflare.com/ips-v4`; do
+    echo "allow $i;" >> /tmp/ips-v4.txt;
+done)
+sed -i -e '/@CLOUDFLARE_IPV4_LIST/{r /tmp/ips-v4.txt' -e 'd' -e '}' "${TMP_ALLOWED_IPS_CONF}"
+
+## ipv6 list ##
+CLOUDFLARE_IPV6_LIST=$(for i in `curl -s -L https://www.cloudflare.com/ips-v6`; do
+    echo "allow $i;" >> /tmp/ips-v6.txt;
+done)
+sed -i -e '/@CLOUDFLARE_IPV6_LIST/{r /tmp/ips-v6.txt' -e 'd' -e '}' "${TMP_ALLOWED_IPS_CONF}"
+
+## install allowed-ips.conf if valid ##
+VALIDATE_TMP_ALLOWED_IPS_CONF=$(grep 'allow ' "${TMP_ALLOWED_IPS_CONF}" 2> /dev/null)
+if [[ -n "${VALIDATE_TMP_ALLOWED_IPS_CONF}" ]]; then
+    ss_mv "${TMP_ALLOWED_IPS_CONF}" "${PATH_ALLOWED_IPS_CONF}"
+    ss_reload nginx
+    ss_echo "${COLOR_INFO}Successfully installed allowed-ips.conf and reloaded Nginx... ${COLOR_RESET}"
+elif [[ -z "${VALIDATE_TMP_ALLOWED_IPS_CONF}" ]]; then
+    ss_echo "${COLOR_WARN}Latest allowed-ips.conf boilerplate appears corrupt so skipping install (old version remains installed if exists)... ${COLOR_RESET}"
+fi
+
+
+#### else if cloudflare ips false #####
+elif [[ "${CLOUDFLARE_IPS_ONLY}" != "true" ]]; then
+    ss_rm "${PATH_ALLOWED_IPS_CONF}"
+    ## no need to reload nginx here... ##
+    ss_echo "${COLOR_WARN}CLOUDFLARE_IPS_ONLY set to false in your ss-config so allowed-ips.conf removed and disabled... ${COLOR_RESET}"
+
+
+## end if parent #####
+fi
+
+## temp cleanup ##
+ss_rm "${TMP_ALLOWED_IPS_CONF}"
+# ss_rm /tmp/ips-v4.txt
+# ss_rm /tmp/ips-v6.txt
+
+####################################################################################################
+#### O. SS-Install-Nginx-Config: Install Authenticated-Origin.conf (Optional) ######################
+####################################################################################################
+
+if [[ "${CLOUDFLARE_AUTHENTICATED_ORIGIN}" == "true" ]]; then 
+
+## retrieve public cloudflare.pem cert ##
+ss_wget "${TMP_CLOUDFLARE_PEM}" "${REMOTE_CLOUDFLARE_PEM}"
+
+## retrieve authenticated-origin.conf boilerplate ##
+ss_wget "${TMP_AUTHENTICATED_ORIGIN_CONF}" "${GITHUB_AUTHENTICATED_ORIGIN_CONF}"
+VALIDATE_TMP_AUTHENTICATED_ORIGIN_CONF=$(grep 'SS_EOF' "${TMP_AUTHENTICATED_ORIGIN_CONF}" 2> /dev/null)
+if [[ -z "${VALIDATE_TMP_AUTHENTICATED_ORIGIN_CONF}" ]]; then
+    ss_wget "${TMP_AUTHENTICATED_ORIGIN_CONF}" "${GITLAB_AUTHENTICATED_ORIGIN_CONF}"
+fi
+
+## install if valid ##
+VALIDATE_TMP_AUTHENTICATED_ORIGIN_CONF=$(grep 'ssl_verify_client' "${TMP_AUTHENTICATED_ORIGIN_CONF}" 2> /dev/null)
+if [[ -n "${VALIDATE_TMP_AUTHENTICATED_ORIGIN_CONF}" ]]; then
+    ss_mv "${TMP_CLOUDFLARE_PEM}" "${PATH_CLOUDFLARE_PEM}"
+    ss_mv "${TMP_AUTHENTICATED_ORIGIN_CONF}" "${PATH_AUTHENTICATED_ORIGIN_CONF}"
+    ss_reload nginx
+    ss_echo "${COLOR_INFO}ss-install-nginx-auth-origin: Successfully installed authenticated-origin.conf and reloaded Nginx... ${COLOR_RESET}"
+elif [[ -z "${VALIDATE_TMP_AUTHENTICATED_ORIGIN_CONF}" ]]; then
+    ss_echo "${COLOR_WARN}ss-install-nginx-config: latest authenticated-origin.conf boilerplate appears corrupt so skipping install (old version remains installed if exists)... ${COLOR_RESET}"
+fi
+
+#### else if cloudflare auth origin false #####
+elif [[ "${CLOUDFLARE_AUTHENTICATED_ORIGIN}" == "false" ]]; then
+    ss_rm "${PATH_CLOUDFLARE_PEM}"
+    ss_rm "${PATH_AUTHENTICATED_ORIGIN_CONF}"
+    ## no need to reload nginx here... ##
+    ss_echo "${COLOR_WARN}ss-install-nginx-config: authenticated-origin.conf is disabled in your ss-config so installation skipped... ${COLOR_RESET}"
+
+
+## end if parent #####
+fi
+
+ss_rm "${TMP_CLOUDFLARE_PEM}"
+ss_rm "${TMP_AUTHENTICATED_ORIGIN_CONF}"
+
+####################################################################################################
+#### P. SS-Install-Nginx-Config: Install Perms-Policy.conf (Optional) ##############################
+####################################################################################################
+
+VALIDATE_ACTIVE_PERMS_POLICY_CONF=$(grep 'add_header Permissions-Policy' /var/www/sites/includes/perms-policy.conf 2> /dev/null)
+if [[ -z "${VALIDATE_ACTIVE_PERMS_POLICY_CONF}" ]]; then
+    ss_wget /tmp/perms-policy.conf https://raw.githubusercontent.com/littlebizzy/slickstack/master/modules/nginx/includes/perms-policy-conf.txt
+    ss_cp_if_not_exists /tmp/perms-policy.conf /var/www/sites/includes/perms-policy.conf
+fi
+
+## cleanup tmp files ##
+ss_rm /tmp/perms-policy.conf
+
+####################################################################################################
+#### P. SS-Install-Nginx-Config: Install Adminer.conf (Optional) ###################################
+####################################################################################################
+
+if [[ "${ADMINER_PUBLIC}" == "true" ]]; then 
+
+ss_wget "${TMP_ADMINER_CONF}" "${GITHUB_ADMINER_CONF}"
+VALIDATE_TMP_ADMINER_CONF=$(grep 'SS_EOF' "${TMP_ADMINER_CONF}" 2> /dev/null)
+if [[ -z "${VALIDATE_TMP_ADMINER_CONF}" ]]; then
+    ss_wget "${TMP_ADMINER_CONF}" "${GITLAB_ADMINER_CONF}"
+fi
+
+## install if valid ##
+VALIDATE_TMP_ADMINER_CONF=$(grep 'SS_EOF' "${TMP_ADMINER_CONF}" 2> /dev/null)
+if [[ -n "${VALIDATE_TMP_ADMINER_CONF}" ]]; then
+    ss_sed "s/@ADMINER_RANDOM_URL/${ADMINER_URL}/g" "${TMP_ADMINER_CONF}"
+    ss_mv "${TMP_ADMINER_CONF}" "${PATH_ADMINER_CONF}"
+    ss_reload nginx
+    ss_echo "${COLOR_INFO}ss-install-nginx-adminer: Successfully installed adminer.conf and reloaded Nginx... ${COLOR_RESET}"
+elif [[ -z "${VALIDATE_TMP_ADMINER_CONF}" ]]; then
+    ss_echo "${COLOR_WARN}ss-install-nginx-adminer: latest adminer.conf boilerplate appears corrupt so skipping install (old version remains installed if exists)... ${COLOR_RESET}"
+fi
+
+#### else if adminer disabled #####
+elif [[ "${ADMINER_PUBLIC}" == "false" ]]; then
+    ss_rm "${PATH_ADMINER_CONF}"
+    ## no need to reload nginx here... ##
+    ss_echo "${COLOR_WARN}ss-install-nginx-adminer: adminer.conf is disabled in your ss-config so installation skipped... ${COLOR_RESET}"
+
+
+## end if parent #####
+fi
+
+ss_rm "${TMP_ADMINER_CONF}"
+
+####################################################################################################
+#### Q. SS-Install-Nginx-Config: Enable TMPFS Mount (Conditional) ##################################
+####################################################################################################
+
+if [[ "${FCGI_CACHE_TMPFS}" == "true" ]]; then
+    mount -t tmpfs -o size=${FCGI_CACHE_MEMORY} tmpfs /var/www/cache
+    ss_sed '/tmpfs/d' /etc/fstab
+    echo "tmpfs /var/www/cache tmpfs defaults,size=${FCGI_CACHE_MEMORY} 0 0" >> /etc/fstab
+else
+    ss_sed '/tmpfs/d' /etc/fstab
+fi
+
+####################################################################################################
+#### R. SS-Install-Nginx-Config: Reset Permissions (Nginx Config) ##################################
+####################################################################################################
+
+source "${PATH_SS_PERMS_NGINX_CONFIG}"
+
+####################################################################################################
+#### S. SS-Install-Nginx-Config: Restart Modules (Nginx) ###########################################
+####################################################################################################
+
+source "${PATH_SS_RESTART_NGINX}"
+
+####################################################################################################
+#### T. SS-Install-Nginx-Config: Install WordPress Config ##########################################
+####################################################################################################
+
+## ensures that concatenate is disabled in wp-config to support latest nginx server block ##
+
+if [[ "${SS_APP}" == "wordpress" || -z "${SS_APP}"  ]]; then
+    source "${PATH_SS_INSTALL_WORDPRESS_CONFIG}"
+fi
+
+####################################################################################################
+#### U. SS-Install-Nginx-Config: Cleanup Temporary Files ###########################################
+####################################################################################################
+
+## we briefly cleanup any leftover temporarily files that are relevant to this script ##
+## this is performed before and after associated code runs to avoid conflicts ##
+
+ss_rm "${TMP_NGINX_CONFIG}"
+ss_rm "${TMP_NGINX_BLOCK_DEVELOPMENT}"
+ss_rm "${TMP_NGINX_BLOCK_STAGING}"
+ss_rm "${TMP_NGINX_BLOCK_PRODUCTION}"
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://serverfault.com/questions/527630/difference-in-sites-available-vs-sites-enabled-vs-conf-d-directories-nginx
+## Ref: https://www.digitalocean.com/community/tutorials/how-to-set-up-nginx-server-blocks-virtual-hosts-on-ubuntu-16-04
+## Ref: https://ar.al/2018/07/05/nginx-remember-to-remove-the-default-site/
+## Ref: https://discourse.roots.io/t/http-does-not-redirect-to-https-only-at-the-first-access/8669
+## Ref: https://www.linode.com/docs/guides/how-to-configure-nginx/
+## Ref: https://www.shellscript.sh/tips/pattern-substitution/
+## Ref: https://stackoverflow.com/questions/11618696/shell-write-variable-contents-to-a-file
+## Ref: https://coderwall.com/p/zvvgna/create-htpasswd-file-for-nginx-without-apache
+## Ref: https://www.tecmint.com/password-protect-web-directories-in-nginx/
+## Ref: https://www.web2generators.com/apache-tools/htpasswd-generator
+## Ref: https://www.mkssoftware.com/docs/man1/openssl_passwd.1.asp
+## Ref: https://linuxize.com/post/nginx-log-files/
+## Ref: https://coderwall.com/p/zvvgna/create-htpasswd-file-for-nginx-without-apache
+## Ref: https://community.centminmod.com/threads/how-to-properly-password-protect-a-directory-or-file.579/page-2
+## Ref: https://httpd.apache.org/docs/2.4/misc/password_encryptions.html
+## Ref: https://8gwifi.org/htpasswd.jsp
+## Ref: https://blog.benpri.me/blog/2019/01/13/why-you-shouldnt-be-using-bcrypt-and-scrypt/
+## Ref: https://rpartlan.tumblr.com/post/141705066884/bye-bye-bcrypt-hello-openssl
+## Ref: https://www.openssl.org/docs/manmaster/man1/openssl-passwd.html
+## Ref: https://github.com/littlebizzy/slickstack/issues/198
+## Ref: https://github.com/ergin/nginx-cloudflare-real-ip
+## Ref: https://serverfault.com/questions/950857/use-include-in-nginx-server-block-but-where-to-save
+## Ref: https://serverfault.com/questions/1126212/block-bad-bot-based-on-a-query-param-signature
+## Ref: https://developers.cloudflare.com/ssl/origin-configuration/authenticated-origin-pull/set-up/zone-level/
+## Ref: https://github.com/littlebizzy/slickstack/issues/198
+## Ref: https://developers.cloudflare.com/support/troubleshooting/restoring-visitor-ips/restoring-original-visitor-ips/
+## Ref: https://www.cloudflare.com/ips/
+## Ref: https://github.com/ergin/nginx-cloudflare-real-ip
+## Ref: https://slickstack.io/forum/topic/when-is-cloudflare-real-ip-actually-needed-for-wordpress
+## Ref: https://stackoverflow.com/questions/36223802/store-for-loop-results-as-a-variable-in-bash
+## Ref: https://stackoverflow.com/questions/6790631/use-the-contents-of-a-file-to-replace-a-string-using-sed
+
+## SS_EOF

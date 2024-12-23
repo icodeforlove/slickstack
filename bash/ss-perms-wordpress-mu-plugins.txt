@@ -1,0 +1,150 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/bash/ss-perms-wordpress-mu-plugins.txt #############
+#### path: /var/www/ss-perms-wordpress-mu-plugins ##################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Resets file and user permissions for WordPress MU plugins files and folders ##########
+#### module version: WordPress 6.6.x ###############################################################
+#### sourced by: ss-perms, ss-install-wordpress-mu-plugins #########################################
+#### bash aliases: ss perms mu plugins, ss perms [wordpress|wp] mu plugins #########################
+####################################################################################################
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Perms-WordPress-MU-Plugins) #############################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Source SS-Config + SS-Functions
+## B. Touch Timestamp Fil
+## C. Message (Begin Script)
+## D. Reset Permissions (WordPress MU Plugins)
+
+####################################################################################################
+#### A. SS-Perms-WordPress-MU-Plugins: Source SS-Config + SS-Functions #############################
+####################################################################################################
+
+## before anything else we must source the critical variables that power this script ##
+## ss-config is setup during ss-install wizard but ss-functions is hardcoded ##
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### B. SS-Perms-WordPress-MU-Plugins: Touch Timestamp File ########################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_PERMS_WORDPRESS_MU_PLUGINS}"
+
+####################################################################################################
+#### C. SS-Perms-WordPress-MU-Plugins: Message (Begin Script) ######################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-perms-wordpress-mu-plugins... ${COLOR_RESET}"
+
+####################################################################################################
+#### D. SS-Perms-WordPress-MU-Plugins: Reset Permissions (WordPress MU Plugins) ####################
+####################################################################################################
+
+## here we reset permissions for MU plugins and certain other SlickStack bundled files ##
+## functions.php might be edited via SFTP so we must keep that in mind here ##
+
+## ensure files exist (production only because ss-sync will copy to staging) ##
+if [[ ! -f "/var/www/html/wp-content/blacklist.txt" ]]; then 
+    ss_touch "/var/www/html/wp-content/blacklist.txt"
+fi
+
+## production ##
+chown -R www-data:slickstack /var/www/html/wp-content/mu-plugins
+find /var/www/html/wp-content/mu-plugins/ -type d -exec chmod 0755 {} \; ## 0755 is enough
+find /var/www/html/wp-content/mu-plugins/ -type f -exec chmod 0644 {} \; ## 0644 is enough
+chmod 0440 /var/www/html/wp-content/mu-plugins/autoloader.php ## 0440 (read-only)
+chmod 0440 /var/www/html/wp-content/mu-plugins/000-common.php ## 0440 (read-only)
+
+chown -R "${SFTP_USER}":www-data "${PATH_BLACKLIST_TXT}" ## change to www-data:www-data when ss-perms fixed
+chmod 0444 "${PATH_BLACKLIST_TXT}"
+
+if [[ -f "/var/www/html/wp-content/object-cache.php" ]]; then 
+    chmod 0664 /var/www/html/wp-content/object-cache.php ## 0644 is enough
+fi
+
+## staging ##
+if [[ "${STAGING_SITE}" == "true" ]]; then 
+    ss_touch "/var/www/html/staging/wp-content/blacklist.txt"
+    chown -R www-data:slickstack /var/www/html/staging/wp-content/mu-plugins
+    chown www-data:slickstack /var/www/html/staging/wp-content/blacklist.txt
+    find /var/www/html/staging/wp-content/mu-plugins/ -type d -exec chmod 0755 {} \; ## 0755 is enough
+    find /var/www/html/staging/wp-content/mu-plugins/ -type f -exec chmod 0644 {} \; ## 0644 is enough
+    chmod 0440 /var/www/html/staging/wp-content/mu-plugins/autoloader.php ## 0440 (read-only)
+    chmod 0440 /var/www/html/staging/wp-content/mu-plugins/000-common.php ## 0440 (read-only)
+    chmod 0440 /var/www/html/staging/wp-content/blacklist.txt ## 0440 (read-only)
+fi
+
+## development ##
+if [[ "${DEV_SITE}" == "true" ]]; then 
+    ss_touch "/var/www/html/dev/wp-content/blacklist.txt"
+    chown -R www-data:slickstack /var/www/html/dev/wp-content/mu-plugins
+    chown www-data:slickstack /var/www/html/dev/wp-content/blacklist.txt
+    find /var/www/html/dev/wp-content/mu-plugins/ -type d -exec chmod 0755 {} \; ## 0755 is enough
+    find /var/www/html/dev/wp-content/mu-plugins/ -type f -exec chmod 0644 {} \; ## 0644 is enough
+    chmod 0440 /var/www/html/dev/wp-content/mu-plugins/autoloader.php ## 0440 (read-only)
+    chmod 0440 /var/www/html/dev/wp-content/mu-plugins/000-common.php ## 0440 (read-only)
+    chmod 0440 /var/www/html/dev/wp-content/blacklist.txt ## 0440 (read-only)
+fi
+
+## NULL blacklist.txt if ss-config false (allows default SS MU plugin to be installed while still being able to disable plugin blacklist) ##
+if [[ "${SS_PLUGIN_BLACKLIST}" == "false" ]]; then 
+    ss_touch /var/www/html/wp-content/blacklist.txt
+    ss_truncate /var/www/html/wp-content/blacklist.txt
+fi
+
+if [[ "${SS_PLUGIN_BLACKLIST}" == "false" ]] && [[ "${DEV_SITE}" == "true" ]]; then 
+    ss_touch /var/www/html/dev/wp-content/blacklist.txt
+    ss_truncate /var/www/html/dev/wp-content/blacklist.txt
+fi
+
+if [[ "${SS_PLUGIN_BLACKLIST}" == "false" ]] && [[ "${STAGING_SITE}" == "true" ]]; then 
+    ss_touch /var/www/html/staging/wp-content/blacklist.txt
+    ss_truncate /var/www/html/staging/wp-content/blacklist.txt
+fi
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref:
+
+## SS_EOF

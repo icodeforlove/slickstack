@@ -1,0 +1,62 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/crons/custom/04-cron-quarter-hourly-custom.txt #####
+#### path: /var/www/crons/custom/04-cron-quarter-hourly-custom #####################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: SlickStack core cron job *quarter-hourly* (04/14) will run every 15 minutes ##########
+#### module version: Ubuntu 24.04 LTS ##############################################################
+#### sourced by: 04-cron-quarter-hourly ############################################################
+#### bash aliases: ss cron custom 04|quarter-hourly ################################################
+####################################################################################################
+
+## NEVER MODIFY ROOT CRONTAB OR SLICKSTACK CRON JOBS OR YOUR STACK WILL STOP WORKING ##
+## INSTEAD ADJUST INTERVAL_SS SETTINGS IN SS-CONFIG OR EDIT CUSTOM CRON FILES ##
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### TABLE OF CONTENTS (04-Cron-Quarter-Hourly-Custom) #############################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Touch Timestamp File
+## B. Run Custom Tasks (EDIT HERE)
+
+####################################################################################################
+#### A. 04-Cron-Quarter-Hourly-Custom: Touch Timestamp File ########################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_04_CRON_QUARTER_HOURLY_CUSTOM}"
+
+####################################################################################################
+#### B. 04-Cron-Quarter-Hourly-Custom: Run Custom Tasks (EDIT HERE) ################################
+####################################################################################################
+
+## the below tasks will be called by the parent ss cron job with associated interval ##
+## keep in mind that custom cron tasks are not required and only run if exist ##
+
+## ADD YOUR CODE HERE ##
+
+
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: 
+
+## SS_EOF

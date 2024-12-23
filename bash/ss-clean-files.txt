@@ -1,0 +1,1745 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/bash/ss-clean-files.txt ############################
+#### path: /var/www/ss-clean-files #################################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Cleans up various unsafe and unnecessary files on the SlickStack server ##############
+#### module version: Ubuntu 24.04 LTS ##############################################################
+#### sourced by: n/a ###############################################################################
+#### bash aliases: ss clean files ##################################################################
+####################################################################################################
+
+## CERTAIN UNSAFE FILES WILL BE FORCE DELETED REGARDLESS OF YOUR SLICKSTACK SETTINGS ##
+## SS-CLEAN-FILES DOES NOT PERFORM ANY MALWARE SCANNING (USE SS-SCAN-MALWARE) ##
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Clean-Files) ############################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Source SS-Config + SS-Functions
+## B. Touch Timestamp File
+## C. Message (Begin Script)
+## D. Null Bash Command History
+## E. Delete SSH Private Key (If Exists) 
+## F. Delete Oldest SS-Config Backups
+## G. Delete Staging Site Files (Conditional)
+## H. Delete Outdated WordPress MU Plugins
+## I. Delete Outdated Bash Scripts
+
+## K. Delete Disabled SlickStack Files
+## K. Delete Deprecated SlickStack Files
+## L. Delete Unused WordPress Core Files
+## J. Delete Junk Linux System Files
+## L. Delete Certain Files Throughout Public Web Root (Required) 
+## L. Delete Certain Files In WordPress Content Directory
+## L. Delete Certain WordPress Plugins (Required)
+## M. Delete Junk Files In WordPress Plugins Directory
+## N. Delete Junk Files In WordPress Themes Directory
+
+####################################################################################################
+#### A. SS-Clean-Files: Source SS-Config + SS-Functions ############################################
+####################################################################################################
+
+## before anything else we must source the critical variables that power this script ##
+## ss-config is setup during ss-install wizard but ss-functions is hardcoded ##
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### B. SS-Clean-Files: Touch Timestamp File #######################################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_CLEAN_FILES}"
+
+####################################################################################################
+#### C. SS-Clean-Files: Message (Begin Script) #####################################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-clean-files... ${COLOR_RESET}"
+
+####################################################################################################
+#### D. SS-Clean-Files: Null Bash Command History ##################################################
+####################################################################################################
+
+## many sensitive data items like passwords are often saved indefinitely in Bash history ##
+## this command will erase the Bash history file contents for better security ##
+
+ss_null /home/"${SFTP_USER}"/.bash_history
+ss_null /home/"${SUDO_USER}"/.bash_history
+ss_null /root/.bash_history
+
+####################################################################################################
+#### E. SS-Clean-Files: Delete SSH Private Key (If Exists) #########################################
+####################################################################################################
+
+## this will delete the generated private SSH key if exists and more than 12 hours old ##
+## it is briefly displayed via ss-stack-overview after ss-install first runs ##
+
+if [[ -n $(find "${PATH_SSH_PRIVATE_KEY_FILE}" -amin +720 2> /dev/null) ]]; then
+    ss_rm "${PATH_SSH_PRIVATE_KEY_FILE}"
+fi
+
+####################################################################################################
+#### F. SS-Clean-Files: Delete Oldest SS-Config Backups ############################################
+####################################################################################################
+
+## in order to rotate ss-config file backups we delete the oldest versions to clear space ##
+## the newest intact backup of ss-config is auto-restored by SlickStack when needed ##
+
+find /var/www/backups/config -maxdepth 1 -name "ss-config.bak*" -type f -mtime +3 -delete
+
+####################################################################################################
+#### G. SS-Clean-Files: Delete Staging Site Files (Conditional) ####################################
+####################################################################################################
+
+## this will delete any staging files and folders in case STAGING_SITE is set to false ##
+## to avoid data loss we never delete dev files since they are standalone sites ##
+
+if [[ "${STAGING_SITE}" == "false" ]]; then
+    ss_rm /var/www/html/staging
+fi
+
+####################################################################################################
+#### H. SS-Clean-Files: Delete Outdated WordPress MU Plugins #######################################
+####################################################################################################
+
+## over the years SlickStack has included various MU plugins that are not longer used ##
+## here we ensure they do not exist but ss-install-wordpress-mu-plugins does too ##
+
+## production ##
+ss_rm /var/www/html/wp-content/mu-plugins/dashboard-cleanup*
+ss_rm /var/www/html/wp-content/mu-plugins/delete-expired-transients*
+ss_rm /var/www/html/wp-content/mu-plugins/disable-attachment-pages*
+ss_rm /var/www/html/wp-content/mu-plugins/disable-embeds*
+ss_rm /var/www/html/wp-content/mu-plugins/disable-gutenberg*
+ss_rm /var/www/html/wp-content/mu-plugins/disable-post-via-email*
+ss_rm /var/www/html/wp-content/mu-plugins/error-log-monitor*
+ss_rm /var/www/html/wp-content/mu-plugins/force-strong-hashing*
+ss_rm /var/www/html/wp-content/mu-plugins/index-autoload*
+ss_rm /var/www/html/wp-content/mu-plugins/limit-heartbeat*
+ss_rm /var/www/html/wp-content/mu-plugins/minify-html*
+ss_rm /var/www/html/wp-content/mu-plugins/redis-cache*
+ss_rm /var/www/html/wp-content/mu-plugins/remove-query-strings*
+ss_rm /var/www/html/wp-content/mu-plugins/server-status*
+ss_rm /var/www/html/wp-content/mu-plugins/sftp-details*
+ss_rm /var/www/html/wp-content/mu-plugins/virtual-robotstxt*
+ss_rm /var/www/html/wp-content/mu-plugins/xxx-common*
+ss_rm /var/www/html/wp-content/mu-plugins/xxx-dev*
+ss_rm /var/www/html/wp-content/mu-plugins/xxx-notices*
+ss_rm /var/www/html/wp-content/mu-plugins/xxx-staging*
+
+## staging ##
+ss_rm /var/www/html/staging/wp-content/mu-plugins/dashboard-cleanup*
+ss_rm /var/www/html/staging/wp-content/mu-plugins/delete-expired-transients*
+ss_rm /var/www/html/staging/wp-content/mu-plugins/disable-attachment-pages*
+ss_rm /var/www/html/staging/wp-content/mu-plugins/disable-embeds*
+ss_rm /var/www/html/staging/wp-content/mu-plugins/disable-gutenberg*
+ss_rm /var/www/html/staging/wp-content/mu-plugins/disable-post-via-email*
+ss_rm /var/www/html/staging/wp-content/mu-plugins/error-log-monitor*
+ss_rm /var/www/html/staging/wp-content/mu-plugins/force-strong-hashing*
+ss_rm /var/www/html/staging/wp-content/mu-plugins/index-autoload*
+ss_rm /var/www/html/staging/wp-content/mu-plugins/limit-heartbeat*
+ss_rm /var/www/html/staging/wp-content/mu-plugins/minify-html*
+ss_rm /var/www/html/staging/wp-content/mu-plugins/redis-cache*
+ss_rm /var/www/html/staging/wp-content/mu-plugins/remove-query-strings*
+ss_rm /var/www/html/staging/wp-content/mu-plugins/server-status*
+ss_rm /var/www/html/staging/wp-content/mu-plugins/sftp-details*
+ss_rm /var/www/html/staging/wp-content/mu-plugins/virtual-robotstxt*
+ss_rm /var/www/html/staging/wp-content/mu-plugins/xxx-common*
+ss_rm /var/www/html/staging/wp-content/mu-plugins/xxx-dev*
+ss_rm /var/www/html/staging/wp-content/mu-plugins/xxx-notices*
+ss_rm /var/www/html/staging/wp-content/mu-plugins/xxx-staging*
+
+## development ##
+ss_rm /var/www/html/dev/wp-content/mu-plugins/dashboard-cleanup*
+ss_rm /var/www/html/dev/wp-content/mu-plugins/delete-expired-transients*
+ss_rm /var/www/html/dev/wp-content/mu-plugins/disable-attachment-pages*
+ss_rm /var/www/html/dev/wp-content/mu-plugins/disable-embeds*
+ss_rm /var/www/html/dev/wp-content/mu-plugins/disable-gutenberg*
+ss_rm /var/www/html/dev/wp-content/mu-plugins/disable-post-via-email*
+ss_rm /var/www/html/dev/wp-content/mu-plugins/error-log-monitor*
+ss_rm /var/www/html/dev/wp-content/mu-plugins/force-strong-hashing*
+ss_rm /var/www/html/dev/wp-content/mu-plugins/index-autoload*
+ss_rm /var/www/html/dev/wp-content/mu-plugins/limit-heartbeat*
+ss_rm /var/www/html/dev/wp-content/mu-plugins/minify-html*
+ss_rm /var/www/html/dev/wp-content/mu-plugins/redis-cache*
+ss_rm /var/www/html/dev/wp-content/mu-plugins/remove-query-strings*
+ss_rm /var/www/html/dev/wp-content/mu-plugins/server-status*
+ss_rm /var/www/html/dev/wp-content/mu-plugins/sftp-details*
+ss_rm /var/www/html/dev/wp-content/mu-plugins/virtual-robotstxt*
+ss_rm /var/www/html/dev/wp-content/mu-plugins/xxx-common*
+ss_rm /var/www/html/dev/wp-content/mu-plugins/xxx-dev*
+ss_rm /var/www/html/dev/wp-content/mu-plugins/xxx-notices*
+ss_rm /var/www/html/dev/wp-content/mu-plugins/xxx-staging*
+
+####################################################################################################
+#### I. SS-Clean-Files: Delete Outdated Bash Scripts ###############################################
+####################################################################################################
+
+## many of the SlickStack bash scripts have changed names or been removed after a while ##
+## this ensures those old scripts are properly deleted to avoid any confusion ##
+
+ss_rm /var/www/0-crontab
+ss_rm /var/www/1-cron-often
+ss_rm /var/www/2-cron-regular
+ss_rm /var/www/3-cron-hourly
+ss_rm /var/www/3-cron-quarter-hourly
+ss_rm /var/www/4-cron-half-hourly
+ss_rm /var/www/4-cron-quarter-daily
+ss_rm /var/www/5-cron-half-daily
+ss_rm /var/www/5-cron-hourly
+ss_rm /var/www/6-cron-daily
+ss_rm /var/www/6-cron-quarter-daily
+ss_rm /var/www/7-cron-half-daily
+ss_rm /var/www/7-cron-weekly
+ss_rm /var/www/8-cron-daily
+ss_rm /var/www/8-cron-monthly
+ss_rm /var/www/9-cron-half-weekly
+ss_rm /var/www/9-cron-sometimes
+ss_rm /var/www/00-crontab
+ss_rm /var/www/01-cron-often
+ss_rm /var/www/02-cron-regular
+ss_rm /var/www/03-cron-quarter-hourly
+ss_rm /var/www/04-cron-half-hourly
+ss_rm /var/www/05-cron-hourly
+ss_rm /var/www/06-cron-quarter-daily
+ss_rm /var/www/07-cron-half-daily
+ss_rm /var/www/08-cron-daily
+ss_rm /var/www/09-cron-half-weekly
+ss_rm /var/www/10-cron-weekly
+ss_rm /var/www/11-cron-half-monthly
+ss_rm /var/www/12-cron-monthly
+ss_rm /var/www/13-cron-sometimes
+ss_rm /var/www/ss-install-adminer
+ss_rm /var/www/ss-install-craft-config
+ss_rm /var/www/ss-install-craft-packages
+ss_rm /var/www/ss-delete-database
+ss_rm /var/www/ss-delete-files
+ss_rm /var/www/ss-install-postfix
+ss_rm /var/www/ss-install-redis
+ss_rm /var/www/ss-install-php-core
+ss_rm /var/www/ss-install-magento-config
+ss_rm /var/www/ss-install-magento-core 
+ss_rm /var/www/ss-install-mediawiki-config
+ss_rm /var/www/ss-install-mediawiki-packages
+ss_rm /var/www/ss-install-moodle-config
+ss_rm /var/www/ss-install-moodle-packages
+ss_rm /var/www/ss-install-mysql-core
+ss_rm /var/www/ss-install-nginx-adminer
+ss_rm /var/www/ss-install-nginx-cloudflare-authenticated-origin
+ss_rm /var/www/ss-install-nginx-cloudflare-ips
+ss_rm /var/www/ss-install-nginx-core
+ss_rm /var/www/ss-install-nginx-letsencrypt
+ss_rm /var/www/ss-install-nginx-openssl
+ss_rm /var/www/ss-install-nginx-ssl
+ss_rm /var/www/ss-install-opencart-config
+ss_rm /var/www/ss-install-opencart-packages
+ss_rm /var/www/ss-install-prestashop-config
+ss_rm /var/www/ss-install-prestashop-packages
+ss_rm /var/www/ss-install-ufw-core
+ss_rm /var/www/ss-perms-adminer
+ss_rm /var/www/ss-perms-craft-config
+ss_rm /var/www/ss-perms-craft-packages
+ss_rm /var/www/ss-perms-postfix
+ss_rm /var/www/ss-perms-php-core
+ss_rm /var/www/ss-perms-nginx-core
+ss_rm /var/www/ss-perms-nginx
+ss_rm /var/www/ss-perms-redis
+ss_rm /var/www/ss-perms-magento-config
+ss_rm /var/www/ss-perms-magento-core
+ss_rm /var/www/ss-perms-mediawiki-config
+ss_rm /var/www/ss-perms-mediawiki-packages
+ss_rm /var/www/ss-perms-moodle-config
+ss_rm /var/www/ss-perms-moodle-packages
+ss_rm /var/www/ss-perms-mysql
+ss_rm /var/www/ss-perms-nginx-ssl
+ss_rm /var/www/ss-perms-opencart-config
+ss_rm /var/www/ss-perms-opencart-packages
+ss_rm /var/www/ss-perms-prestashop-config
+ss_rm /var/www/ss-perms-prestashop-packages
+ss_rm /var/www/ss-purge-redis
+ss_rm /var/www/ss-overview
+ss_rm /var/www/ss-remote
+ss_rm /var/www/ss-dos2unix
+ss_rm /var/www/ss-dos2unix-files
+ss_rm /var/www/ss-encrypt
+ss_rm /var/www/ss-reboot
+ss_rm /var/www/ss-import
+ss_rm /var/www/ss-perms-ufw
+ss_rm /var/www/ss-perms-ufw-core
+ss_rm /var/www/ss-monitor
+ss_rm /var/www/ss-reset-logs
+ss_rm /var/www/ss-restart-redis
+ss_rm /var/www/ss-restart-services
+ss_rm /var/www/ss-restart-services-mysql
+ss_rm /var/www/ss-restart-services-php
+ss_rm /var/www/ss-restart-services-redis
+ss_rm /var/www/ss-restart-services-nginx
+ss_rm /var/www/ss-install-mysql
+ss_rm /var/www/ss-install-ubuntu-swap
+ss_rm /var/www/ss-install-php
+ss_rm /var/www/ss-install-nginx
+ss_rm /var/www/ss-install-ufw
+ss_rm /var/www/ss-perms-php
+ss_rm /var/www/ss-perms-nginx
+ss_rm /var/www/ss-perms-ubuntu-swap
+ss_rm /var/www/ss-purge
+ss_rm /var/www/ss-update
+ss_rm /var/www/ss-update-packages
+
+####################################################################################################
+#### K. SS-Clean-Files: Delete Deprecated SlickStack Files #########################################
+####################################################################################################
+
+## as SlickStack evolves there are certain files that become irrelevant and not used ##
+## for example bash scripts change names or config files change locations ##
+
+## temp fix to delete files generated from empty variables in ss-config MU plugins ##
+ss_rm /var/www/html/wp-content/mu-plugins/tmp* ## junk folder from before
+
+## old names without .conf ##
+ss_rm /var/www/sites/production
+ss_rm /var/www/sites/staging
+ss_rm /var/www/sites/development
+
+## delete deprecated log files ##
+ss_rm /var/www/logs/cron.log ## deprecated
+ss_rm /var/www/logs/error.log ## now php-error.log
+ss_rm /var/www/logs/nginx.log ## now nginx-error.log
+ss_rm /var/www/logs/clamav.log ## clamav no longer installed
+ss_rm /var/www/logs/redis.log ## redis no longer installed
+
+## delete deprecated directories ##
+ss_rm /etc/nginx/cache*
+
+## this file should now exist under /var/www/sites/includes/ ##
+ss_rm /etc/nginx/conf.d/cloudflare.conf
+
+## deprecated (production) ##
+ss_rm /var/www/html/wp-content/functions.php
+ss_rm /var/www/html/staging/wp-content/functions.php
+ss_rm /var/www/html/dev/wp-content/functions.php
+
+## delete deprecated throwaway themes ##
+ss_rm /var/www/html/wp-content/themes/throwaway*
+ss_rm /var/www/html/staging/wp-content/themes/throwaway*
+ss_rm /var/www/html/dev/wp-content/themes/throwaway*
+
+## cleanup conflicting log files (SlickStack uses unique log paths) ##
+ss_rm /var/log/fpm-php.www.log*
+ss_rm /var/log/php7.0-fpm.log*
+ss_rm /var/log/php7.1-fpm.log*
+ss_rm /var/log/php7.2-fpm.log*
+ss_rm /var/log/php-fpm/*
+ss_rm /var/log/monit.log*
+
+####################################################################################################
+#### L. SS-Clean-Files: Delete Any Leftover WordPress Installation Files #########################################
+####################################################################################################
+
+## production ##
+ss_rm /var/www/html/wordpress
+ss_rm /var/www/html/wordpress.zip*
+
+## staging ##
+ss_rm /var/www/html/staging/wordpress
+ss_rm /var/www/html/staging/wordpress.zip*
+
+## development ##
+ss_rm /var/www/html/dev/wordpress
+ss_rm /var/www/html/dev/wordpress.zip*
+
+####################################################################################################
+#### L. SS-Clean-Files: Delete Unused WordPress Core Files #########################################
+####################################################################################################
+
+## partly for backwards compatibility (but also stubborness) WP Core retains these files ##
+## none are critical yet they greatly hurt security thus SlickStack deletes them ##
+
+## wordpress junk files (production) ##
+ss_rm /var/www/html/readme.html*
+ss_rm /var/www/html/license.txt*
+ss_rm /var/www/html/licence.txt*
+
+## wordpress junk files (staging) ##
+ss_rm /var/www/html/staging/readme.html*
+ss_rm /var/www/html/staging/license.txt*
+ss_rm /var/www/html/staging/licence.txt*
+
+## wordpress junk files (development) ##
+ss_rm /var/www/html/dev/readme.html*
+ss_rm /var/www/html/dev/license.txt*
+ss_rm /var/www/html/dev/licence.txt*
+
+## wordpress unused files (production) ##
+ss_rm /var/www/html/wp-admin/install.php
+ss_rm /var/www/html/wp-links-opml.php*
+ss_rm /var/www/html/wp-mail.php*
+ss_rm /var/www/html/wp-trackback.php*
+ss_rm /var/www/html/xmlrpc.php*
+
+## wordpress unused files (staging) ##
+ss_rm /var/www/html/staging/wp-admin/install.php
+ss_rm /var/www/html/staging/wp-links-opml.php*
+ss_rm /var/www/html/staging/wp-mail.php*
+ss_rm /var/www/html/staging/wp-trackback.php*
+ss_rm /var/www/html/staging/xmlrpc.php*
+
+## wordpress unused files (development) ##
+ss_rm /var/www/html/dev/wp-admin/install.php
+ss_rm /var/www/html/dev/wp-links-opml.php*
+ss_rm /var/www/html/dev/wp-mail.php*
+ss_rm /var/www/html/dev/wp-trackback.php*
+ss_rm /var/www/html/dev/xmlrpc.php*
+
+####################################################################################################
+#### J. SS-Clean-Files: Delete Junk Linux System Files #############################################
+####################################################################################################
+
+## delete Ubuntu junk files ##
+# ss_rm /tmp/systemd-*
+# ss_rm /var/tmp/systemd-*
+# find /var/backups/ -name "*.gz" -type f -delete
+find /var/www/html/ -name "wget-log*" -type f -delete
+# ss_rm /media*
+
+## delete non-critical system logs ##
+ss_rm /var/log/journal/*
+
+## wget junk ##
+find /var/www/html/ -name "wget-log*" -type f -delete
+
+## linux logs ##
+find /var/log/ -name "*.gz" -type f -delete
+find /var/log/ -name "*.log.*" -type f -delete
+
+## not linux move this ##
+ss_rm /var/lib/mysql/binlog.*
+
+####################################################################################################
+#### SS-Clean-Files: Delete Any PHP Error Handling Hacks In WordPress Plugins + Themes #############
+####################################################################################################
+
+## an unfortunate feature of PHP is that scripts can override WP or server-level settings ##
+## this set of commands safely removes any PHP error handling hacks from scripts ##
+
+## CRASHES SOME PLUGINS 
+## replace this with WP Admin warning message if files found ##
+# find /var/www/html/wp-content/mu-plugins -type f -name "*.php" -exec ss_sed '/ini_set/d' {} \;
+# find /var/www/html/wp-content/plugins -type f -name "*.php" -exec ss_sed '/ini_set/d' {} \;
+# find /var/www/html/wp-content/themes -type f -name "*.php" -exec ss_sed '/ini_set/d' {} \;
+# find /var/www/html/wp-content/mu-plugins -type f -name "*.php" -exec ss_sed '/error_reporting/d' {} \;
+# find /var/www/html/wp-content/plugins -type f -name "*.php" -exec ss_sed '/error_reporting/d' {} \;
+# find /var/www/html/wp-content/themes -type f -name "*.php" -exec ss_sed '/error_reporting/d' {} \;
+
+####################################################################################################
+#### K. SS-Clean-Files: Cleanup SlickStack Core Files Under /var/www/ #################################
+####################################################################################################
+
+if [[ "$SS_CLEAN_FILES_ROOT_PRIVATE" != "false" ]]; then
+
+## delete SlickStack leftovers ##
+ss_rm /var/www/maintenance.txt
+ss_rm /var/www/backups/html/export.tar.gz 
+# ss_rm /var/www/meta/.bash-aliases ## activate this soon
+ss_rm /var/www/auth/shell
+ss_rm /var/www/shell
+ss_rm /var/www/meta/shell
+ss_rm /var/www/meta/.ssh/authorized_keys
+ss_rm /var/www/meta/.ssh
+ss_rm /var/www/backups/mysql/wp.sql
+ss_rm /etc/nginx/sites-available/*
+ss_rm /etc/nginx/sites-enabled/*
+ss_rm /home/${SUDO_USER}/.wp-cli/config.yml
+ss_rm /root/.wp-cli/config.yml
+ss_rm /var/www/meta/timestamps/ss-dos2unix-files.timestamp 
+ss_rm /var/www/meta/.ss ## folder from testing
+ss_rm /var/www/meta/.timestamp*
+ss_rm /var/www/meta/timestamps/.timestamp*
+ss_rm /var/www/meta/archive
+ss_rm /var/www/meta/archive/config
+ss_rm /var/www/meta/archive/mysql
+ss_rm /var/www/meta/archive/mysql/data
+ss_rm /var/www/meta/wp.sql
+ss_rm /var/www/meta/mysql.bak
+ss_rm /var/www/meta/mysql-files.bak
+ss_rm /var/www/meta/mysql-keyring.bak
+ss_rm /var/www/meta/ss-config.bak*
+ss_rm /var/www/sites/block-dev
+ss_rm /var/www/sites/block-production
+ss_rm /var/www/sites/block-staging
+ss_rm /home/${SUDO_USER}/.bash-aliases
+ss_rm /var/www/ss-perms-ad
+ss_rm /tmp/dos2unix*
+ss_rm /var/www/meta/.cherry*
+ss_rm /var/ss-config*.bak*
+ss_rm /var/www/'$'
+ss_rm /var/www/ss
+ss_rm /var/www/bash/ ## we decided to keep ss core scripts in /var/www/ for now (usability)
+ss_rm /var/www/cron/ ## folder only
+ss_rm /var/www/touch
+ss_rm /var/www/tools
+ss_rm /tmp/ss
+ss_rm /home/$SUDO_USER/ss
+ss_rm /home/$SFTP_USER/ss
+ss_rm /root/ss
+ss_rm /var/www/cache/fastcgi
+ss_rm /var/www/meta/.timestamp-01-cron-regular*
+ss_rm /var/www/meta/.timestamp-ss-restart
+ss_rm /var/www/meta/.timestamp-ss-reset-password
+ss_rm /var/www/meta/.timestamp-ss-scan
+ss_rm /var/www/meta/.timestamp-ss-optimize
+ss_rm /var/www/meta/.timestamp-ss-sync
+ss_rm /var/www/meta/.timestamp-ss-dump
+ss_rm /var/www/meta/.timestamp-ss-install-ubuntu-aliases
+ss_rm /var/www/meta/.timestamp-ss-perms-ubuntu-aliases
+ss_rm /var/www/meta/.timestamp-ss-clean
+# ss_rm /var/www/meta/import.tar* ## ss-import-files now uses /tmp/import.tar|.tar.gz ## activate this after a few months
+# ss_rm /var/www/meta/import.zip* ## ss-import-files now uses /tmp/import.tar|.tar.gz ## activate this after a few months
+
+## deprecated cron jobs ##
+ss_rm /var/www/crons/01-cron-often
+ss_rm /var/www/crons/02-cron-regular
+ss_rm /var/www/crons/03-cron-quarter-hourly
+ss_rm /var/www/crons/04-cron-half-hourly
+ss_rm /var/www/crons/05-cron-hourly
+ss_rm /var/www/crons/06-cron-quarter-daily
+ss_rm /var/www/crons/07-cron-half-daily
+ss_rm /var/www/crons/08-cron-daily
+ss_rm /var/www/crons/09-cron-half-weekly
+ss_rm /var/www/crons/10-cron-weekly
+ss_rm /var/www/crons/11-cron-half-monthly
+ss_rm /var/www/crons/12-cron-monthly
+ss_rm /var/www/crons/13-cron-sometimes
+ss_rm /var/www/crons/custom/01-cron-often-custom
+ss_rm /var/www/crons/custom/02-cron-regular-custom
+ss_rm /var/www/crons/custom/03-cron-quarter-hourly-custom
+ss_rm /var/www/crons/custom/04-cron-half-hourly-custom
+ss_rm /var/www/crons/custom/05-cron-hourly-custom
+ss_rm /var/www/crons/custom/06-cron-quarter-daily-custom
+ss_rm /var/www/crons/custom/07-cron-half-daily-custom
+ss_rm /var/www/crons/custom/08-cron-daily-custom
+ss_rm /var/www/crons/custom/09-cron-half-weekly-custom
+ss_rm /var/www/crons/custom/10-cron-weekly-custom
+ss_rm /var/www/crons/custom/11-cron-half-monthly-custom
+ss_rm /var/www/crons/custom/12-cron-monthly-custom
+ss_rm /var/www/crons/custom/13-cron-sometimes-custom
+
+## deprecated ss scripts ##
+ss_rm /var/www/ss-install-aliases
+ss_rm /var/www/ss-install-bash
+ss_rm /var/www/ss-install-clamav
+ss_rm /var/www/ss-install-craft-core
+ss_rm /var/www/ss-install-cron
+ss_rm /var/www/ss-install-misc
+ss_rm /var/www/ss-install-magento-config
+ss_rm /var/www/ss-install-magento-core
+ss_rm /var/www/ss-install-mediawiki-core
+ss_rm /var/www/ss-install-moodle-core
+ss_rm /var/www/ss-install-muplugins
+ss_rm /var/www/ss-install-opencart-core
+ss_rm /var/www/ss-install-prestashop-core
+ss_rm /var/www/ss-install-redis-config
+ss_rm /var/www/ss-install-redis-packages
+ss_rm /var/www/ss-install-wordp ## incomplete file
+ss_rm /var/www/ss-install-wordpress
+ss_rm /var/www/ss-install-wordpress-core
+ss_rm /var/www/ss-install-wpconfig
+ss_rm /var/www/ss-install-ubuntu-aliases
+ss_rm /var/www/ss-perms-clamav
+ss_rm /var/www/ss-perms-craft-core
+ss_rm /var/www/ss-perms-magento-config
+ss_rm /var/www/ss-perms-magento-core
+ss_rm /var/www/ss-perms-mediawiki-core
+ss_rm /var/www/ss-perms-moodle-core
+ss_rm /var/www/ss-perms-opencart-core
+ss_rm /var/www/ss-perms-prestashop-core
+ss_rm /var/www/ss-perms-redis-config
+ss_rm /var/www/ss-perms-redis-packages
+ss_rm /var/www/ss-perms-ubuntu-aliases
+ss_rm /var/www/ss-perms-wordpress-core
+ss_rm /var/www/ss-dump
+ss_rm /var/www/ss-encrypt
+ss_rm /var/www/ss-muplugs
+ss_rm /var/www/ss-restart
+ss_rm /var/www/ss-reset-password
+ss_rm /var/www/ss-scan
+ss_rm /var/www/ss-scan-malware
+ss_rm /var/www/ss-sync
+ss_rm /var/www/ss-chec
+ss_rm /var/www/ss-clean
+ss_rm /var/www/ss-optimize
+ss_rm /var/www/ss-purge-fcgi
+
+## deprecated timestamps ##
+ss_rm /var/www/meta/timestamps/ss-install-craft-core.timestamp
+ss_rm /var/www/meta/timestamps/ss-install-magento-core.timestamp
+ss_rm /var/www/meta/timestamps/ss-install-mediawiki-core.timestamp
+ss_rm /var/www/meta/timestamps/ss-install-opencart-core.timestamp
+ss_rm /var/www/meta/timestamps/ss-install-prestashop-core.timestamp
+ss_rm /var/www/meta/timestamps/ss-install-craft-core.timestamp
+ss_rm /var/www/meta/timestamps/ss-install-magento-core.timestamp
+ss_rm /var/www/meta/timestamps/ss-install-mediawiki-core.timestamp
+ss_rm /var/www/meta/timestamps/ss-install-opencart-core.timestamp
+ss_rm /var/www/meta/timestamps/ss-install-prestashop-core.timestamp
+
+ss_rm /var/www/meta/timestamps/ss-install-redis-config.timestamp
+ss_rm /var/www/meta/timestamps/ss-install-redis-packages.timestamp
+ss_rm /var/www/meta/timestamps/ss-perms-redis-config.timestamp
+ss_rm /var/www/meta/timestamps/ss-perms-redis-packages.timestamp
+
+## deprecated other stuff ##
+ss_rm /var/www/monit.log
+ss_rm /var/www/html/wp-completion.bash
+ss_rm /var/www/meta/wp-completion.bash
+ss_rm /var/www/meta/.wp-completion.bash
+ss_rm /home/wp-completion.bash
+ss_rm /home/${SUDO_USER}/config.yml
+ss_rm /home/${SUDO_USER}/wp-cli.yml
+# ss_rm /var/www/html/.wp-cli
+# ss_rm /var/www/html/wp-cli
+ss_rm /var/www/html/staging/staging*
+ss_rm /var/www/logs/mysql.log
+
+## cleanup ##
+# ss_rm -v ~/secure_our_mysql.sh ## commented cuz not sure if still needed
+
+## delete SlickStack junk files ##
+find /var/www/ -name "*.save*" -type f -delete
+ss_rm /var/www/wp.sql*
+ss_rm /var/www/meta/myisam-tables.txt*
+ss_rm /var/www/meta/myisam-tables.sql*
+
+fi
+
+####################################################################################################
+#### L. SS-Clean-Files: Delete Certain Files Throughout Public Web Root (Required) #################
+####################################################################################################
+
+## this powerful snippet deletes several unsafe file types throughout the public dir ##
+## these files will be permanently deleted regardless of where they are found ##
+
+## delete known malware files ##
+# find /var/www/html/ -name "script.php" -type f -delete
+# find /var/www/html/ -name "licensed.php" -type f -delete
+# find /var/www/html/ -name "apikey*.zip" -type f -delete
+find /var/www/html/ -name "wp_ftp*.php" -type f -delete
+find /var/www/html/ -name "wp-xmlrpc*.php" -type f -delete
+find /var/www/html/ -name "zgepd_oddsd*.php" -type f -delete
+find /var/www/html/ -name "index2*.php" -type f -delete
+find /var/www/html/ -name "index_.php" -type f -delete
+find /var/www/html/ -name "wp-counts*.php" -type f -delete
+find /var/www/html/ -name "wp-interst*.php" -type f -delete
+# find /var/www/html/ -name "idb.php" -type f -delete
+# find /var/www/html/ -name "validate.php" -type f -delete
+find /var/www/html/ -name "tbl_status.php" -type f -delete
+find /var/www/html/ -name "wp_p.php" -type f -delete
+find /var/www/html/ -name "temp-crawl*.php" -type f -delete
+find /var/www/html/ -name "wp-crawl*.php" -type f -delete
+# find /var/www/html/ -name "robots.php" -type f -delete
+find /var/www/html/ -name "timthumb*.php" -type f -delete
+# find /var/www/html/ -name "syslib.php" -type f -delete
+find /var/www/html/ -name "settings_v2.php" -type f -delete
+# find /var/www/html/ -name "minify.php" -type f -delete
+find /var/www/html/ -name "wpsetting.php" -type f -delete
+find /var/www/html/ -name "new_license.php" -type f -delete
+find /var/www/html/ -name "site-site-icon-functions.php" -type f -delete
+# find /var/www/html/ -name "wp-media.php" -type f -delete
+find /var/www/html/ -name "wp-reset-*.php" -type f -delete
+
+## remove not find ##
+ss_rm /var/www/html/.analytic ## hidden malware folder
+ss_rm /var/www/html/.ftpquotas ## malware file
+ss_rm /var/www/html/admin-ajax.php ## malware
+ss_rm /var/www/html/lte_
+ss_rm /var/www/html/wp-domain.php
+ss_rm /var/www/html/wp-main.php
+ss_rm /var/www/html/wp-uti.php
+ss_rm /var/www/html/wp.php
+ss_rm /var/www/html/w.php
+ss_rm /var/www/html/wp-sid.php
+ss_rm /var/www/html/about.php
+ss_rm /var/www/html/admin.php ## malware
+ss_rm /var/www/html/content.php
+ss_rm /var/www/html/default.php ## junk files, vendor specific (e.g. Hostinger, etc)
+ss_rm /var/www/html/gank.php*
+ss_rm /var/www/html/m3.php
+ss_rm /var/www/html/mini.php
+ss_rm /var/www/html/1index.php
+ss_rm /var/www/html/baindex.php
+ss_rm /var/www/html/hbf0oajf_index.php
+ss_rm /var/www/html/*_index.php
+ss_rm /var/www/html/kindex.php
+ss_rm /var/www/html/mindex.php
+ss_rm /var/www/html/abby.php ## malware
+ss_rm /var/www/html/options.php ## malware
+ss_rm /var/www/html/plugins.php ## malware 
+ss_rm /var/www/html/profile.php ## malware
+ss_rm /var/www/html/report.php ## malware
+ss_rm /var/www/html/themes.php ## malware 
+ss_rm /var/www/html/wp-beckup.php
+ss_rm /var/www/html/wikindex.php
+ss_rm /var/www/html/sw.js ## malware imports https://js.jssx.live/sw.js
+ss_rm /var/www/html/wp-content/10web-page-cache-config* ## ss conflicts (by 10Web Booster)
+ss_rm /var/www/html/wp-content/admin-ajax.php ## malware
+ss_rm /var/www/html/wp-content/bla ## mistaken blacklist.txt file on some older servers
+ss_rm /var/www/html/wp-content/coment* ## also placed in /uploads/2020/ (etc) types of folders
+ss_rm /var/www/html/wp-content/plugins.php ## malware 
+ss_rm /var/www/html/wp-content/themes.php ## malware
+ss_rm /var/www/html/wp-content/options.php ## malware
+ss_rm /var/www/html/wp-content/profile.php ## malware
+ss_rm /var/www/html/wp-content/plugins/bots.txt*
+ss_rm /var/www/html/wp-content/plugins/plug1*
+ss_rm /var/www/html/wp-content/plugins/plug1-1*
+ss_rm /var/www/html/wp-content/plugins/wpematico*
+ss_rm /var/www/html/dev/wp-content/plugins/bots.txt*
+ss_rm /var/www/html/dev/wp-content/plugins/plug1*
+ss_rm /var/www/html/dev/wp-content/plugins/plug1-1*
+ss_rm /var/www/html/dev/wp-content/plugins/wpematico*
+ss_rm /var/www/html/staging/wp-content/plugins/bots.txt*
+ss_rm /var/www/html/staging/wp-content/plugins/plug1*
+ss_rm /var/www/html/staging/wp-content/plugins/plug1-1*
+ss_rm /var/www/html/staging/wp-content/plugins/wpematico*
+# ss_rm /var/www/html/staging/wp-content/uploads/symbols/ ## not sure if directory is made by the malware or taken over by the malware
+
+## known malware filenames that cant be deleted because they conflict with WP Core filenames ##
+# find /var/www/html/ -name "cache.php*" -type f -delete
+# find /var/www/html/ -name "update.php*" -type f -delete
+# find /var/www/html/ -name "settings.php*" -type f -delete
+# find /var/www/html/ -name "wp_api.php*" -type f -delete ## not malware but possibly exploitable SSO script
+## find /var/www/html/ -name "http.php" -type f -delete ## exists in WP Core under /wp-includes/
+# find /var/www/html/ -name "stats.php" -type f -delete ## conflicts with some themes
+find /var/www/html/ -name "wp-xmlrpc.php" -type f -delete
+
+## delete unsafe file extensions ##
+find /var/www/html/ -name "*.asp" -type f -delete
+find /var/www/html/ -name "*.aspx" -type f -delete
+find /var/www/html/ -name "*.ascx" -type f -delete
+find /var/www/html/ -name "*.asis" -type f -delete
+find /var/www/html/ -name "*.bat" -type f -delete
+find /var/www/html/ -name "*.cfc" -type f -delete
+find /var/www/html/ -name "*.cfm" -type f -delete
+find /var/www/html/ -name "*.cfml" -type f -delete
+find /var/www/html/ -name "*.cfr" -type f -delete
+find /var/www/html/ -name "*.cfswf" -type f -delete
+find /var/www/html/ -name "*.cmd" -type f -delete
+find /var/www/html/ -name "*.cpl" -type f -delete
+find /var/www/html/ -name "*.com" -type f -delete
+find /var/www/html/ -name "*.dll" -type f -delete
+find /var/www/html/ -name "*.exe" -type f -delete
+find /var/www/html/ -name "*.fla" -type f -delete
+find /var/www/html/ -name "*.flv" -type f -delete
+find /var/www/html/ -name "*.htc" -type f -delete
+find /var/www/html/ -name "*.jhtml" -type f -delete
+find /var/www/html/ -name "*.jsb" -type f -delete
+find /var/www/html/ -name "*.jsp" -type f -delete
+find /var/www/html/ -name "*.jws" -type f -delete
+find /var/www/html/ -name "*.mht" -type f -delete
+find /var/www/html/ -name "*.mhtml" -type f -delete
+find /var/www/html/ -name "*.msi" -type f -delete
+find /var/www/html/ -name "*.pif" -type f -delete
+find /var/www/html/ -name "*.py" -type f -delete
+find /var/www/html/ -name "*.pwml" -type f -delete
+find /var/www/html/ -name "*.rb" -type f -delete
+find /var/www/html/ -name "*.reg" -type f -delete
+find /var/www/html/ -name "*.scr" -type f -delete
+find /var/www/html/ -name "*.swf" -type f -delete
+find /var/www/html/ -name "*.swt" -type f -delete
+find /var/www/html/ -name "*.swc" -type f -delete
+find /var/www/html/ -name "*.sem" -type f -delete ## (Alpha Five software)
+find /var/www/html/ -name "*.vbs" -type f -delete
+find /var/www/html/ -name "*.vxd" -type f -delete
+
+## delete unsupported file types ##
+find /var/www/html/ -name "*.conf" -type f -delete ## Nginx hacks
+find /var/www/html/ -name "*.config" -type f -delete ## Nginx hacks
+find /var/www/html/ -name ".DS_Store*" -type f -delete ## macOS files
+find /var/www/html/ -name "error_log*" -type f -delete ## Apache error logs (not supported on Nginx servers)
+find /var/www/html/ -name "*.ftpquota" -type f -delete ## cPanel style files
+find /var/www/html/ -name ".htaccess*" -type f -delete ## Apache files (not supported on Nginx servers)
+# find /var/www/html/ -name "*.ini" -type f -delete ## PHP hacks ## DISABLED BECAUSE CERTAIN WP PLUGINS CRASH IF FILE MISSING
+find /var/www/html/ -name "*.ini.php" -type f -delete ## PHP hacks
+find /var/www/html/ -name "nginx.conf" -type f -delete ## Nginx hacks
+find /var/www/html/ -name "*.user.ini" -type f -delete ## PHP hacks
+
+## MAYBE QUARANTINE THESE into /backups/quarantine/
+## delete unsafe database dumps ##
+# find /var/www/html/ -name "*.sql" -type f -delete ## unsafe dumps
+# find /var/www/html/ -name "*.wpress" -type f -delete ## All In One Migration archives
+
+## delete linux junk files ##
+# find /var/www/html/ -name ".listing*" -type f -delete
+
+## delete php.ini hijacking ##
+ss_rm /var/www/html/php.ini
+ss_sed '/INI_SET/d' /var/www/html/wp-config.php
+ss_sed '/ini_set/d' /var/www/html/wp-config.php
+
+## delete leftover plugin junk file types ##
+find /var/www/html/ -name "adminer*.version*" -type f -delete ## Adminer plugin config
+find /var/www/html/ -name "php_errorlog*" -type f -delete ## Adminer plugin config
+
+## BASED ON RECENT MALWARE ATTACK FINDINGS ... some plugins use the /uploads/ folder for all kinds of improper stuff, PHP should never be here ##
+## .htaccess and index.php files also not needed for security reasons as SlickStack already blocks these folders from frontend indexing ##
+## potential malware or improper files ##
+# find /var/www/html/wp-content/uploads/ -name "*.php" -type f -delete
+# find /var/www/html/wp-content/languages/ -name "*.php" -type f -delete
+find /var/www/html/wp-content/temp/ -name "*.php" -type f -delete
+
+####################################################################################################
+#### SS-Clean-Files: cleanup Various Files Directly Under /var/www/html/ ###########################
+####################################################################################################
+
+if [[ "$SS_CLEAN_FILES_ROOT_PUBLIC" != "false" ]]; then
+
+# ss_rm /var/www/html/http_* ## improper wget leftovers?
+
+## delete Nginx junk files ##
+ss_rm /var/www/html/index.nginx-debian*.html*
+
+ss_rm /var/www/html/.fw-config.php* ## vendor-specific (Flywheel)
+
+## delete insecure database access points (Adminer accessible at example.com/adminer) ##
+ss_rm /var/www/html/adminer*
+ss_rm /var/www/html/*adminer*.php*
+ss_rm /var/www/html/database.php*
+ss_rm /var/www/html/db.php*
+ss_rm /var/www/html/database
+ss_rm /var/www/html/DATABASE
+ss_rm /var/www/html/db
+ss_rm /var/www/html/DB
+ss_rm /var/www/html/phpmyadmin*
+ss_rm /var/www/html/phpMyAdmin*
+ss_rm /var/www/html/phpmyadmin*.php* ## no support for phpMyAdmin
+ss_rm /var/www/html/phpMyAdmin*.php* ## no support for phpMyAdmin
+
+## delete various files ##
+ss_rm /var/www/html/.closte* ## vendor specific (Closte)
+ss_rm /var/www/html/.maintenance*
+ss_rm /var/www/html/.quarantine*
+ss_rm /var/www/html/.tmb*
+ss_rm /var/www/html/*_archive.zip ## leftover migration junk (Duplicator plugin)
+ss_rm /var/www/html/_wpeprivate* ## vendor specific (WP Engine)
+ss_rm /var/www/html/bing*.xml  ## junk domain verification files
+ss_rm /var/www/html/Bing*.xml  ## junk domain verification files
+# ss_rm /var/www/html/browserconfig.xml*
+ss_rm /var/www/html/cache* ## invalid cache files
+ss_rm /var/www/html/cgi-bin* ## ss conflicts
+ss_rm /var/www/html/cookie.txt* ## (Netscape HTTP Cookie File)
+ss_rm /var/www/html/crossdomain.xml ## https://sethsec.blogspot.com/2014/03/exploiting-misconfigured-crossdomainxml.html
+ss_rm /var/www/html/daemon ## malware
+ss_rm /var/www/html/dup-installer* ## unsafe archives and leftover migration junk (Duplicator plugin)
+ss_rm /var/www/html/error_log* ## leftover Apache error logs
+ss_rm /var/www/html/favicon.gif ## invalid favicons
+ss_rm /var/www/html/GetYoastData*.php ##
+ss_rm /var/www/html/liesmich.html ## readme after updating german wordpress
+ss_rm /var/www/html/wordpress_admin_payload* ## vendor specific (EIG brands)
+ss_rm /var/www/html/quickstart.html ## vendor specific (Dreamhost)
+
+## delete domain verification files (use DNS instead) ##
+ss_rm /var/www/html/ahrefs* ## Ahrefs
+ss_rm /var/www/html/google*.html ## junk domain verification files
+ss_rm /var/www/html/google*.txt ## junk domain verification files
+ss_rm /var/www/html/imagify-backup* ## junk plugin files
+ss_rm /var/www/html/index.htm ## ss conflicts
+ss_rm /var/www/html/index.html ## ss conflicts
+ss_rm /var/www/html/i.php ## obvious phpinfo files
+ss_rm /var/www/html/i.html ## obvious phpinfo files
+ss_rm /var/www/html/info.php ## obvious phpinfo files
+ss_rm /var/www/html/info.html ## obvious phpinfo files
+ss_rm /var/www/html/installer*.php ## leftover migration junk (Duplicator plugin)
+ss_rm /var/www/html/iwp-restore-log* ## improper log location
+# ss_rm /var/www/html/manifest.json*
+ss_rm /var/www/html/my-wp-backup* ## ss conflicts, unsafe archives
+ss_rm /var/www/html/networko* ## known malware infection
+ss_rm /var/www/html/nortonsw*.html  ## junk domain verification files
+ss_rm /var/www/html/php.php ## obvious phpinfo files
+ss_rm /var/www/html/php.html ## obvious phpinfo files
+ss_rm /var/www/html/phpinfo*.php ## obvious phpinfo files
+ss_rm /var/www/html/phpinfo*.html ## obvious phpinfo files
+ss_rm /var/www/html/php-errors.log* ## ss conflicts, duplicate logs
+ss_rm /var/www/html/pinterest*.html  ## junk domain verification files
+ss_rm /var/www/html/ror.xml
+ss_rm /var/www/html/sap-logs* ## plugin logs (AccessPress Social Auto Post)
+ss_rm /var/www/html/wp-snapshots* ## ss conflicts, unsafe archives
+ss_rm /var/www/html/ssv3_directory.php* ## vendor specific (Bluehost)
+ss_rm /var/www/html/sucuri*.php
+ss_rm /var/www/html/sys-cache/ ## unknown
+ss_rm /var/www/html/test.php ## obvious phpinfo files
+ss_rm /var/www/html/test.html ## obvious phpinfo files
+ss_rm /var/www/html/theme-option-export-file* ## local theme export archives
+ss_rm /var/www/html/web.config*
+ss_rm /var/www/html/wordfence-waf* ## ss conflicts, bloated, creates instability (WordFence)
+ss_rm /var/www/html/yandex*.html  ## junk domain verification files
+ss_rm /var/www/html/wp-snapshots* ## unsafe archives (Duplicator)
+ss_rm /var/www/html/wps-fbre-logs* ## unknown
+
+fi
+
+####################################################################################################
+#### L. SS-Clean-Files: Delete Certain Files In WordPress Content Directory ########################
+####################################################################################################
+
+## going forward this snippet will only delete things that are high risk categories ##
+## this means malware, exploitable, thrashing, or conflicts with SlickStack ##
+
+## production ##
+ss_rm /var/www/html/wp-content/advanced-cache.php* ## ss conflicts
+ss_rm /var/www/html/wp-content/ari-adminer-config.php* ## ss conflicts
+ss_rm /var/www/html/wp-content/deleteme*.php ## junk files
+ss_rm /var/www/html/wp-content/endurance-page-cache* ## vendor specific (EIG)
+ss_rm /var/www/html/wp-content/install.php* ## junk files (by Jetpack)
+ss_rm /var/www/html/wp-content/jetpack-waf* ## ss conflicts (by Jetpack)
+ss_rm /var/www/html/wp-content/litespeed* ## ss conflicts
+ss_rm /var/www/html/wp-content/nginx-helper* ## ss conflicts (by Nginx Helper)
+ss_rm /var/www/html/wp-content/siteground-migrator* ## vendor-specific
+ss_rm /var/www/html/wp-content/temp-write-test* ## junk files
+ss_rm /var/www/html/wp-content/w3tc-config* ## ss conflicts
+ss_rm /var/www/html/wp-content/wcfe* ## ss conflicts (by WP Config File Editor)
+ss_rm /var/www/html/wp-content/wflogs* ## ss conflicts (by WordFence)
+ss_rm /var/www/html/wp-content/wp-cache-config.php* ## ss conflicts
+ss_rm /var/www/html/wp-content/wp-rocket* ## ss conflicts (by WP Rocket)
+ss_rm /var/www/html/wp-content/wp-rocket-config* ## ss conflicts (by WP Rocket)
+ss_rm /var/www/html/wp-content/wp-performance-score-booster* ## ss conflicts (by WP Performance Score Booster)
+ss_rm /var/www/html/wp-content/wpo-cache* ## ss conflicts (by WP-Optimize)
+ss_rm /var/www/html/wp-content/wphb-cache* ## ss conflicts (by Hummingbird)
+ss_rm /var/www/html/wp-content/wphb-logs* ## ss conflicts (by Hummingbird)
+ss_rm /var/www/html/wp-content/sunrise.php* ## deprecated (previously for Multisite domain mapping)
+
+## staging ##
+if [[ "${STAGING_SITE}" == "true" ]]; then
+ss_rm /var/www/html/staging/wp-content/advanced-cache.php* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/ari-adminer-config.php* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/deleteme*.php ## junk files
+ss_rm /var/www/html/staging/wp-content/endurance-page-cache* ## vendor specific (EIG)
+ss_rm /var/www/html/staging/wp-content/install.php* ## junk files (by Jetpack)
+ss_rm /var/www/html/staging/wp-content/jetpack-waf* ## ss conflicts (by Jetpack)
+ss_rm /var/www/html/staging/wp-content/litespeed* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/nginx-helper* ## ss conflicts (by Nginx Helper)
+ss_rm /var/www/html/staging/wp-content/siteground-migrator* ## vendor-specific
+ss_rm /var/www/html/staging/wp-content/temp-write-test* ## junk files
+ss_rm /var/www/html/staging/wp-content/w3tc-config* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/wcfe* ## ss conflicts (by WP Config File Editor)
+ss_rm /var/www/html/staging/wp-content/wflogs* ## ss conflicts (by WordFence)
+ss_rm /var/www/html/staging/wp-content/wp-cache-config.php* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/wp-rocket* ## ss conflicts (by WP Rocket)
+ss_rm /var/www/html/staging/wp-content/wp-rocket-config* ## ss conflicts (by WP Rocket)
+ss_rm /var/www/html/staging/wp-content/wp-performance-score-booster* ## ss conflicts (by WP Performance Score Booster)
+ss_rm /var/www/html/staging/wp-content/wpo-cache* ## ss conflicts (by WP-Optimize)
+ss_rm /var/www/html/staging/wp-content/wphb-cache* ## ss conflicts (by Hummingbird)
+ss_rm /var/www/html/staging/wp-content/wphb-logs* ## ss conflicts (by Hummingbird)
+ss_rm /var/www/html/staging/wp-content/sunrise.php* ## deprecated (previously for Multisite domain mapping)
+fi
+
+## development ##
+if [[ "${DEV_SITE}" == "true" ]]; then
+ss_rm /var/www/html/dev/wp-content/advanced-cache.php* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/ari-adminer-config.php* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/deleteme*.php ## junk files
+ss_rm /var/www/html/dev/wp-content/endurance-page-cache* ## vendor specific (EIG)
+ss_rm /var/www/html/dev/wp-content/install.php* ## junk files (by Jetpack)
+ss_rm /var/www/html/dev/wp-content/jetpack-waf* ## ss conflicts (by Jetpack)
+ss_rm /var/www/html/dev/wp-content/litespeed* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/nginx-helper* ## ss conflicts (by Nginx Helper)
+ss_rm /var/www/html/dev/wp-content/siteground-migrator* ## vendor-specific
+ss_rm /var/www/html/dev/wp-content/temp-write-test* ## junk files
+ss_rm /var/www/html/dev/wp-content/w3tc-config* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/wcfe* ## ss conflicts (by WP Config File Editor)
+ss_rm /var/www/html/dev/wp-content/wflogs* ## ss conflicts (by WordFence)
+ss_rm /var/www/html/dev/wp-content/wp-cache-config.php* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/wp-rocket* ## ss conflicts (by WP Rocket)
+ss_rm /var/www/html/dev/wp-content/wp-rocket-config* ## ss conflicts (by WP Rocket)
+ss_rm /var/www/html/dev/wp-content/wp-performance-score-booster* ## ss conflicts (by WP Performance Score Booster)
+ss_rm /var/www/html/dev/wp-content/wpo-cache* ## ss conflicts (by WP-Optimize)
+ss_rm /var/www/html/dev/wp-content/wphb-cache* ## ss conflicts (by Hummingbird)
+ss_rm /var/www/html/dev/wp-content/wphb-logs* ## ss conflicts (by Hummingbird)
+ss_rm /var/www/html/dev/wp-content/sunrise.php* ## deprecated (previously for Multisite domain mapping)
+fi
+
+####################################################################################################
+#### SS-Clean-Files: /var/www/html/wp-content/mu-plugins/ ##########################################
+####################################################################################################
+
+ss_rm /var/www/html/wp-content/mu-plugins/0-worker* ## creates instability, resource intensive (ManageWP)
+ss_rm /var/www/html/wp-content/mu-plugins/et-safe-mode* ## Elegant Themes
+ss_rm /var/www/html/wp-content/mu-plugins/mainwp-child* ## creates instability, resource intensive (MainWP)
+ss_rm /var/www/html/wp-content/mu-plugins/SupportCenterMUAutoloader.php* ## Elegant Themes
+
+####################################################################################################
+#### L. SS-Clean-Files: Delete Certain WordPress Plugins (Required) ################################
+####################################################################################################
+
+## delete plugins with malware, exploits, database thrashing, or SlickStack conflicts ##
+## this snippet will run regardless of any settings you have in your ss-config ##
+
+## production ##
+ss_rm /var/www/html/wp-content/plugins/accelerated-mobile-pages ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/adminer* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/add-index-to-autoload* ## ss conflicts, feature exists in WP Core 5.3+
+ss_rm /var/www/html/wp-content/plugins/ajax-thumbnail-rebuild* ## database thrashing
+ss_rm /var/www/html/wp-content/plugins/all-in-one-wp-security-and-firewall* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/allow-php-in-posts-and-pages* ## php hacks
+ss_rm /var/www/html/wp-content/plugins/amp ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/amp-enhancer ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/amp-for-contact-form-7 ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/amp-google-analytics-4-support ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/amp-post-script ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/amp-wp ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/apikey ## malware
+ss_rm /var/www/html/wp-content/plugins/ari-adminer* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/askapache-debug-viewer* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/autologin-links* ## exploitable, ss conflicts
+ss_rm /var/www/html/wp-content/plugins/bad-behavior* ## ss conflicts, deprecated
+ss_rm /var/www/html/wp-content/plugins/better-wp-security* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/bitcoin-plus-miner* ## cryptomining
+ss_rm /var/www/html/wp-content/plugins/BoosterPage ## deprecated, exploitable (Smart Marketer)
+ss_rm /var/www/html/wp-content/plugins/browser-caching-with-htaccess* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/cache-enabler* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/captcha ## deprecated
+ss_rm /var/www/html/wp-content/plugins/change-wp-admin-login* ## ss conflicts (by Nuno Morais Sarmento)
+ss_rm /var/www/html/wp-content/plugins/clear-cache-for-widgets* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/clearfy* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/comet-cache* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/custom-sidebars* ## exploitable, errors/conflicts, resource intensive, bad practice (WPMU Dev)
+ss_rm /var/www/html/wp-content/plugins/default_library_puvox.php* ## malware
+ss_rm /var/www/html/wp-content/plugins/defender-security* ## ss conflicts (by WPMU Dev)
+ss_rm /var/www/html/wp-content/plugins/display-widgets ## malware/spyware
+ss_rm /var/www/html/wp-content/plugins/dreamhost* ## vendor-specific
+ss_rm /var/www/html/wp-content/plugins/dreamobjects* ## vendor-specific
+ss_rm /var/www/html/wp-content/plugins/envato-wordpress-toolkit* ## deprecated
+ss_rm /var/www/html/wp-content/plugins/elyxolify* ## malware
+ss_rm /var/www/html/wp-content/plugins/fb-instant-articles ## not maintained, serious errors (by Automattic)
+ss_rm /var/www/html/wp-content/plugins/fb-messenger ## deprecated
+ss_rm /var/www/html/wp-content/plugins/folders ## creates instability, ss conflicts
+ss_rm /var/www/html/wp-content/plugins/fuzzy-seo-booster* ## database thrashing
+ss_rm /var/www/html/wp-content/plugins/hello.php* ## pointless
+ss_rm /var/www/html/wp-content/plugins/hide_my_wp* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/hostinger* ## ss conflicts, vendor specific (by Hostinger)
+ss_rm /var/www/html/wp-content/plugins/htaccess* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/hummingbird-performance* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/hyper-cache* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/hyperdb* ## ss conflicts, not maintained
+ss_rm /var/www/html/wp-content/plugins/increase-upload-file-size-maximum-execution-time-limit* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/integrate-monero-miner* ## cryptomining
+ss_rm /var/www/html/wp-content/plugins/jm-live-blog* ## serious errors, database thrashing, not maintained
+ss_rm /var/www/html/wp-content/plugins/jonradio-multiple-themes* ## creates instability
+ss_rm /var/www/html/wp-content/plugins/jsecoin* ## cryptomining
+ss_rm /var/www/html/wp-content/plugins/last-modified-timestamp* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/linkman* ## deprecated, database thrashing
+ss_rm /var/www/html/wp-content/plugins/litespeed* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/litespeed-cache* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/login-lockdown* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/maintenance-mode-littlebizzy* ## not maintained
+ss_rm /var/www/html/wp-content/plugins/miwoftp* ## exploitable
+ss_rm /var/www/html/wp-content/plugins/my-wp-backup* ## blacklisted vendor (by MyThemeShop)
+ss_rm /var/www/html/wp-content/plugins/my-wp-backup-pro-master* ## blacklisted vendor (by MyThemeShop)
+ss_rm /var/www/html/wp-content/plugins/mplugin.php* ## monetization malware
+ss_rm /var/www/html/wp-content/plugins/myrp* ## database thrashing
+ss_rm /var/www/html/wp-content/plugins/mythemeshop-connect* ## ransomware (by MyThemeShop)
+ss_rm /var/www/html/wp-content/plugins/onlywire-bookmark-share-button* ## deprecated, serious errors
+ss_rm /var/www/html/wp-content/plugins/optimizemember* ## potential data loss
+ss_rm /var/www/html/wp-content/plugins/optimizeMember* ## potential data loss
+ss_rm /var/www/html/wp-content/plugins/optimizePress* ## potential data loss
+ss_rm /var/www/html/wp-content/plugins/optimizePressPlugin* ## potential data loss
+ss_rm /var/www/html/wp-content/plugins/optimizepress* ## potential data loss
+ss_rm /var/www/html/wp-content/plugins/outtatimr* ## deprecated (by DigitalMarketer)
+ss_rm /var/www/html/wp-content/plugins/page-links-to* ## not maintained, bad practice
+ss_rm /var/www/html/wp-content/plugins/perfmatters* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/periods-in-titles* ## bad for seo
+ss_rm /var/www/html/wp-content/plugins/php-settings* ## php hacks, ss conflicts
+ss_rm /var/www/html/wp-content/plugins/phpmyadmin* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/powered-cache* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/protect-wp-admin* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/pushlive* ## deprecated, ss conflicts (by 1 Squared, Jamin Szczesny)
+ss_rm /var/www/html/wp-content/plugins/pwnd* ## malware
+ss_rm /var/www/html/wp-content/plugins/qtranslate-x* ## deprecated, database thrashing
+ss_rm /var/www/html/wp-content/plugins/redis-cache* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/redis-object-cache* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/rest-api/ ## deprecated, exists in wp core (Rest API)
+ss_rm /var/www/html/wp-content/plugins/seo-alrp* ## database thrashing
+ss_rm /var/www/html/wp-content/plugins/sg-cachepress* ## ss conflicts, vendor specific (by Siteground)
+ss_rm /var/www/html/wp-content/plugins/sg-security* ## ss conflicts, vendor specific (by Siteground)
+ss_rm /var/www/html/wp-content/plugins/shopbop-widget* ## database thrashing
+ss_rm /var/www/html/wp-content/plugins/similar-posts* ## database thrashing
+ss_rm /var/www/html/wp-content/plugins/simple-cache* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/simple-monero-miner-coin-hive* ## cryptomining
+ss_rm /var/www/html/wp-content/plugins/simple-wistia-embed* ## exists in wp core
+ss_rm /var/www/html/wp-content/plugins/sitespeed* ## malware (as per Sucuri report)
+ss_rm /var/www/html/wp-content/plugins/sitewide-message/ ## deprecated
+ss_rm /var/www/html/wp-content/plugins/sweetcaptcha* ## malware/spyware
+ss_rm /var/www/html/wp-content/plugins/sweetcaptcha-revolutionary-free-captcha-service* ## malware/spyware
+ss_rm /var/www/html/wp-content/plugins/timthumb* ## exploitable, deprecated
+ss_rm /var/www/html/wp-content/plugins/total-donations* ## exploitable, deprecated
+ss_rm /var/www/html/wp-content/plugins/totaldonations* ## exploitable, deprecated
+ss_rm /var/www/html/wp-content/plugins/tweet-blender* ## database thrashing
+ss_rm /var/www/html/wp-content/plugins/upload-max-file-size* ## ss conflicts, php hacks
+ss_rm /var/www/html/wp-content/plugins/uploadify* ## exploitable
+ss_rm /var/www/html/wp-content/plugins/w3-total-cache* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/w3speedster* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/way2enjoy-compress-images* ## deprecated
+ss_rm /var/www/html/wp-content/plugins/wc-password-strength-settings* ## exploitable, bad practice
+ss_rm /var/www/html/wp-content/plugins/weather-for-us-widget* ## cryptomining
+ss_rm /var/www/html/wp-content/plugins/wistia-responsive* ## exists in wp core
+ss_rm /var/www/html/wp-content/plugins/woocommerce-jquery-cookie-fix* ## ss conflicts, creates instability
+ss_rm /var/www/html/wp-content/plugins/woothemes-updater* ## deprecated
+ss_rm /var/www/html/wp-content/plugins/wordfence* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/wp-advanced-importer* ## not maintained, serious errors
+ss_rm /var/www/html/wp-content/plugins/wp-amp-it-up ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/wp-amp-website ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/wp-coinhive ## cryptomining
+ss_rm /var/www/html/wp-content/plugins/wp-editor* ## exists in wp core (syntax editor)
+ss_rm /var/www/html/wp-content/plugins/wp-fastest-cache* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/wp-file-manager* ## being used in malware attacks
+ss_rm /var/www/html/wp-content/plugins/wp-htaccess-control* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/wp-maximum-execution-time-exceeded* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/wp-monero-miner-using-coin-hive* ## cryptomining
+ss_rm /var/www/html/wp-content/plugins/wp-optimize* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/wp-performance ## ss conflicts (by alaca)
+ss_rm /var/www/html/wp-content/plugins/wp-performance-score-booster* ## ss conflicts, bad practice
+ss_rm /var/www/html/wp-content/plugins/wp-phpmyadmin-extension* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/wp-postviews* ## database thrashing
+ss_rm /var/www/html/wp-content/plugins/wp-redis* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/wp-rocket* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/wp-rocket-static-exclude-defer-js* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/wp-roilbacks* ## malware
+ss_rm /var/www/html/wp-content/plugins/wp-security ## malware (reported by Sucuri) no wildcard to avoid wp-security-audit-log
+ss_rm /var/www/html/wp-content/plugins/wp-site-migrate* ## vendor specific (WP Engine)
+ss_rm /var/www/html/wp-content/plugins/wp-speedup* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/wp-super-cache* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/wpe-advanced-cache-options* ## vendor specific
+ss_rm /var/www/html/wp-content/plugins/wpengine-geoip* ## vendor specific (by WP Engine)
+ss_rm /var/www/html/wp-content/plugins/wpframework* ## malware (reported by Sucuri)
+ss_rm /var/www/html/wp-content/plugins/wpide ## exists in wp core (syntax editor)
+ss_rm /var/www/html/wp-content/plugins/wpmudev-updates* ## ss conflicts, vendor specific (by WPMU Dev)
+ss_rm /var/www/html/wp-content/plugins/wps-hide-login* ## ss conflicts
+ss_rm /var/www/html/wp-content/plugins/yoast-seo-search-index-purge* ## ss conflicts, serious errors
+ss_rm /var/www/html/wp-content/plugins/youtube-embed-* ## malware
+ss_rm /var/www/html/wp-content/plugins/yuzo-related-post* ## deprecated, exploitable
+
+## staging ##
+if [[ "${STAGING_SITE}" == "true" ]]; then
+ss_rm /var/www/html/staging/wp-content/plugins/accelerated-mobile-pages ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/adminer* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/add-index-to-autoload* ## ss conflicts, feature exists in WP Core 5.3+
+ss_rm /var/www/html/staging/wp-content/plugins/ajax-thumbnail-rebuild* ## database thrashing
+ss_rm /var/www/html/staging/wp-content/plugins/all-in-one-wp-security-and-firewall* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/allow-php-in-posts-and-pages* ## php hacks
+ss_rm /var/www/html/staging/wp-content/plugins/amp ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/amp-enhancer ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/amp-for-contact-form-7 ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/amp-google-analytics-4-support ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/amp-post-script ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/amp-wp ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/apikey ## malware
+ss_rm /var/www/html/staging/wp-content/plugins/ari-adminer* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/askapache-debug-viewer* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/autologin-links* ## exploitable, ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/bad-behavior* ## ss conflicts, deprecated
+ss_rm /var/www/html/staging/wp-content/plugins/better-wp-security* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/bitcoin-plus-miner* ## cryptomining
+ss_rm /var/www/html/staging/wp-content/plugins/BoosterPage ## deprecated, exploitable (Smart Marketer)
+ss_rm /var/www/html/staging/wp-content/plugins/browser-caching-with-htaccess* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/cache-enabler* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/captcha ## deprecated
+ss_rm /var/www/html/staging/wp-content/plugins/change-wp-admin-login* ## ss conflicts (by Nuno Morais Sarmento)
+ss_rm /var/www/html/staging/wp-content/plugins/clear-cache-for-widgets* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/clearfy* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/comet-cache* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/custom-sidebars* ## exploitable, errors/conflicts, resource intensive, bad practice (WPMU Dev)
+ss_rm /var/www/html/staging/wp-content/plugins/default_library_puvox.php* ## malware
+ss_rm /var/www/html/staging/wp-content/plugins/defender-security* ## ss conflicts (by WPMU Dev)
+ss_rm /var/www/html/staging/wp-content/plugins/display-widgets ## malware/spyware
+ss_rm /var/www/html/staging/wp-content/plugins/dreamhost* ## vendor-specific
+ss_rm /var/www/html/staging/wp-content/plugins/dreamobjects* ## vendor-specific
+ss_rm /var/www/html/staging/wp-content/plugins/envato-wordpress-toolkit* ## deprecated
+ss_rm /var/www/html/staging/wp-content/plugins/elyxolify* ## malware
+ss_rm /var/www/html/staging/wp-content/plugins/fb-instant-articles ## not maintained, serious errors (by Automattic)
+ss_rm /var/www/html/staging/wp-content/plugins/fb-messenger ## deprecated
+ss_rm /var/www/html/staging/wp-content/plugins/folders ## creates instability, ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/fuzzy-seo-booster* ## database thrashing
+ss_rm /var/www/html/staging/wp-content/plugins/hello.php* ## pointless
+ss_rm /var/www/html/staging/wp-content/plugins/hide_my_wp* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/htaccess* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/hummingbird-performance* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/hyper-cache* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/hyperdb* ## ss conflicts, not maintained
+ss_rm /var/www/html/staging/wp-content/plugins/increase-upload-file-size-maximum-execution-time-limit* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/integrate-monero-miner* ## cryptomining
+ss_rm /var/www/html/staging/wp-content/plugins/jm-live-blog* ## serious errors, database thrashing, not maintained
+ss_rm /var/www/html/staging/wp-content/plugins/jonradio-multiple-themes* ## creates instability
+ss_rm /var/www/html/staging/wp-content/plugins/jsecoin* ## cryptomining
+ss_rm /var/www/html/staging/wp-content/plugins/last-modified-timestamp* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/linkman* ## deprecated, database thrashing
+ss_rm /var/www/html/staging/wp-content/plugins/litespeed* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/litespeed-cache* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/login-lockdown* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/maintenance-mode-littlebizzy* ## not maintained
+ss_rm /var/www/html/staging/wp-content/plugins/miwoftp* ## exploitable
+ss_rm /var/www/html/staging/wp-content/plugins/my-wp-backup* ## blacklisted vendor (by MyThemeShop)
+ss_rm /var/www/html/staging/wp-content/plugins/my-wp-backup-pro-master* ## blacklisted vendor (by MyThemeShop)
+ss_rm /var/www/html/staging/wp-content/plugins/myrp* ## database thrashing
+ss_rm /var/www/html/staging/wp-content/plugins/mythemeshop-connect* ## ransomware (by MyThemeShop)
+ss_rm /var/www/html/staging/wp-content/plugins/onlywire-bookmark-share-button* ## deprecated, serious errors
+ss_rm /var/www/html/staging/wp-content/plugins/optimizemember* ## potential data loss
+ss_rm /var/www/html/staging/wp-content/plugins/optimizeMember* ## potential data loss
+ss_rm /var/www/html/staging/wp-content/plugins/optimizePress* ## potential data loss
+ss_rm /var/www/html/staging/wp-content/plugins/optimizePressPlugin* ## potential data loss
+ss_rm /var/www/html/staging/wp-content/plugins/optimizepress* ## potential data loss
+ss_rm /var/www/html/staging/wp-content/plugins/outtatimr* ## deprecated (by DigitalMarketer)
+ss_rm /var/www/html/staging/wp-content/plugins/page-links-to* ## not maintained, bad practice
+ss_rm /var/www/html/staging/wp-content/plugins/perfmatters* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/periods-in-titles* ## bad for seo
+ss_rm /var/www/html/staging/wp-content/plugins/php-settings* ## php hacks, ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/phpmyadmin* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/powered-cache* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/protect-wp-admin* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/pushlive* ## deprecated, ss conflicts (by 1 Squared, Jamin Szczesny)
+ss_rm /var/www/html/staging/wp-content/plugins/pwnd* ## malware
+ss_rm /var/www/html/staging/wp-content/plugins/qtranslate-x* ## deprecated, database thrashing
+ss_rm /var/www/html/staging/wp-content/plugins/redis-cache* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/redis-object-cache* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/rest-api/ ## deprecated, exists in wp core (Rest API)
+ss_rm /var/www/html/staging/wp-content/plugins/seo-alrp* ## database thrashing
+ss_rm /var/www/html/staging/wp-content/plugins/sg-cachepress* ## ss conflicts, vendor specific (by Siteground)
+ss_rm /var/www/html/staging/wp-content/plugins/sg-security* ## ss conflicts, vendor specific (by Siteground)
+ss_rm /var/www/html/staging/wp-content/plugins/shopbop-widget* ## database thrashing
+ss_rm /var/www/html/staging/wp-content/plugins/similar-posts* ## database thrashing
+ss_rm /var/www/html/staging/wp-content/plugins/simple-cache* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/simple-monero-miner-coin-hive* ## cryptomining
+ss_rm /var/www/html/staging/wp-content/plugins/simple-wistia-embed* ## exists in wp core
+ss_rm /var/www/html/staging/wp-content/plugins/sitespeed* ## malware (as per Sucuri report)
+ss_rm /var/www/html/staging/wp-content/plugins/sitewide-message/ ## deprecated
+ss_rm /var/www/html/staging/wp-content/plugins/sweetcaptcha* ## malware/spyware
+ss_rm /var/www/html/staging/wp-content/plugins/sweetcaptcha-revolutionary-free-captcha-service* ## malware/spyware
+ss_rm /var/www/html/staging/wp-content/plugins/timthumb* ## exploitable, deprecated
+ss_rm /var/www/html/staging/wp-content/plugins/total-donations* ## exploitable, deprecated
+ss_rm /var/www/html/staging/wp-content/plugins/totaldonations* ## exploitable, deprecated
+ss_rm /var/www/html/staging/wp-content/plugins/tweet-blender* ## database thrashing
+ss_rm /var/www/html/staging/wp-content/plugins/upload-max-file-size* ## ss conflicts, php hacks
+ss_rm /var/www/html/staging/wp-content/plugins/uploadify* ## exploitable
+ss_rm /var/www/html/staging/wp-content/plugins/w3-total-cache* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/w3speedster* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/way2enjoy-compress-images* ## deprecated
+ss_rm /var/www/html/staging/wp-content/plugins/wc-password-strength-settings* ## exploitable, bad practice
+ss_rm /var/www/html/staging/wp-content/plugins/weather-for-us-widget* ## cryptomining
+ss_rm /var/www/html/staging/wp-content/plugins/wistia-responsive* ## exists in wp core
+ss_rm /var/www/html/staging/wp-content/plugins/woocommerce-jquery-cookie-fix* ## ss conflicts, creates instability
+ss_rm /var/www/html/staging/wp-content/plugins/woothemes-updater* ## deprecated
+ss_rm /var/www/html/staging/wp-content/plugins/wordfence* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/wp-advanced-importer* ## not maintained, serious errors
+ss_rm /var/www/html/staging/wp-content/plugins/wp-amp-it-up ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/wp-amp-website ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/wp-coinhive ## cryptomining
+ss_rm /var/www/html/staging/wp-content/plugins/wp-editor* ## exists in wp core (syntax editor)
+ss_rm /var/www/html/staging/wp-content/plugins/wp-fastest-cache* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/wp-htaccess-control* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/wp-maximum-execution-time-exceeded* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/wp-monero-miner-using-coin-hive* ## cryptomining
+ss_rm /var/www/html/staging/wp-content/plugins/wp-optimize* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/wp-performance ## ss conflicts (by alaca)
+ss_rm /var/www/html/staging/wp-content/plugins/wp-performance-score-booster* ## ss conflicts, bad practice
+ss_rm /var/www/html/staging/wp-content/plugins/wp-phpmyadmin-extension* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/wp-postviews* ## database thrashing
+ss_rm /var/www/html/staging/wp-content/plugins/wp-redis* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/wp-rocket* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/wp-rocket-static-exclude-defer-js* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/wp-roilbacks* ## malware
+ss_rm /var/www/html/staging/wp-content/plugins/wp-security ## malware (reported by Sucuri) no wildcard to avoid wp-security-audit-log
+ss_rm /var/www/html/staging/wp-content/plugins/wp-site-migrate* ## vendor specific (WP Engine)
+ss_rm /var/www/html/staging/wp-content/plugins/wp-speedup* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/wp-super-cache* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/wpe-advanced-cache-options* ## vendor specific
+ss_rm /var/www/html/staging/wp-content/plugins/wpengine-geoip* ## vendor specific (by WP Engine)
+ss_rm /var/www/html/staging/wp-content/plugins/wpframework* ## malware (reported by Sucuri)
+ss_rm /var/www/html/staging/wp-content/plugins/wpide ## exists in wp core (syntax editor)
+ss_rm /var/www/html/staging/wp-content/plugins/wpmudev-updates* ## ss conflicts, vendor specific (by WPMU Dev)
+ss_rm /var/www/html/staging/wp-content/plugins/wps-hide-login* ## ss conflicts
+ss_rm /var/www/html/staging/wp-content/plugins/yoast-seo-search-index-purge* ## ss conflicts, serious errors
+ss_rm /var/www/html/staging/wp-content/plugins/youtube-embed-* ## malware
+ss_rm /var/www/html/staging/wp-content/plugins/yuzo-related-post* ## deprecated, exploitable
+fi
+
+## development ##
+if [[ "${DEV_SITE}" == "true" ]]; then
+ss_rm /var/www/html/dev/wp-content/plugins/accelerated-mobile-pages ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/adminer* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/add-index-to-autoload* ## ss conflicts, feature exists in WP Core 5.3+
+ss_rm /var/www/html/dev/wp-content/plugins/ajax-thumbnail-rebuild* ## database thrashing
+ss_rm /var/www/html/dev/wp-content/plugins/all-in-one-wp-security-and-firewall* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/allow-php-in-posts-and-pages* ## php hacks
+ss_rm /var/www/html/dev/wp-content/plugins/amp ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/amp-enhancer ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/amp-for-contact-form-7 ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/amp-google-analytics-4-support ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/amp-post-script ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/amp-wp ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/apikey ## malware
+ss_rm /var/www/html/dev/wp-content/plugins/ari-adminer* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/askapache-debug-viewer* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/autologin-links* ## exploitable, ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/bad-behavior* ## ss conflicts, deprecated
+ss_rm /var/www/html/dev/wp-content/plugins/better-wp-security* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/bitcoin-plus-miner* ## cryptomining
+ss_rm /var/www/html/dev/wp-content/plugins/BoosterPage ## deprecated, exploitable (Smart Marketer)
+ss_rm /var/www/html/dev/wp-content/plugins/browser-caching-with-htaccess* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/cache-enabler* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/captcha ## deprecated
+ss_rm /var/www/html/dev/wp-content/plugins/change-wp-admin-login* ## ss conflicts (by Nuno Morais Sarmento)
+ss_rm /var/www/html/dev/wp-content/plugins/clear-cache-for-widgets* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/clearfy* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/comet-cache* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/custom-sidebars* ## exploitable, errors/conflicts, resource intensive, bad practice (WPMU Dev)
+ss_rm /var/www/html/dev/wp-content/plugins/default_library_puvox.php* ## malware
+ss_rm /var/www/html/dev/wp-content/plugins/defender-security* ## ss conflicts (by WPMU Dev)
+ss_rm /var/www/html/dev/wp-content/plugins/display-widgets ## malware/spyware
+ss_rm /var/www/html/dev/wp-content/plugins/dreamhost* ## vendor-specific
+ss_rm /var/www/html/dev/wp-content/plugins/dreamobjects* ## vendor-specific
+ss_rm /var/www/html/dev/wp-content/plugins/envato-wordpress-toolkit* ## deprecated
+ss_rm /var/www/html/dev/wp-content/plugins/elyxolify* ## malware
+ss_rm /var/www/html/dev/wp-content/plugins/fb-instant-articles ## not maintained, serious errors (by Automattic)
+ss_rm /var/www/html/dev/wp-content/plugins/fb-messenger ## deprecated
+ss_rm /var/www/html/dev/wp-content/plugins/folders ## creates instability, ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/fuzzy-seo-booster* ## database thrashing
+ss_rm /var/www/html/dev/wp-content/plugins/hello.php* ## pointless
+ss_rm /var/www/html/dev/wp-content/plugins/hide_my_wp* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/htaccess* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/hummingbird-performance* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/hyper-cache* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/hyperdb* ## ss conflicts, not maintained
+ss_rm /var/www/html/dev/wp-content/plugins/increase-upload-file-size-maximum-execution-time-limit* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/integrate-monero-miner* ## cryptomining
+ss_rm /var/www/html/dev/wp-content/plugins/jm-live-blog* ## serious errors, database thrashing, not maintained
+ss_rm /var/www/html/dev/wp-content/plugins/jonradio-multiple-themes* ## creates instability
+ss_rm /var/www/html/dev/wp-content/plugins/jsecoin* ## cryptomining
+ss_rm /var/www/html/dev/wp-content/plugins/last-modified-timestamp* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/linkman* ## deprecated, database thrashing
+ss_rm /var/www/html/dev/wp-content/plugins/litespeed* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/litespeed-cache* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/login-lockdown* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/maintenance-mode-littlebizzy* ## not maintained
+ss_rm /var/www/html/dev/wp-content/plugins/miwoftp* ## exploitable
+ss_rm /var/www/html/dev/wp-content/plugins/my-wp-backup* ## blacklisted vendor (by MyThemeShop)
+ss_rm /var/www/html/dev/wp-content/plugins/my-wp-backup-pro-master* ## blacklisted vendor (by MyThemeShop)
+ss_rm /var/www/html/dev/wp-content/plugins/myrp* ## database thrashing
+ss_rm /var/www/html/dev/wp-content/plugins/mythemeshop-connect* ## ransomware (by MyThemeShop)
+ss_rm /var/www/html/dev/wp-content/plugins/onlywire-bookmark-share-button* ## deprecated, serious errors
+ss_rm /var/www/html/dev/wp-content/plugins/optimizemember* ## potential data loss
+ss_rm /var/www/html/dev/wp-content/plugins/optimizeMember* ## potential data loss
+ss_rm /var/www/html/dev/wp-content/plugins/optimizePress* ## potential data loss
+ss_rm /var/www/html/dev/wp-content/plugins/optimizePressPlugin* ## potential data loss
+ss_rm /var/www/html/dev/wp-content/plugins/optimizepress* ## potential data loss
+ss_rm /var/www/html/dev/wp-content/plugins/outtatimr* ## deprecated (by DigitalMarketer)
+ss_rm /var/www/html/dev/wp-content/plugins/page-links-to* ## not maintained, bad practice
+ss_rm /var/www/html/dev/wp-content/plugins/perfmatters* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/periods-in-titles* ## bad for seo
+ss_rm /var/www/html/dev/wp-content/plugins/php-settings* ## php hacks, ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/phpmyadmin* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/powered-cache* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/protect-wp-admin* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/pushlive* ## deprecated, ss conflicts (by 1 Squared, Jamin Szczesny)
+ss_rm /var/www/html/dev/wp-content/plugins/pwnd* ## malware
+ss_rm /var/www/html/dev/wp-content/plugins/qtranslate-x* ## deprecated, database thrashing
+ss_rm /var/www/html/dev/wp-content/plugins/redis-cache* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/redis-object-cache* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/rest-api/ ## deprecated, exists in wp core (Rest API)
+ss_rm /var/www/html/dev/wp-content/plugins/seo-alrp* ## database thrashing
+ss_rm /var/www/html/dev/wp-content/plugins/sg-cachepress* ## ss conflicts, vendor specific (by Siteground)
+ss_rm /var/www/html/dev/wp-content/plugins/sg-security* ## ss conflicts, vendor specific (by Siteground)
+ss_rm /var/www/html/dev/wp-content/plugins/shopbop-widget* ## database thrashing
+ss_rm /var/www/html/dev/wp-content/plugins/similar-posts* ## database thrashing
+ss_rm /var/www/html/dev/wp-content/plugins/simple-cache* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/simple-monero-miner-coin-hive* ## cryptomining
+ss_rm /var/www/html/dev/wp-content/plugins/simple-wistia-embed* ## exists in wp core
+ss_rm /var/www/html/dev/wp-content/plugins/sitespeed* ## malware (as per Sucuri report)
+ss_rm /var/www/html/dev/wp-content/plugins/sitewide-message/ ## deprecated
+ss_rm /var/www/html/dev/wp-content/plugins/sweetcaptcha* ## malware/spyware
+ss_rm /var/www/html/dev/wp-content/plugins/sweetcaptcha-revolutionary-free-captcha-service* ## malware/spyware
+ss_rm /var/www/html/dev/wp-content/plugins/timthumb* ## exploitable, deprecated
+ss_rm /var/www/html/dev/wp-content/plugins/tweet-blender* ## database thrashing
+ss_rm /var/www/html/dev/wp-content/plugins/upload-max-file-size* ## ss conflicts, php hacks
+ss_rm /var/www/html/dev/wp-content/plugins/uploadify* ## exploitable
+ss_rm /var/www/html/dev/wp-content/plugins/w3-total-cache* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/w3speedster* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/way2enjoy-compress-images* ## deprecated
+ss_rm /var/www/html/dev/wp-content/plugins/wc-password-strength-settings* ## exploitable, bad practice
+ss_rm /var/www/html/dev/wp-content/plugins/weather-for-us-widget* ## cryptomining
+ss_rm /var/www/html/dev/wp-content/plugins/wistia-responsive* ## exists in wp core
+ss_rm /var/www/html/dev/wp-content/plugins/woocommerce-jquery-cookie-fix* ## ss conflicts, creates instability
+ss_rm /var/www/html/dev/wp-content/plugins/woothemes-updater* ## deprecated
+ss_rm /var/www/html/dev/wp-content/plugins/wordfence* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/wp-advanced-importer* ## not maintained, serious errors
+ss_rm /var/www/html/dev/wp-content/plugins/wp-amp-it-up ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/wp-amp-website ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/wp-coinhive ## cryptomining
+ss_rm /var/www/html/dev/wp-content/plugins/wp-editor* ## exists in wp core (syntax editor)
+ss_rm /var/www/html/dev/wp-content/plugins/wp-fastest-cache* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/wp-htaccess-control* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/wp-maximum-execution-time-exceeded* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/wp-monero-miner-using-coin-hive* ## cryptomining
+ss_rm /var/www/html/dev/wp-content/plugins/wp-optimize* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/wp-performance ## ss conflicts (by alaca)
+ss_rm /var/www/html/dev/wp-content/plugins/wp-performance-score-booster* ## ss conflicts, bad practice
+ss_rm /var/www/html/dev/wp-content/plugins/wp-phpmyadmin-extension* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/wp-postviews* ## database thrashing
+ss_rm /var/www/html/dev/wp-content/plugins/wp-redis* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/wp-rocket* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/wp-rocket-static-exclude-defer-js* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/wp-roilbacks* ## malware
+ss_rm /var/www/html/dev/wp-content/plugins/wp-security ## malware (reported by Sucuri) no wildcard to avoid wp-security-audit-log
+ss_rm /var/www/html/dev/wp-content/plugins/wp-site-migrate* ## vendor specific (WP Engine)
+ss_rm /var/www/html/dev/wp-content/plugins/wp-speedup* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/wp-super-cache* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/wpe-advanced-cache-options* ## vendor specific
+ss_rm /var/www/html/dev/wp-content/plugins/wpengine-geoip* ## vendor specific (by WP Engine)
+ss_rm /var/www/html/dev/wp-content/plugins/wpframework* ## malware (reported by Sucuri)
+ss_rm /var/www/html/dev/wp-content/plugins/wpide ## exists in wp core (syntax editor)
+ss_rm /var/www/html/dev/wp-content/plugins/wpmudev-updates* ## ss conflicts, vendor specific (by WPMU Dev)
+ss_rm /var/www/html/dev/wp-content/plugins/wps-hide-login* ## ss conflicts
+ss_rm /var/www/html/dev/wp-content/plugins/yoast-seo-search-index-purge* ## ss conflicts, serious errors
+ss_rm /var/www/html/dev/wp-content/plugins/youtube-embed-* ## malware
+ss_rm /var/www/html/dev/wp-content/plugins/yuzo-related-post* ## deprecated, exploitable
+fi
+
+####################################################################################################
+#### M. SS-Clean-Files: Delete Junk Files In WordPress Plugins Directory ###########################
+####################################################################################################
+
+## this is a brief snippet to delete any existing junk files in the plugins directory ##
+## there is never a good reason to have archives, logs, or non-plugins in here ##
+
+## delete archive files (production) ##
+find /var/www/html/wp-content/plugins/ -name "*.gz" -type f -delete
+find /var/www/html/wp-content/plugins/ -name "*.tar" -type f -delete
+find /var/www/html/wp-content/plugins/ -name "*.zip" -type f -delete
+
+## delete archive files (staging) ##
+if [[ "${STAGING_SITE}" == "true" ]]; then
+find /var/www/html/staging/wp-content/plugins/ -name "*.gz" -type f -delete
+find /var/www/html/staging/wp-content/plugins/ -name "*.tar" -type f -delete
+find /var/www/html/staging/wp-content/plugins/ -name "*.zip" -type f -delete
+fi
+
+## delete archive files (development) ##
+if [[ "${DEV_SITE}" == "true" ]]; then
+find /var/www/html/dev/wp-content/plugins/ -name "*.gz" -type f -delete
+find /var/www/html/dev/wp-content/plugins/ -name "*.tar" -type f -delete
+find /var/www/html/dev/wp-content/plugins/ -name "*.zip" -type f -delete
+fi
+
+## delete junk files (production) ##
+ss_rm /var/www/html/wp-content/plugins/Licensing ## junk folder
+ss_rm /var/www/html/wp-content/plugins/pp_default_lib.php ## wordpresss junk files
+ss_rm /var/www/html/wp-content/plugins/wp_mainlog2* ## unknown
+
+## delete junk files (staging) ##
+if [[ "${STAGING_SITE}" == "true" ]]; then
+ss_rm /var/www/html/staging/wp-content/plugins/Licensing ## junk folder
+ss_rm /var/www/html/staging/wp-content/plugins/pp_default_lib.php ## wordpresss junk files
+ss_rm /var/www/html/staging/wp-content/plugins/wp_mainlog2* ## unknown
+fi
+
+## delete junk files (development) ##
+if [[ "${DEV_SITE}" == "true" ]]; then
+ss_rm /var/www/html/dev/wp-content/plugins/Licensing ## junk folder
+ss_rm /var/www/html/dev/wp-content/plugins/pp_default_lib.php ## wordpresss junk files
+ss_rm /var/www/html/dev/wp-content/plugins/wp_mainlog2* ## unknown
+fi
+
+####################################################################################################
+#### N. SS-Clean-Files: Delete Junk Files In WordPress Themes Directory ############################
+####################################################################################################
+
+## this is a brief snippet to delete any existing junk files in the themes directory ##
+## there is never a good reason to have archives, logs, or non-themes in here ##
+
+## delete archive files (production) ##
+find /var/www/html/wp-content/themes/ -name "*.gz" -type f -delete
+find /var/www/html/wp-content/themes/ -name "*.tar" -type f -delete
+find /var/www/html/wp-content/themes/ -name "*.zip" -type f -delete
+
+## delete archive files (staging) ##
+if [[ "${STAGING_SITE}" == "true" ]]; then
+find /var/www/html/staging/wp-content/themes/ -name "*.gz" -type f -delete
+find /var/www/html/staging/wp-content/themes/ -name "*.tar" -type f -delete
+find /var/www/html/staging/wp-content/themes/ -name "*.zip" -type f -delete
+fi
+
+## delete archive files (development) ##
+if [[ "${DEV_SITE}" == "true" ]]; then
+find /var/www/html/dev/wp-content/themes/ -name "*.gz" -type f -delete
+find /var/www/html/dev/wp-content/themes/ -name "*.tar" -type f -delete
+find /var/www/html/dev/wp-content/themes/ -name "*.zip" -type f -delete
+fi
+
+####################################################################################################
+#### SS-Clean-Files: /var/www/wp-content/uploads/ ##################################################
+####################################################################################################
+
+## block malware attacks ##
+## cleanup syntax using https://superuser.com/questions/1058716/using-an-array-as-search-criterea-for-find-command ##
+
+## production ##
+find /var/www/html/wp-content/uploads/2001/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/wp-content/uploads/2002/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/wp-content/uploads/2003/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/wp-content/uploads/2004/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/wp-content/uploads/2005/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/wp-content/uploads/2006/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/wp-content/uploads/2007/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/wp-content/uploads/2008/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/wp-content/uploads/2009/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/wp-content/uploads/2010/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/wp-content/uploads/2011/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/wp-content/uploads/2012/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/wp-content/uploads/2013/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/wp-content/uploads/2014/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/wp-content/uploads/2015/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/wp-content/uploads/2016/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/wp-content/uploads/2017/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/wp-content/uploads/2018/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/wp-content/uploads/2019/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/wp-content/uploads/2020/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/wp-content/uploads/2021/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/wp-content/uploads/2022/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/wp-content/uploads/2023/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/wp-content/uploads/2024/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/wp-content/uploads/2025/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+
+## staging ##
+find /var/www/html/staging/wp-content/uploads/2001/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/staging/wp-content/uploads/2002/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/staging/wp-content/uploads/2003/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/staging/wp-content/uploads/2004/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/staging/wp-content/uploads/2005/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/staging/wp-content/uploads/2006/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/staging/wp-content/uploads/2007/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/staging/wp-content/uploads/2008/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/staging/wp-content/uploads/2009/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/staging/wp-content/uploads/2010/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/staging/wp-content/uploads/2011/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/staging/wp-content/uploads/2012/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/staging/wp-content/uploads/2013/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/staging/wp-content/uploads/2014/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/staging/wp-content/uploads/2015/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/staging/wp-content/uploads/2016/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/staging/wp-content/uploads/2017/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/staging/wp-content/uploads/2018/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/staging/wp-content/uploads/2019/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/staging/wp-content/uploads/2020/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/staging/wp-content/uploads/2021/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/staging/wp-content/uploads/2022/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/staging/wp-content/uploads/2023/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/staging/wp-content/uploads/2024/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/staging/wp-content/uploads/2025/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+
+## development ##
+find /var/www/html/dev/wp-content/uploads/2001/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/dev/wp-content/uploads/2002/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/dev/wp-content/uploads/2003/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/dev/wp-content/uploads/2004/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/dev/wp-content/uploads/2005/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/dev/wp-content/uploads/2006/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/dev/wp-content/uploads/2007/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/dev/wp-content/uploads/2008/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/dev/wp-content/uploads/2009/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/dev/wp-content/uploads/2010/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/dev/wp-content/uploads/2011/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/dev/wp-content/uploads/2012/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/dev/wp-content/uploads/2013/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/dev/wp-content/uploads/2014/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/dev/wp-content/uploads/2015/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/dev/wp-content/uploads/2016/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/dev/wp-content/uploads/2017/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/dev/wp-content/uploads/2018/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/dev/wp-content/uploads/2019/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/dev/wp-content/uploads/2020/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/dev/wp-content/uploads/2021/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/dev/wp-content/uploads/2022/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/dev/wp-content/uploads/2023/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/dev/wp-content/uploads/2024/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+find /var/www/html/dev/wp-content/uploads/2025/ -name "*.html" -type f -delete -o -name "*.xml" -type f -delete -o -name "*.json" -type f -delete -o -name "*.js" -type f -delete -o -name "*.php" -type f -delete
+
+################
+ss_rm /var/www/html/wp-content/uploads/.shortpixel* ## junk files (Shortpixel)
+# ss_rm /var/www/html/wp-content/uploads/affwp-debug.log* ## improper debug logs (AffiliateWP)
+# ss_rm /var/www/html/wp-content/uploads/ai1ec_static*
+ss_rm /var/www/html/wp-content/uploads/analytify-logs*
+ss_rm /var/www/html/wp-content/uploads/*edd-debug.log
+ss_rm /var/www/html/wp-content/uploads/backup* ## unsafe archives
+ss_rm /var/www/html/wp-content/uploads/backup-guard* ## unsafe archives
+ss_rm /var/www/html/wp-content/uploads/backupbuddy_backups* ## unsafe archives
+ss_rm /var/www/html/wp-content/uploads/backwpup* ## unsafe archives (BackWPUp)
+ss_rm /var/www/html/wp-content/uploads/bb-plugin/cache* ## improper cache (Beaver Builder Pro)
+# ss_rm /var/www/html/wp-content/uploads/bfi_thumb* ## (elementor? various themes too)
+ss_rm /var/www/html/wp-content/uploads/cache* ## improper cache
+# ss_rm /var/www/html/wp-content/uploads/ced_umb_logs ## unknown
+ss_rm /var/www/html/wp-content/uploads/certifications*
+ss_rm /var/www/html/wp-content/uploads/csv_exports* ## unsafe local archives (WooCommerce Product CSV Import Suite)
+# ss_rm /var/www/html/wp-content/uploads/custom-css-js* ## bad practice, creates instability, hostage-ware (Simple Custom CSS & JS)
+ss_rm /var/www/html/wp-content/uploads/db-backup*
+ss_rm /var/www/html/wp-content/uploads/divi-contact-extended-temp*
+ss_rm /var/www/html/wp-content/uploads/dynamic-style-* ## unknown CSS minify plugin?
+ss_rm /var/www/html/wp-content/uploads/edd/jilt*.log
+ss_rm /var/www/html/wp-content/uploads/elm-email-errors.lock* ## unknown
+ss_rm /var/www/html/wp-content/uploads/et_temp* ## improper temp folders (Elegant Themes)
+ss_rm /var/www/html/wp-content/uploads/expdbs-migrations*
+# ss_rm /var/www/html/wp-content/uploads/fbrfg* ## unknown
+ss_rm /var/www/html/wp-content/uploads/file-manager* ## plugin junk files/logs
+# ss_rm /var/www/html/wp-content/uploads/fileaway-custom-css*
+# ss_rm /var/www/html/wp-content/uploads/flags* ## unknown (maybe WPML)
+ss_rm /var/www/html/wp-content/uploads/freshizer*
+# ss_rm /var/www/html/wp-content/uploads/fusion_slider_exports* ## plugin junk files (Fusion Slider)
+# ss_rm /var/www/html/wp-content/uploads/GeoIP.dat* ## ss conflicts
+# ss_rm /var/www/html/wp-content/uploads/GeoIPv6.dat* ## ss conflicts
+# ss_rm /var/www/html/wp-content/uploads/GeoLite*mmdb
+# ss_rm /var/www/html/wp-content/uploads/GeoLite2-Country.mmdb* ## ss conflicts
+ss_rm /var/www/html/wp-content/uploads/gppro* ## files from disallowed plugin (Genesis Design Palette Pro – Export CSS)
+# /var/www/html/wp-content/uploads/hm_custom_css_js/
+ss_rm /var/www/html/wp-content/uploads/hummingbird-assets* ## ss conflicts (WPMU Hummingbird)
+ss_rm /var/www/html/wp-content/uploads/intense-cache* ## unknown
+ss_rm /var/www/html/wp-content/uploads/ithemes-security* ## junk files (iThemes Security)
+ss_rm /var/www/html/wp-content/uploads/latest-export*
+ss_rm /var/www/html/wp-content/uploads/mainwp* ## junk files (MainWP)
+ss_rm /var/www/html/wp-content/uploads/mc4wp-debug-log.php*
+ss_rm /var/www/html/wp-content/uploads/my-php.log* ## improper error log, exploitable (unknown source)
+# ss_rm /var/www/html/wp-content/uploads/my_custom_css*
+ss_rm /var/www/html/wp-content/uploads/nginx-helper*
+ss_rm /var/www/html/wp-content/uploads/pb_backupbuddy* ## unsafe local archives
+ss_rm /var/www/html/wp-content/uploads/premise*
+# /var/www/html/wp-content/uploads/pum/
+ss_rm /var/www/html/wp-content/uploads/rank-math* ## spyware
+# ss_rm /var/www/html/wp-content/uploads/resized ## unsure (slider plugin)
+ss_rm /var/www/html/wp-content/uploads/rstemp* ## improper temp directory
+ss_rm /var/www/html/wp-content/uploads/sacache* ## unknown
+ss_rm /var/www/html/wp-content/uploads/ShortpixelBackups* ## junk files (Shortpixel)
+ss_rm /var/www/html/wp-content/uploads/siteground-optimizer-assets*
+# ss_rm /var/www/html/wp-content/uploads/siteorigin-widgets* ## possibly no longer used
+# ss_rm /var/www/html/wp-content/uploads/smile_fonts* ## unsure
+ss_rm /var/www/html/wp-content/uploads/smush*.log ## junk files (WP Smush)
+ss_rm /var/www/html/wp-content/uploads/spacker-cache* ## not maintained, ss conflicts (JS & CSS Script Optimizer) By Yevhen Kotelnytskyi
+ss_rm /var/www/html/wp-content/uploads/taxjar*.csv* ## unsafe archives (TaxJar)
+ss_rm /var/www/html/wp-content/uploads/tCapsule* ## unsafe archives (WP Time Capsule)
+# ss_rm /var/www/html/wp-content/uploads/tcb_content_templates* ## (Thrive junk)
+# ss_rm /var/www/html/wp-content/uploads/tcb_lp_templates* ## (Thrive junk)
+ss_rm /var/www/html/wp-content/uploads/thrive-ab-page-testing* ## (Thrive junk)
+ss_rm /var/www/html/wp-content/uploads/thrive-quiz-builder* ## (Thrive junk)
+# ss_rm /var/www/html/wp-content/uploads/thrive-visual-editor* ## (Thrive junk)
+# ss_rm /var/www/html/wp-content/uploads/tve-ff-* (Thrive junk)
+ss_rm /var/www/html/wp-content/uploads/tve_leads_templates* ## (Thrive Leads)
+# ss_rm /var/www/html/wp-content/uploads/us-assets* ## unsure
+# ss_rm /var/www/html/wp-content/uploads/useanyfont* ## creates instability, bad practice (Use Any Font)
+ss_rm /var/www/html/wp-content/uploads/vipercache* ## improper cache, ss conflicts
+ss_rm /var/www/html/wp-content/uploads/webp-express-test-conversion*.webp
+# ss_rm /var/www/html/wp-content/uploads/wordpress-popular-posts* files from disallowed plugin
+ss_rm /var/www/html/wp-content/uploads/wp-clone* ## unsafe archives (WP Clone)
+ss_rm /var/www/html/wp-content/uploads/wp-defender* ## ss conflicts (WP Defender)
+ss_rm /var/www/html/wp-content/uploads/wp-file-manager-pro* ## junk files (WP File Manager Pro), being used in malware attacks
+ss_rm /var/www/html/wp-content/uploads/wp-migrate-db* ## junk files (WP Migrate DB)
+# ss_rm /var/www/html/wp-content/uploads/wp-staging*
+# ss_rm /var/www/html/wp-content/uploads/wp-staging/logs*
+# ss_rm /var/www/html/wp-content/uploads/wp-static-html*
+ss_rm /var/www/html/wp-content/uploads/wp-statistics* ## junk files (WP Statistics)
+ss_rm /var/www/html/wp-content/uploads/wp-sync-db* ## local archives
+# ss_rm /var/www/html/wp-content/uploads/wp-ultimate-csv-importer.log* ## log files (WP Ultimate CSV Importer)
+ss_rm /var/www/html/wp-content/uploads/wp_edit_pro* ## WP Edit Pro files (disallowed plugin)
+# ss_rm /var/www/html/wp-content/uploads/*wpsp-rate-limiting.log* ## WP Simple Pay 
+# ss_rm /var/www/html/wp-content/uploads/wpallimport*
+# ss_rm /var/www/html/wp-content/uploads/wpallimport_history*
+# ss_rm /var/www/html/wp-content/uploads/wpallimport_logs*
+ss_rm /var/www/html/wp-content/uploads/wpallimport/temp/* ## WP All Import temp files
+# ss_rm /var/www/html/wp-content/uploads/wpallimport/uploads/* ## WP All Import uploads
+ss_rm /var/www/html/wp-content/uploads/wpfc-backup* ## local archives
+ss_rm /var/www/html/wp-content/uploads/wplr-tmp*
+ss_rm /var/www/html/wp-content/uploads/wpseo-redirects* ## bad practice (automatic 301s) Yoast Premium
+ss_rm /var/www/html/wp-content/uploads/wtfdivi* ## Divi Booster files, bad practice
+ss_rm /var/www/html/wp-content/uploads/wwlc-temp* ## improper temp folder
+# ss_rm /var/www/html/wp-content/uploads/yikes-log* ## log files (Yikes Easy Mailchimp)
+ss_rm /var/www/html/wp-content/uploads/sucuri*
+ss_rm /var/www/html/wp-content/uploads/pb_backupbuddy*
+ss_rm /var/www/html/wp-content/uploads/snapshots*
+ss_rm /var/www/html/wp-content/uploads/fw-backup*
+# ss_rm /var/www/html/wp-content/uploads/ithemes-security*
+ss_rm /var/www/html/wp-content/uploads/cache* ## improper cache path
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://www.techrepublic.com/article/how-to-effectively-clear-your-bash-history/
+## Ref: https://askubuntu.com/questions/447295/where-is-the-bash-history-for-the-root-user-saved
+## Ref: https://stackoverflow.com/questions/13148438/how-to-view-the-bash-history-for-root
+## Ref: https://stackoverflow.com/questions/1182756/remove-line-of-text-from-multiple-files-in-linux
+## Ref: https://unix.stackexchange.com/questions/17520/deleting-lines-containing-a-specified-string-in-different-files
+## Ref: https://superuser.com/questions/428493/how-can-i-do-a-recursive-find-and-replace-from-the-command-line
+## Ref: https://unix.stackexchange.com/questions/324118/replace-string-in-multiple-files-using-find-and-sed
+## Ref: https://unix.stackexchange.com/questions/474505/how-to-use-sed-on-all-matching-files
+## Ref: https://wordpress.org/plugins/old-core-files/
+## Ref: https://dba.stackexchange.com/questions/56804/mysql-how-to-drop-all-tables-starting-with-a-prefix/56806
+## Ref: https://azimyasin.wordpress.com/2007/08/11/mysql-dropping-multiple-tables/
+## Ref: https://stackoverflow.com/questions/19283740/save-mysql-query-results-into-a-text-file
+## Ref: https://stackoverflow.com/questions/21253704/how-to-save-mysql-query-output-to-excel-or-txt-file
+## Ref: https://stackoverflow.com/questions/5410757/how-to-delete-from-a-text-file-all-lines-that-contain-a-specific-string
+## Ref: https://blog.sqlauthority.com/2018/10/23/sql-server-how-to-drop-multiple-tables-using-single-drop-statement/
+## Ref: https://stackoverflow.com/questions/11245144/replace-whole-line-containing-a-string-using-sed
+## Ref: https://stackoverflow.com/questions/3657860/bash-append-text-to-last-line-of-file
+## Ref: https://stackoverflow.com/questions/35021524/how-can-i-add-a-comma-at-the-end-of-every-line-except-the-last-line/35021663
+## Ref: https://stackoverflow.com/questions/17075837/append-space-and-character-to-each-line-except-the-last
+## Ref: https://stackoverflow.com/questions/49169243/add-comma-at-end-of-all-lines-except-1-2-3-and-last-line
+## Ref: https://stackoverflow.com/questions/17666249/how-do-i-import-an-sql-file-using-the-command-line-in-mysql/56250785
+## Ref: https://www.unix.com/unix-for-dummies-questions-and-answers/69518-removing-semicolon-using-sed-aix-urgent.html
+## Ref: https://stackoverflow.com/questions/5833086/shell-script-variable-replacing-characters
+## Ref: https://unix.stackexchange.com/questions/162221/shortest-way-to-replace-characters-in-a-variable
+## Ref: https://stackoverflow.com/questions/6744006/can-i-use-sed-to-manipulate-a-variable-in-bash
+## Ref: https://silicondales.com/tutorials/wordpress/convert-wordpress-mysql-database-tables-myisam-innodb-better-scale/
+## Ref: https://stackoverflow.com/questions/4107599/show-a-tables-fulltext-indexed-columns
+## Ref: https://stackoverflow.com/questions/4898653/mysql-to-find-all-tables-with-a-full-text-indexed-column-in-them
+## Ref: https://stackoverflow.com/questions/1718126/show-tables-by-engine-in-mysql
+## Ref: http://redino.net/blog/2016/12/mysql-find-myisam-tables/
+## Ref: https://stackoverflow.com/questions/16711598/get-the-sql-query-result-without-the-table-format
+## Ref: https://dev.mysql.com/doc/refman/8.0/en/option-modifiers.html
+## Ref: https://alvinalexander.com/mysql/how-to-list-mysql-table-column-field-names-without-table-formatting-headers/
+## Ref: https://dev.mysql.com/doc/refman/8.0/en/mysql-command-options.html
+## Ref: https://www.streetdirectory.com/travel_guide/122595/world_wide_web/root_home_directory_of_linux_.html
+## Ref: https://unix.stackexchange.com/questions/447360/delete-only-files-older-than-7-days-mtime-and-find
+## Ref: https://unix.stackexchange.com/questions/130786/can-i-remove-files-in-var-log-journal-and-var-cache-abrt-di-usr
+## Ref: https://superuser.com/questions/150136/deleted-opt-directory-from-linux-machine-will-there-be-any-reboot-problem-for
+## Ref: https://stackoverflow.com/questions/23582472/index-php-in-uploads-directory-wordpress
+## Ref: https://github.com/littlebizzy/slickstack/issues/196
+
+## SS_EOF

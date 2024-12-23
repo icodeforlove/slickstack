@@ -1,0 +1,784 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/bash/ss-config-sample.txt ##########################
+#### path: /var/www/ss-config-sample (for reference only) ##########################################
+#### destination: /var/www/ss-config (can be configured by ss-install wizard or manually) ##########
+#### purpose: SlickStack configuration file boilerplate ############################################
+#### module version: Ubuntu 24.04 LTS ##############################################################
+#### bash aliases: n/a (ss status) #################################################################
+####################################################################################################
+
+## TO UPDATE SS-CONFIG TO LATEST BOILERPLATE RUN SS-UPDATE-CONFIG (SETTINGS RETAINED) ##
+## AFTER CHANGING ANY SS-CONFIG SETTINGS BELOW YOU MUST RUN SS-INSTALL AGAIN ##
+
+####################################################################################################
+#### SS-Config: General Settings ###################################################################
+####################################################################################################
+
+## run ss-update-config if outdated (check the public mirror link for current build) ##
+## builds merely prevent conflicts as SlickStack scripts auto-update regardless ##
+
+SS_BUILD="DEC2024C"
+
+## SS_LOCKDOWN = [false|true] stops dev site from being overwritten... and more soon ##
+## SS_APP = [wordpress|etc] only wordpress is supported currently (feedback welcome) ##
+## SS_LANGUAGE = [en_US|de_DE|pl_PL|etc] en_US is best supported right now ##
+## SS_NOINDEX = [false|true] server header (noindex + nofollow + noarchive + nosnippet) ##
+## SS_TIMEZONE = [UTC|Greenwich|etc] pretty much everyone should use UTC time zone ##
+## SS_SYNC_DEVELOPMENT [false|true] enables script of the same name (must be run manually) ##
+## SS_SYNC_STAGING [true|false] enabled by default (change to false to stop auto-syncing) ##
+## SS_REBOOT_MIN_UPTIME = [1 hour|3 days|etc] min server uptime to allow ss-reboot to run ##
+## SS_REMOTE_BACKUPS = [none|rsync|rclone] which method of remote backups you want ##
+## SS_MASSIVE_SITE = [false|true] when true it skips certain time consuming tasks ##
+
+SS_LOCKDOWN="false" ## limited functionality
+SS_APP="wordpress"
+SS_LANGUAGE="en_US"
+SS_NOINDEX="false"
+SS_TIMEZONE="UTC"
+SS_SYNC_DEVELOPMENT="false"
+SS_SYNC_STAGING="true"
+SS_REBOOT_MIN_UPTIME="1 hour"
+SS_REMOTE_BACKUPS="none"
+SS_MASSIVE_SITE="false"
+
+####################################################################################################
+#### SS-Config: Access Settings ####################################################################
+####################################################################################################
+
+## write down your sudo password or you will be locked out of your server forever ##
+## after ss-install finishes the root user will no longer have shell access ##
+
+## SUDO_USER = [*must be unique*] username for SSH (must be different than SFTP_USER) ##
+## SUDO_PASSWORD = [*must be unique*] something very strong (write it down) ##
+
+SUDO_USER="@SUDO_USER"
+SUDO_PASSWORD="@SUDO_PASSWORD"
+
+## using SSH keys is only recommended for advanced users who know what they are doing ##
+## be sure to copy your public key hash into: /var/www/auth/authorized_keys ##
+
+## SSH_KEYS = [false|true] if enabled then SSH password logins will be disabled ##
+## SSH_RESTRICT_IP = [false|true] enable restricting SSH logins per IP address (caution) ##
+## SSH_IPV4 = [*must be unique*] only allow SSH logins from the given IPv4 address ##
+
+SSH_KEYS="false"
+SSH_RESTRICT_IP="false"
+SSH_IPV4="192.0.2.1"
+
+## SFTP user is jailed to the /var/www/ directory e.g. for your client to safely access ##
+## you can also use SFTP user for remote backups like CodeGuard (safer than sudo) ##
+
+## SFTP_USER = [*must be unique*] username that your client can login as via SFTP ##
+## SFTP_PASSWORD = [*must be unique*] something very strong (for your client) ##
+
+SFTP_USER="@SFTP_USER"
+SFTP_PASSWORD="@SFTP_PASSWORD"
+
+####################################################################################################
+#### SS-Config: Pilot File Settings ################################################################
+####################################################################################################
+
+## use the pilot file to control ss-config settings across unlimited SlickStack servers ##
+## find supported variables in ss-worker (which will update ss-config on every run) ##
+
+## SS_PILOT_FILE = [*must be unique*] full raw URL to secret Gist file with variables ##
+
+SS_PILOT_FILE=""
+
+####################################################################################################
+#### SS-Config: Domain Settings ####################################################################
+####################################################################################################
+
+## below domain values are used in order to hardcode Nginx and WordPress configuration ##
+## these values will override any domain settings that may exist in the database ##
+
+## SITE_ROOT_DOMAIN = [example.com|etc] root domain without any prefixes or subdomains ##
+## SITE_FULL_DOMAIN = [example.com|www.example.com|blog.example.com|etc] no subdirectories ##
+
+SITE_ROOT_DOMAIN="@SITE_ROOT_DOMAIN"
+SITE_FULL_DOMAIN="@SITE_FULL_DOMAIN"
+
+####################################################################################################
+#### SS-Config: Cloudflare Settings ################################################################
+####################################################################################################
+
+## SlickStack generally expects you to be using Cloudflare for many different reasons ##
+## authenticated origin needs to also be activated within the Cloudflare panel ##
+
+## CLOUDFLARE_REAL_IPS = [true|false] allows your server logs to see the real client IPs ##
+## CLOUDFLARE_AUTH_ORIGIN = [false|true] allows only Cloudflare TLS to connect (secure) ##
+## CLOUDFLARE_IPS_ONLY = [false|true] allows only Cloudflare IP addresses to connect ##
+
+CLOUDFLARE_REAL_IPS="true"
+CLOUDFLARE_AUTHENTICATED_ORIGIN="false"
+CLOUDFLARE_IPS_ONLY="false"
+
+####################################################################################################
+#### SS-Config: Database Settings ##################################################################
+####################################################################################################
+
+## remote MySQL databases are supported along with whatever port number is required ##
+## for security reasons the password for DB_PASSWORD_ROOT should be different ##
+
+## DB_REMOTE = [false|true] skips local MySQL install if true (remote database) ##
+## DB_NAME = [production|etc] active production database (staging/development hardcoded) ##
+## DB_USER = [example|etc] the user that WordPress and remote backups should use ##
+## DB_PASSWORD = [*must be unique*] strong as you probably will not need to remember it ##
+## DB_PASSWORD_ROOT = [*must be unique*] for admin@127.0.0.1 or root in older stacks ##
+## DB_HOST = [127.0.0.1|etc] enter remote database hostname here otherwise use 127.0.0.1 ##
+## DB_PORT = [3306|25060|etc] some remote database providers require a specific port ##
+## DB_PREFIX = [wp_|etc] for easier management the default wp_ prefix is recommended ##
+## DB_CHARSET = [utf8mb4|etc] most databases these days should be using utf8mb4 ##
+## DB_COLLATE = [NULL|etc] leave it blank unless you really know what you are doing ##
+
+DB_REMOTE="false"
+DB_NAME="production"
+DB_USER="@DB_USER"
+DB_PASSWORD="@DB_PASSWORD_USER"
+DB_PASSWORD_ROOT="@DB_PASSWORD_ROOT"
+DB_HOST="127.0.0.1"
+DB_PORT="3306"
+DB_PREFIX="wp_"
+DB_CHARSET="utf8mb4"
+DB_COLLATE=""
+
+## adminer is a lightweight alternative to phpmyadmin used for database management ##
+## your freelancers or team members might want to use adminer occassionally ##
+
+## ADMINER_PUBLIC = [true|false] if you want a randomized link accessible on frontend ##
+## ADMINER_URL = [*must be unique*] should be long and very random for security ##
+
+ADMINER_PUBLIC="true"
+ADMINER_URL="@RANDOM_STRING_ADMINER_URL"
+
+####################################################################################################
+#### SS-Config: Staging/Dev Settings ###############################################################
+####################################################################################################
+
+## staging site subdomains are auto-synced from production to briefly test features ##
+## enabling creates the staging database and Nginx block during ss-install ##
+
+## STAGING_SITE = [true|false] enables staging subdomain and WP Admin toolbar switcher ##
+## STAGING_SITE_PROTECT = [false|true] password protects subdomain using guest user ##
+
+STAGING_SITE="false"
+STAGING_SITE_PROTECT="false"
+
+## dev sites are standalone subdomain sites you can use to create brand new designs ##
+## enabling creates the development database and Nginx block during ss-install ##
+
+## DEV_SITE = [true|false] enables dev subdomain and WP Admin toolbar switcher ##
+## DEV_SITE_PROTECT = [false|true] password protects subdomain using guest user ##
+
+DEV_SITE="false"
+DEV_SITE_PROTECT="false"
+
+## the guest user can be provided to clients for viewing the staging/dev subdomains ##
+## to password protect production site please use a WordPress plugin instead ##
+
+## GUEST_USER = [*must be unique*] this user can login to view staging/dev sites ##
+## GUEST_PASSWORD = [*must be unique*] something easy for clients to remember ##
+
+GUEST_USER="@GUEST_USER"
+GUEST_PASSWORD="@GUEST_PASSWORD"
+
+####################################################################################################
+#### SS-Config: WordPress Settings #################################################################
+####################################################################################################
+
+## by default WP-Cron will be managed entirely by WP-CLI on the interval set below ##
+## for best performance SlickStack no longer supports WordPress triggering it ##
+
+## WP_CRON_METHOD = [wpcli|server] wpcli strongly recommended (required for WP Multisite) ##
+## WP_CRON_INTERVAL = [minutely|often|regular|quarter-hourly|half-hourly|hourly] ##
+
+WP_CRON_METHOD="wpcli"
+WP_CRON_INTERVAL="often"
+
+## Multisite setups should not be used for high-traffic or business-critical websites ##
+## domain mapping on Multisite installations requires the subdomains approach ##
+
+## WP_MULTISITE = [false|true] enables Multisite network (staging/dev sites not supported) ##
+## WP_MULTISITE_SUBDOMAINS = [true|false] subdomains approach highly recommended ##
+## WP_MULTISITE_DOMAIN_MAPPING = [true|false] enable if using multiple domain names ##
+
+WP_MULTISITE="false"
+WP_MULTISITE_SUBDOMAINS="true" ## subdirs not supported yet
+WP_MULTISITE_DOMAIN_MAPPING="true"
+
+## for stability reasons several WP defined constants are hardcoded in wp-config.php ##
+## you can define additional constants in the /wp-content/functions.php file ##
+
+## WP_POST_REVISIONS = [3|5|10|etc] the smaller the better but >1 to avoid data loss ##
+## WP_AUTOSAVE_INTERVAL = [15|30|60|120|etc] less often saves resources but risks data loss ##
+## WP_HTTP_BLOCK_EXTERNAL = [false|true] best for typical users to keep this disabled ##
+## WP_ACCESSIBLE_HOSTS = [api.wordpress.org,example.com,etc] comma separated allowed hosts ##
+## WP_DISALLOW_FILE_EDIT = [false|true] prevents editing plugin/theme files in WP Admin ##
+## WP_DISALLOW_FILE_MODS = [false|true] prevents all core/plugin/theme updates and changes ##
+## WP_ALLOW_UNFILTERED_UPLOADS = [true|false] interactive communities should not allow ##
+## WP_OBJECT_CACHE = [true|false] most sites will benefit from object caching ##
+## WP_MU_PLUGINS = [default|custom] use our default MU plugins or custom ones ##
+
+WP_POST_REVISIONS="3"
+WP_AUTOSAVE_INTERVAL="60"
+WP_HTTP_BLOCK_EXTERNAL="false"
+WP_ACCESSIBLE_HOSTS="api.wordpress.org"
+WP_DISALLOW_FILE_EDIT="false"
+WP_DISALLOW_FILE_MODS="false"
+WP_ALLOW_UNFILTERED_UPLOADS="true"
+WP_OBJECT_CACHE="true"
+WP_MU_PLUGINS="default"
+
+## the WordPress plugin blacklist can be disabled entirely or custom blacklist used ##
+## to use a custom blacklist simply replace source with your Gist raw URL or etc ##
+
+## WP_PLUGIN_BLACKLIST = [true|false] enable or disable the WordPress plugin blacklist ##
+## WP_PLUGIN_BLACKLIST_SOURCE = [*must be unique*] URL to custom blacklist.txt file ##
+
+WP_PLUGIN_BLACKLIST="true"
+WP_PLUGIN_BLACKLIST_SOURCE="https://raw.githubusercontent.com/littlebizzy/slickstack/master/modules/wordpress/blacklist.txt"
+
+####################################################################################################
+#### SS-Config: Whitelabel Settings ################################################################
+####################################################################################################
+
+## whitelabeling allows agencies to replace some generic branding with their own ##
+## this is useful for running your own web hosting business or otherwise ##
+
+## WHITELABEL_BRAND = [*must be unique*] the agency name you want customers to see ##
+## WHITELABEL_HOMEPAGE = [*must be unique*] generic website homepage for your agency ##
+## WHITELABEL_SUPPORT_URL = [*must be unique*] link to open new support requests ##
+## WHITELABEL_SUPPORT_EMAIL = [*must be unique*] direct email address customers can use ##
+## WHITELABEL_BILLING_METHOD = [paypal] allows hosting payments directly in WP Admin ##
+
+WHITELABEL_BRAND="SlickStack"
+WHITELABEL_HOMEPAGE="https://slickstack.io"
+WHITELABEL_SUPPORT_URL="https://slickstack.io/forum"
+WHITELABEL_SUPPORT_EMAIL="example@slickstack.io"
+WHITELABEL_BILLING_METHOD="paypal" ## not supported yet
+
+####################################################################################################
+#### SS-Config: Remote Backup Settings #############################################################
+####################################################################################################
+
+## BE SURE TO ENABLE YOUR PREFERRED SERVICE USING SS_REMOTE_BACKUPS OPTION IN SS-CONFIG ##
+
+## not to be confused with the ss-dump scripts which create temporary local archives ##
+## remote backups push your SlickStack data to cloud storage using rsync/rclone ##
+
+## RCLONE_TYPE = [b2|dropbox|etc] choose a supported rclone cloud storage provider ##
+## RCLONE_MODE = [copy|sync] copy avoids data loss but complicates restores ##
+## RCLONE_REMOTE_PATH = [*must be unique*] storage path on your remote service ##
+## RCLONE_CLIENT_ID = [*must be unique*] might be account key ID or application key ID ##
+## RCLONE_CLIENT_SECRET = [*must be unique*] might be master key or application key ##
+## RCLONE_USER = [*must be unique*] some services want to know your username ##
+## RCLONE_PASSWORD = [*must be unique*] some services want to know your password ##
+## RCLONE_TOKEN = [*must be unique*] usually a one-time token you must generate ##
+## RCLONE_BACKUP_PATH = [/var/www/backups/|etc] directory tree that you want to rclone ##
+## RCLONE_PARALLEL_TRANSFERS = [15|100|...] number of parallel transfers (more is faster) ##
+
+## about parallel transfers: 1000 on 2c VPS = 200% CPU, 500 = 120% CPU, 100 = 10% CPU ##
+## WARNING: when you set parallel transfers high and have files that are big, it could crash your VPS. ##
+## when you have files over 5GB, it will chunk that data to 96MB and stores them in RAM. 96MB*transfers=RAM Usage ##
+## WARNING: /var/www/ will exceed the free limit of 2500 daily Class C Transactions! 1 file/chunk makes 2 API calls ##
+## /var/www/backups/ and SS_DUMP_FILES recommended ##
+## b2 Application key must have read and write permissions ##
+
+RCLONE_TYPE="b2" ## only b2 supported for now
+RCLONE_MODE="copy" ## recommended to leave "copy" and use b2 lifecycle rules
+RCLONE_REMOTE_PATH="/bucketname/@SITE_FULL_DOMAIN"  ## for b2 use /bucketname/ and then subfolder
+RCLONE_CLIENT_ID="" ## fill with b2 key ID
+RCLONE_CLIENT_SECRET="" ## fill with b2 key
+RCLONE_USER=""
+RCLONE_PASSWORD=""
+RCLONE_TOKEN=""
+RCLONE_BACKUP_PATH="/var/www/backups/" ## enable SS_DUMP_FILES first
+RCLONE_PARALLEL_TRANSFERS="15" ## default 15 (recommended lower for big files)
+
+## RSYNC_REMOTE_HOST = [192.0.2.1|example.rsync.net|etc] remote host address for rsync ##
+## RSYNC_BACKUP_PATH = [/var/www/html/|etc] best to backup html directory for rsync ##
+## RSYNC_USER = [*must be unique*] username is assigned by services like rsync.net ##
+## RSYNC_PASSWORD = [*must be unique*] password is assigned by services like rsync.net ##
+
+RSYNC_REMOTE_HOST="192.0.2.1"
+RSYNC_BACKUP_PATH="/var/www/html/" ## hardcoded for now in ss-remote-backups
+RSYNC_USER=""
+RSYNC_PASSWORD=""
+
+####################################################################################################
+#### deleting below soon ###########################################################################
+####################################################################################################
+
+## ss-clean-files ##
+SS_CLEAN_FILES_ROOT_PUBLIC="true" ## public dir
+SS_CLEAN_FILES_ROOT_PRIVATE="true" ## root dir
+
+## coming soon ##
+# SS_CLEAN_FILES_PHP_HACKS="true"
+# SS_CLEAN_FILES_BACKUPS="true"
+
+####################################################################################################
+#### SS-Config: SSL Settings (CSR Optional) ########################################################
+####################################################################################################
+
+## some of these settings only apply to OpenSSL or Lets Encrypt / third-party certs ##
+## to avoid confusion we maintain all SSL related settings in the same place ##
+
+## SSL_TYPE = [openssl|certbot|thirdparty] for Cloudflare Full (strict) choose certbot ##
+## SSL_PROTOCOLS = [TLSv1.2 TLSv1.3] nearly all servers should be using 1.2 and 1.3 ##
+## SSL_CIPHERS = [*changes regularly*] the Mozilla cipher list is one of the best ##
+## SSL_SESSION_TIMEOUT = [120m|360m|1d|etc] less sensitive sites can use a higher setting ##
+## SSL_SESSION_CACHE = [shared:SSL:64m] there should be no reason to use other settings ##
+## SSL_BUFFER_SIZE = [16k|8k|4k] smaller is better but less than 16k can cause errors ##
+
+SSL_TYPE="openssl"
+SSL_PROTOCOLS="TLSv1.2 TLSv1.3"
+SSL_CIPHERS="ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305"
+SSL_SESSION_TIMEOUT="1d"
+SSL_SESSION_CACHE="shared:SSL:64m"
+SSL_BUFFER_SIZE="16k"
+
+## OPENSSL_CERT_INCLUDE_DOMAINS = [true|false] required for any web-facing domains ##
+## OPENSSL_CERT_INCLUDE_IPS = [false|true] strongly discouraged to avoid doxxing origin ##
+## OPENSSL_CERT_INCLUDE_LOCALHOST = [false|true] might help during local development ##
+
+OPENSSL_CERT_INCLUDE_DOMAINS="true"
+OPENSSL_CERT_INCLUDE_IPS="false"
+OPENSSL_CERT_INCLUDE_LOCALHOST="false"
+
+## new ##
+CERTBOT_REQUEST="true"
+
+## the CSR settings below are not required and exist only in case of future needs ##
+## Certbot does not use this CSR data (only OpenSSL uses it currently) ##
+
+## CSR_COUNTRY = [US|etc] country to be used with your SSL CSR request data ##
+## CSR_STATE = [Nevada|etc] state or province to be used with your SSL CSR request data ##
+## CSR_CITY = [Las Vegas|etc] city or town to be used with your SSL CSR request data ##
+## CSR_COMPANY = [Example, LLC|etc] company name to be used with your SSL CSR request data ##
+## CSR_DEPT = [DevOps|etc] department to be used with your SSL CSR request data ##
+
+CSR_COUNTRY="US"
+CSR_STATE="Nevada"
+CSR_CITY="Las Vegas"
+CSR_COMPANY="Example, LLC"
+CSR_DEPT="DevOps"
+
+####################################################################################################
+#### SS-Config: Nginx Settings #####################################################################
+####################################################################################################
+
+## default Nginx settings assume that CloudFlare is in front of your origin VPS server ##
+## this means that most settings are very liberal to allow for traffic scaling ##
+
+## NGINX_WORKER_RLIMIT_NOFILE = [655535] our default is the max limit for nofile ##
+## NGINX_WORKER_PRIORITY = [-10|-5|0|etc] negative values can help with high loads ##
+## NGINX_WORKER_CONNECTIONS = [1024|4096|8192|etc] change with regard to server resources ##
+## NGINX_SERVER_NAMES_HASH_BUCKET_SIZE = [64|128|etc] only for experts ##
+## NGINX_SERVER_NAMES_MAX_HASH_SIZE = [512|etc] only for experts ##
+## NGINX_TYPES_MAX_HASH_SIZE = [2048|etc] only for experts ##
+## NGINX_CLIENT_MAX_BODY_SIZE = [64m|etc] decreasing this might produce fatal errors ##
+## NGINX_CLIENT_BODY_BUFFER_SIZE = [64k|128k|etc] be a good boy dont mess with buffers ##
+## NGINX_CLIENT_HEADER_BUFFER_SIZE = [2k|4k|etc] be a good boy dont mess with buffers ##
+## NGINX_LARGE_CLIENT_HEADER_BUFFERS = [4 8k|etc] yes that space is required ##
+## NGINX_CLIENT_BODY_TIMEOUT = [10s|30s|60s|etc] be a good boy dont mess with timeouts ##
+## NGINX_CLIENT_HEADER_TIMEOUT = [5s|10s|15s|etc] be a good boy dont mess with timeouts ##
+## NGINX_KEEPALIVE_TIMEOUT = [10s|30s|60s|90s|etc] be a good boy dont mess with timeouts ##
+## NGINX_KEEPALIVE_REQUESTS = [100|500|65535] our default is the max limit for requests ##
+## NGINX_SEND_TIMEOUT = [10s|30s|60s|120s|etc] might not do what you think it does ##
+## NGINX_VARIABLES_HASH_MAX_SIZE = [1024|2048|etc] usually 2048 avoids warnings ##
+## NGINX_VARIABLES_HASH_BUCKET_SIZE = [64|etc] not many reasons to not use 64 ##
+
+NGINX_WORKER_RLIMIT_NOFILE="65535"
+NGINX_WORKER_PRIORITY="-5"
+NGINX_WORKER_CONNECTIONS="4096"
+NGINX_SERVER_NAMES_HASH_BUCKET_SIZE="128"
+NGINX_SERVER_NAMES_MAX_HASH_SIZE="512"
+NGINX_TYPES_MAX_HASH_SIZE="2048"
+
+NGINX_CLIENT_MAX_BODY_SIZE="64m"
+NGINX_CLIENT_BODY_BUFFER_SIZE="128k"
+NGINX_CLIENT_HEADER_BUFFER_SIZE="2k"
+NGINX_LARGE_CLIENT_HEADER_BUFFERS="4 8k"
+
+NGINX_CLIENT_BODY_TIMEOUT="30s"
+NGINX_CLIENT_HEADER_TIMEOUT="10s"
+NGINX_KEEPALIVE_TIMEOUT="15s"
+NGINX_KEEPALIVE_REQUESTS="100"
+NGINX_SEND_TIMEOUT="10s"
+
+## new ##
+NGINX_VARIABLES_HASH_MAX_SIZE="2048"
+NGINX_VARIABLES_HASH_BUCKET_SIZE="64"
+
+## OPEN_FILE_CACHE_MAX = [10000|etc] total number of file caches to allow (uses space) ##
+## OPEN_FILE_CACHE_INACTIVE = [20s|etc] period that controls min_uses window ##
+## OPEN_FILE_CACHE_MIN_USES = [2|etc] minimum amount of requests during active period ##
+## OPEN_FILE_CACHE_VALID = [30s|etc] how long before cached versions revalidated ##
+## OPEN_FILE_CACHE_ERRORS = [on] caching errors helps your server to scale smoothly ##
+
+OPEN_FILE_CACHE_MAX="10000"
+OPEN_FILE_CACHE_INACTIVE="20s"
+OPEN_FILE_CACHE_MIN_USES="2"
+OPEN_FILE_CACHE_VALID="30s"
+OPEN_FILE_CACHE_ERRORS="on"
+
+####################################################################################################
+#### SS-Config: Rate-Limiting Settings #############################################################
+####################################################################################################
+
+## rate-limiting Nginx can be very powerful but these settings are often misunderstood ##
+## research carefully and keep in mind requests are not the same as page loads ##
+
+## LIMIT_CONNECTIONS_PER_IP = [10|15|etc] usually a device needs at least 5+ connections ##
+## LIMIT_CONNECTIONS_SERVER = [100|500|etc] total number of connections Nginx should maintain ##
+
+LIMIT_CONNECTIONS_PER_IP="10"
+LIMIT_CONNECTIONS_SERVER="100"
+
+## limit requests ##
+LIMIT_REQUESTS_SERVER_SECOND="100"
+LIMIT_REQUESTS_SERVER_SECOND_BURST="300"
+LIMIT_REQUESTS_SERVER_MINUTE="3000"
+LIMIT_REQUESTS_SERVER_MINUTE_BURST="9000"
+LIMIT_REQUESTS_PHP_SECOND="100"
+LIMIT_REQUESTS_PHP_SECOND_BURST="300"
+LIMIT_REQUESTS_PHP_MINUTE="3000"
+LIMIT_REQUESTS_PHP_MINUTE_BURST="9000"
+LIMIT_REQUESTS_WPLOGIN_SECOND="1"
+LIMIT_REQUESTS_WPLOGIN_SECOND_BURST="1"
+LIMIT_REQUESTS_WPLOGIN_MINUTE="60"
+LIMIT_REQUESTS_WPLOGIN_MINUTE_BURST="2"
+
+LIMIT_REQUESTS_WPSEARCH_SECOND="100"
+LIMIT_REQUESTS_WPSEARCH_SECOND_BURST="300"
+LIMIT_REQUESTS_WPSEARCH_MINUTE="3000"
+LIMIT_REQUESTS_WPSEARCH_MINUTE_BURST="9000"
+
+## soon ##
+LIMIT_REQUESTS_ADMINER_SECOND="300"
+LIMIT_REQUESTS_ADMINER_MINUTE="5000"
+
+####################################################################################################
+#### SS-Config: Fail2ban Settings ##################################################################
+####################################################################################################
+
+FAIL2BAN_GET_DOS_FINDTIME="60"
+FAIL2BAN_GET_DOS_MAXRETRY="100"
+FAIL2BAN_GET_DOS_BANTIME="3600"
+
+FAIL2BAN_POST_DOS_FINDTIME="30"
+FAIL2BAN_POST_DOS_MAXRETRY="10"
+FAIL2BAN_POST_DOS_BANTIME="3600"
+
+FAIL2BAN_4XX_FINDTIME="60"
+FAIL2BAN_4XX_MAXRETRY="10"
+FAIL2BAN_4XX_BANTIME="3600"
+
+FAIL2BAN_5XX_FINDTIME="600"
+FAIL2BAN_5XX_MAXRETRY="100"
+FAIL2BAN_5XX_BANTIME="21600"
+
+####################################################################################################
+#### SS-Config: FastCGI Cache Settings #############################################################
+####################################################################################################
+
+## nearly every WordPress site should be using FastCGI Cache at least for micro-caching ##
+## it is pre-configured to skip cache on critical pages like cart, checkout, etc ##
+
+## FCGI_CACHE = [true|false] recommended for nearly every WordPress site ##
+## FCGI_CACHE_VALID = [30m|1440m|etc] longer is better (but dynamic sites need less) ##
+## FCGI_CACHE_INACTIVE = [60m|2880m|etc] longer is better to improve stale requests ##
+## FCGI_CACHE_MEMORY = [64m|128m|256m|512m|etc] for 512M|1GB|2GB|4GB RAM VPS ##
+## FCGI_CACHE_MAX_SIZE = [2048m|4096m|8192m|16384m|etc] allocate space on disk ##
+## FCGI_CACHE_QUERIES =
+## FCGI_CACHE_QUERIES_SEARCH = 
+## FCGI_CACHE_TMPFS = [false|true] mount as TMPFS (not recommended) ##
+
+## FCGI_CONNECT_TIMEOUT = [60s|etc] usually these timeouts can be about the same ##
+## FCGI_READ_TIMEOUT = [60s|120s|etc] should usually match PHP_MAX_EXECUTION_TIME ##
+## FCGI_SEND_TIMEOUT = [60s|etc] usually these timeouts can be about the same ##
+## FCGI_BUFFERS = [32 32k] warning: 16 16k not compatible with 256k busy buffers ##
+## FCGI_BUFFER_SIZE = [32k|etc] in most cases 32k is all you need ##
+## FCGI_BUSY_BUFFERS_SIZE = [256k|etc] in most cases 256k is all you need ##
+## FCGI_TEMP_FILE_WRITE_SIZE = [256k|etc] in most cases 256k is all you need ##
+
+FCGI_CACHE="true"
+FCGI_CACHE_VALID="1440m"
+FCGI_CACHE_INACTIVE="2880m"
+FCGI_CACHE_MEMORY="256m"
+FCGI_CACHE_MAX_SIZE="4096m"
+# FCGI_CACHE_QUERIES="true"
+# FCGI_CACHE_QUERIES_SEARCH="true"
+FCGI_CACHE_TMPFS="false"
+
+FCGI_CONNECT_TIMEOUT="60s"
+FCGI_READ_TIMEOUT="120s"
+FCGI_SEND_TIMEOUT="60s"
+FCGI_BUFFERS="8 32k"
+FCGI_BUFFER_SIZE="16k"
+FCGI_BUSY_BUFFERS_SIZE="128k"
+FCGI_TEMP_FILE_WRITE_SIZE="128k"
+
+####################################################################################################
+#### SS-Config: MySQL + InnoDB Settings (Applies To Localhost Database Only) #######################
+####################################################################################################
+
+## there are very few settings that need to be optimized in MySQL after version 5.7+ ##
+## probably the SQL_MODE is the only setting that you might consider changing ##
+
+## SQL_MODE = [*infinite options*] the preset mode is highly recommended ##
+## SQL_MAX_ALLOWED_PACKET = [256M|1GB|etc] a high number helps avoid staging/backup issues ##
+## SQL_CONNECT_TIMEOUT = [15|30|60|3600|etc] time allowed to establish a connection ##
+## SQL_WAIT_TIMEOUT = [30|60|3600|28800|etc] usually this can be a fairly small number ##
+## SQL_INTERACTIVE_TIMEOUT = [1800|3600|28800|43200|etc] larger to support applications etc ##
+## SQL_NET_READ_TIMEOUT = [30|60|3600|etc] usually this should be fine at 30 seconds ##
+## SQL_NET_WRITE_TIMEOUT = [30|60|3600|etc] usually this should be fine at 60 seconds ##
+
+SQL_MODE="STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION"
+# SQL_MODE="STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION,ALLOW_INVALID_DATES" better if works?
+
+SQL_MAX_ALLOWED_PACKET="1GB"
+SQL_CONNECT_TIMEOUT="60"
+SQL_WAIT_TIMEOUT="3600"
+SQL_INTERACTIVE_TIMEOUT="43200"
+SQL_NET_READ_TIMEOUT="3600"
+SQL_NET_WRITE_TIMEOUT="3600"
+
+## INNODB_BUFFER_POOL_SIZE = [auto|256M|512M|1GB|2GB|4GB|etc] ~50-70% of total RAM ##
+## INNODB_LOG_FILE_SIZE = [256M|512M|1GB|etc] bigger is better but slows crash recovery ##
+## INNODB_LOG_FILES_IN_GROUP = [1|2|etc] debated but 1 is usually best ##
+## INNODB_FLUSH_LOG_AT_TRX_COMMIT = [true|false] be a good boy and leave it on ##
+## INNODB_FLUSH_METHOD = most servers should use O_DIRECT flushing ##
+
+INNODB_BUFFER_POOL_SIZE="auto"
+INNODB_LOG_FILE_SIZE="256M"
+INNODB_LOG_FILES_IN_GROUP="1"
+INNODB_FLUSH_LOG_AT_TRX_COMMIT="true"
+INNODB_FLUSH_METHOD="O_DIRECT_NO_FSYNC"
+
+####################################################################################################
+#### SS-Config: General PHP Settings (php.ini) #####################################################
+####################################################################################################
+
+## many well-known PHP settings are hardcoded to ensure server stability and security ##
+## below settings can be modified before ss-install to customize PHP as needed ##
+
+## PHP_EXTENSIONS = [fpm,bcmath,gd,imagick,json,mbstring,mysql,soap,sqlite3,xml,zip] ##
+## PHP_PRECISION = [14|etc] not many reasons to change from default value ##
+## PHP_OUTPUT_BUFFERING = [4096|etc] keep in mind zlib.output_compression is disabled ##
+## PHP_UNSERIALIZE_MAX_DEPTH = [4096|etc] new max depth setting for PHP 7.4 ##
+## PHP_SERIALIZE_PRECISION = [-1|100|etc] only for uncommon situations ##
+## PHP_DISABLE_FUNCTIONS = [*infinite options*] disable certain unsafe PHP functions ##
+## PHP_DISABLE_CLASSES = [*infinite options*] disable certain unsafe PHP classes ##
+## PHP_MAX_EXECUTION_TIME = [30|60|120|300|etc] most websites should use 30-60 ##
+## PHP_MAX_INPUT_TIME = [30|60|120|300|etc] most websites should use 30-60 ##
+## PHP_MAX_INPUT_NESTING_LEVEL = [64|etc] not many reasons to change default value (64) ##
+## PHP_MAX_INPUT_VARS = [3000|5000|10000|etc] mostly to support extremely bloated themes ##
+## PHP_MAX_MULTIPART_BODY_PARTS = [1500|etc] helps reduce the strength of DDOS attacks ##
+## PHP_MEMORY_LIMIT = [256M|512M|etc] should probably be 512M for most websites ##
+## PHP_POST_MAX_SIZE = [256M|512M|etc] limit the size of post data ##
+## PHP_UPLOAD_MAX_FILESIZE = [256M|512M|1024M|etc] limit the size of large uploads ##
+## PHP_MAX_FILE_UPLOADS = [10|100|1000|etc] more relevant for community websites ##
+## PHP_ALLOW_URL_FOPEN = [true|false] safe for most sites to keep this enabled ##
+## PHP_DEFAULT_SOCKET_TIMEOUT = [60|etc] not many reasons to change this ##
+
+PHP_EXTENSIONS=""
+PHP_PRECISION="14"
+PHP_OUTPUT_BUFFERING="4096"
+PHP_UNSERIALIZE_MAX_DEPTH="4096" ## PHP 7.4+
+PHP_SERIALIZE_PRECISION="-1"
+PHP_DISABLE_FUNCTIONS=""
+PHP_DISABLE_CLASSES=""
+PHP_MAX_EXECUTION_TIME="60"
+PHP_MAX_INPUT_TIME="60"
+PHP_MAX_INPUT_NESTING_LEVEL="64"
+PHP_MAX_INPUT_VARS="5000"
+PHP_MAX_MULTIPART_BODY_PARTS="1500" ## PHP 8.3+
+PHP_MEMORY_LIMIT="512M"
+PHP_POST_MAX_SIZE="512M"
+PHP_UPLOAD_MAX_FILESIZE="512M"
+PHP_MAX_FILE_UPLOADS="100"
+PHP_ALLOW_URL_FOPEN="true"
+PHP_DEFAULT_SOCKET_TIMEOUT="60"
+
+####################################################################################################
+#### SS-Config: FPM Settings #######################################################################
+####################################################################################################
+
+## the vast majority of SlickStack servers should not need to adjust any FPM settings ##
+## in most cases the general PHP settings or pool settings are more relevant ##
+
+## FPM_EMERGENCY_RESTART_THRESHOLD = [5|10|15|etc] how many failures per interval ##
+## FPM_EMERGENCY_RESTART_INTERVAL = [30s|1m|etc] time window for invalid signals threshold ##
+## FPM_PROCESS_CONTROL_TIMEOUT = [5s|10s|etc] how long child processes wait for signal ##
+## FPM_PROCESS_MAX = [128|etc] controls max PHP workers when using dynamic PM ##
+## FPM_PROCESS_PRIORITY = [-19|etc] only change this for multi-site server setups ##
+## FPM_RLIMIT_FILES = [65535|etc] we leave this uncapped by default (i.e. 65535) ##
+## FPM_RLIMIT_CORE = [0|etc] almost every site should keep this disabled (i.e. 0) ##
+## FPM_SYSTEMD_INTERVAL = [0|10s|etc] 10 is usually perfect but 0 gives a small boost ##
+
+FPM_EMERGENCY_RESTART_THRESHOLD="10"
+FPM_EMERGENCY_RESTART_INTERVAL="1m"
+FPM_PROCESS_CONTROL_TIMEOUT="10s"
+FPM_PROCESS_MAX="128"
+FPM_PROCESS_PRIORITY="-19"
+FPM_RLIMIT_FILES="65535"
+FPM_RLIMIT_CORE="0"
+FPM_SYSTEMD_INTERVAL="10s"
+
+####################################################################################################
+#### SS-Config: Pool Settings ######################################################################
+####################################################################################################
+
+## modifying pool settings can have drastic effects on scaling LEMP for high-traffic ##
+## ondemand is best for cheap cloud VMs (most sites should not change these) ##
+
+## WWW_LISTEN_BACKLOG = [65535|etc] most sites can leave this uncapped (i.e. 65535) ##
+## WWW_PM_MODE = [ondemand|dynamic] dynamic for extremely high traffic (upgrade your VM) ##
+## WWW_PM_MAX_CHILDREN = [5|10|20|etc] really depends on the rest of the settings you choose ##
+## WWW_PM_START_SERVERS = [2|etc] keeping this number small usually makes more sense ##
+## WWW_PM_MIN_SPARE_SERVERS = [1|etc] keep this at 1 to maximize CPU efficiency ##
+## WWW_PM_MAX_SPARE_SERVERS = [3|etc] should usually be greater than PM_START_SERVERS ##
+## WWW_PM_MAX_SPAWN_RATE = [32|etc] play with dynamic spawn rate at your own risk ##
+## WWW_PM_PROCESS_IDLE_TIMEOUT = [5s|10s|etc] keep it small to avoid CPU resource abuse ##
+## WWW_PM_MAX_REQUESTS = [50|200|500|etc] usually can keep it big if other settings are safe ##
+## WWW_REQUEST_TERMINATE_TIMEOUT = [60s|etc] backup timeout if IDLE_TIMEOUT not applied ##
+## WWW_RLIMIT_FILES = [65535|etc] most sites can leave this uncapped (i.e. 65535) ##
+## WWW_RLIMIT_CORE = [0|etc] most sites should keep this disabled (i.e. 0) ##
+
+WWW_LISTEN_BACKLOG="65535"
+WWW_PM_MODE="ondemand"
+WWW_PM_MAX_CHILDREN="20"
+WWW_PM_START_SERVERS="2"
+WWW_PM_MIN_SPARE_SERVERS="1"
+WWW_PM_MAX_SPARE_SERVERS="3"
+WWW_PM_MAX_SPAWN_RATE="32"
+WWW_PM_PROCESS_IDLE_TIMEOUT="10s"
+WWW_PM_MAX_REQUESTS="500"
+WWW_REQUEST_TERMINATE_TIMEOUT="60s"
+WWW_RLIMIT_FILES="65535"
+WWW_RLIMIT_CORE="0"
+
+####################################################################################################
+#### SS-Config: OPcache Settings ###################################################################
+####################################################################################################
+
+## OPcache is one of the most powerful (and underrated) ways to scale cheap VPS servers ##
+## high traffic sites that understand how it works can adjust it with big results ##
+
+## OPCACHE_MEMORY_CONSUMPTION = [128|256|512|etc] how much RAM that OPcache can use ##
+## OPCACHE_INTERNED_STRINGS_BUFFER = [16|32|64|etc] probably keep this at 64 ##
+## OPCACHE_MAX_ACCELERATED_FILES = [10000|1000000|etc] must be between 200-1000000 files ##
+## OPCACHE_MAX_WASTED_PERCENTAGE = [5|10|15|20|etc] careful not to set this too high ##
+## OPCACHE_REVALIDATE_FREQUENCY = [2|15|60|etc] seconds before cache checks for changes ##
+## OPCACHE_HUGE_CODE_PAGES = [false|true] only for experts (at your own risk) ##
+## OPCACHE_PRELOAD = [false|true] PHP script that should be included when preloading ##
+## OPCACHE_BLACKLIST_FILENAME = [*must be unique*] absolute path to blacklist file ##
+
+OPCACHE_MEMORY_CONSUMPTION="256"
+OPCACHE_INTERNED_STRINGS_BUFFER="64"
+OPCACHE_MAX_ACCELERATED_FILES="10000"
+OPCACHE_MAX_WASTED_PERCENTAGE="5"
+OPCACHE_REVALIDATE_FREQUENCY="2"
+OPCACHE_HUGE_CODE_PAGES="false"
+OPCACHE_PRELOAD=""
+OPCACHE_BLACKLIST_FILENAME=""
+
+## new for ubuntu 24.04 and php 8.3 ##
+OPCACHE_JIT_CRTO="1255"
+OPCACHE_JIT_BUFFER_SIZE=""
+
+####################################################################################################
+#### SS-Config: Interval Settings ##################################################################
+####################################################################################################
+
+## modifying the below SlickStack intervals could affect server stability and updates ##
+## disable any given task by setting interval to random string (e.g. never) ##
+
+## [often|regular|quarter-hourly|half-hourly|hourly|quarter-daily|half-daily|daily|half-weekly|weekly|half-monthly|monthly|sometimes] ##
+## often = 2min, regular = 5min, sometimes = 2months
+
+## INTERVAL_SS_CLEAN_DATABASE = [hourly|quarter-daily|half-daily|daily|half-weekly|weekly] ##
+## INTERVAL_SS_CLEAN_FILES = [hourly|quarter-daily|half-daily|daily] ##
+## INTERVAL_SS_DUMP_DATABASE = [often|regular|quarter-hourly|half-hourly|hourly|quarter-daily|half-daily|daily] ##
+## INTERVAL_SS_DUMP_FILES = [half-hourly|hourly|quarter-daily|half-daily|daily|half-weekly] ##
+## INTERVAL_SS_EMPTY_LOGS = [quarter-daily|half-daily|daily|half-weekly|weekly] ##
+## INTERVAL_SS_ENCRYPT_CERTBOT = [weekly|half-monthly|monthly] ##
+## INTERVAL_SS_ENCRYPT_OPENSSL = [weekly|half-monthly|monthly|sometimes] ##
+## INTERVAL_SS_INSTALL_NGINX_CLOUDFLARE_IPS = [daily|half-weekly|weekly] ##
+## INTERVAL_SS_INSTALL_UBUNTU_BASH = [daily|half-weekly|weekly|half-monthly] ##
+## INTERVAL_SS_INSTALL_UFW_CONFIG = [monthly|sometimes] ##
+## INTERVAL_SS_INSTALL_UFW_PACKAGES = [monthly|sometimes] ##
+## INTERVAL_SS_INSTALL_WORDPRESS_CLI = [weekly|half-monthly|monthly|sometimes] ##
+## INTERVAL_SS_INSTALL_WORDPRESS_CONFIG = [quarter-daily|half-daily|daily|half-weekly|weekly|half-monthly|monthly] ##
+## INTERVAL_SS_INSTALL_WORDPRESS_PACKAGES = [weekly|half-monthly|monthly] ##
+## INTERVAL_SS_INSTALL_WORDPRESS_MU_PLUGINS = [half-daily|daily|half-weekly] ##
+## INTERVAL_SS_OPTIMIZE_DATABASE = [daily|half-weekly|weekly|half-monthly] ##
+## INTERVAL_SS_OPTIMIZE_FILES = [half-daily|daily|half-weekly|weekly|half-monthly] ##
+## INTERVAL_SS_PERMS = [hourly|quarter-daily|half-daily|daily] ##
+## INTERVAL_SS_REBOOT_MACHINE = [weekly|half-monthly|monthly|sometimes] ##
+## INTERVAL_SS_REMOTE_BACKUP = [half-daily|daily|half-weekly|weekly] ##
+## INTERVAL_SS_SYNC_STAGING = [hourly|quarter-daily|half-daily|daily|half-weekly] ##
+## INTERVAL_SS_UPDATE_CONFIG = [half-monthly|monthly|sometimes] ##
+## INTERVAL_SS_UPDATE_MODULES = [monthly|sometimes] ##
+
+INTERVAL_SS_CLEAN_DATABASE="never" ## ss default = never (not functional yet)
+INTERVAL_SS_CLEAN_FILES="half-daily" ## ss default = half-daily
+INTERVAL_SS_DUMP_DATABASE="hourly" ## ss default = hourly
+INTERVAL_SS_DUMP_FILES="never" ## ss default = never
+INTERVAL_SS_EMPTY_LOGS="never" ## ss default = never
+INTERVAL_SS_ENCRYPT_CERTBOT="weekly" ## ss default = weekly
+INTERVAL_SS_ENCRYPT_OPENSSL="never" ## ss default = never
+INTERVAL_SS_INSTALL_NGINX_CLOUDFLARE_IPS="half-weekly" ## ss default = half-weekly
+INTERVAL_SS_INSTALL_UBUNTU_BASH="half-weekly" ## ss default = half-weekly
+INTERVAL_SS_INSTALL_UFW_CONFIG="never" ## ss default = never
+INTERVAL_SS_INSTALL_UFW_PACKAGES="never" ## ss default = never
+INTERVAL_SS_INSTALL_WORDPRESS_CLI="never" ## ss default = never
+INTERVAL_SS_INSTALL_WORDPRESS_CONFIG="never" ## ss default = never
+INTERVAL_SS_INSTALL_WORDPRESS_PACKAGES="never" ## ss default = never
+INTERVAL_SS_INSTALL_WORDPRESS_MU_PLUGINS="half-weekly" ## ss default = half-weekly
+INTERVAL_SS_OPTIMIZE_DATABASE="weekly" ## ss default = weekly
+INTERVAL_SS_OPTIMIZE_FILES="half-weekly" ## ss default = half-weekly
+INTERVAL_SS_PERMS="quarter-daily" ## ss default = quarter-daily
+INTERVAL_SS_REBOOT_MACHINE="never" ## ss default = never
+INTERVAL_SS_REMOTE_BACKUP="never" ## ss default = never
+INTERVAL_SS_SYNC_STAGING="half-daily" ## ss default = half-daily
+INTERVAL_SS_UPDATE_CONFIG="never" ## ss default = never
+INTERVAL_SS_UPDATE_MODULES="never" ## ss default = never
+
+####################################################################################################
+#### SS-Config: MU (Must-Use) WordPress Plugins (Custom List) ######################################
+####################################################################################################
+
+## activate this custom list of MU (Must-Use) plugins using the SS_MU_PLUGINS variable ##
+## NOTE: Autoloader, Custom Functions, Object Cache, and XXX Notices are required ##
+
+## TO DISABLE ANY OF THE MU PLUGINS BELOW SIMPLY DELETE THE RELEVANT LINES FROM SS-CONFIG ##
+
+MU_PLUGIN_01_SOURCE="https://github.com/littlebizzy/slickstack/raw/master/modules/wordpress/mu-plugins/clear-caches.zip"
+MU_PLUGIN_01_DIR="clear-caches"
+
+MU_PLUGIN_02_SOURCE="https://github.com/littlebizzy/slickstack/raw/master/modules/wordpress/mu-plugins/disable-empty-trash.zip"
+MU_PLUGIN_02_DIR="disable-empty-trash"
+
+MU_PLUGIN_03_SOURCE="https://github.com/littlebizzy/slickstack/raw/master/modules/wordpress/mu-plugins/disable-image-compression.zip"
+MU_PLUGIN_03_DIR="disable-image-compression"
+
+MU_PLUGIN_04_SOURCE="https://github.com/littlebizzy/slickstack/raw/master/modules/wordpress/mu-plugins/disable-xml-rpc.zip"
+MU_PLUGIN_04_DIR="disable-xml-rpc"
+
+MU_PLUGIN_05_SOURCE="https://github.com/littlebizzy/slickstack/raw/master/modules/wordpress/mu-plugins/force-https.zip"
+MU_PLUGIN_05_DIR="force-https"
+
+MU_PLUGIN_06_SOURCE="https://github.com/littlebizzy/slickstack/raw/master/modules/wordpress/mu-plugins/plugin-blacklist.zip"
+MU_PLUGIN_06_DIR="plugin-blacklist"
+
+MU_PLUGIN_07_SOURCE="https://github.com/littlebizzy/slickstack/raw/master/modules/wordpress/mu-plugins/repoman.zip"
+MU_PLUGIN_07_DIR="repoman"
+
+## SS_EOF

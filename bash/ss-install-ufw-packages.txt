@@ -1,0 +1,136 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: https://mirrors.slickstack.io/bash/ss-install-ufw-packages.txt ########################
+#### path: /var/www/ss-install-ufw-packages ########################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Reinstalls the entire UFW firewall module for SlickStack servers (idempotent) ########
+#### module version: UFW 0.36.x ####################################################################
+#### sourced by: ss-install ########################################################################
+#### bash aliases: ss install ufw, ss install ufw firewall #########################################
+####################################################################################################
+
+## SS-CONFIG MUST BE PROPERLY CONFIGURED AND ON CURRENT BUILD BEFORE RUNNING SS-INSTALL ##
+## ENSURE YOUR SS-CONFIG BUILD REMAINS CURRENT BY RUNNING SS-UPDATE OCCASIONALLY ##
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Install-UFW-Packages) ###################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Touch Timestamp File
+## B. Message (Begin Script)
+## C. Update Existing Packages
+## D. Install UFW Firewall
+## E. Reset Permissions (UFW)
+
+####################################################################################################
+#### A. SS-Install-UFW-Packages: Touch Timestamp File ##############################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_INSTALL_UFW_PACKAGES}"
+
+####################################################################################################
+#### B. SS-Install-UFW-Packages: Message (Begin Script) ############################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-install-ufw-packages... ${COLOR_RESET}"
+
+####################################################################################################
+#### X. Change To Default Directory #####################################
+####################################################################################################
+
+ss_cd_default
+
+####################################################################################################
+#### C. SS-Install-UFW-Packages: Update Existing Packages ##########################################
+####################################################################################################
+
+## we must include the standard apt update/upgrade in case script is called directly ##
+## this helps to avoid conflicts and outdated packages during installation ##
+
+## SNIPPET: ss-install-[module]-packages (bash scripts)
+## UPDATED: 25MAY2022
+
+## update apt cache ##
+ss_apt_update
+
+## upgrade packages ##
+ss_apt_upgrade
+
+####################################################################################################
+#### D. SS-Install-UFW-Packages: Install UFW Firewall ##############################################
+####################################################################################################
+
+## ubuntu 22.04 ##
+if [[ "${SYSTEM_UBUNTU_VERSION}" = "22.04" ]]; then
+    ss_apt_install ufw
+fi
+
+## ubuntu 20.04 ##
+if [[ "${SYSTEM_UBUNTU_VERSION}" = "20.04" ]]; then
+    ss_apt_install ufw
+fi
+
+## ubuntu 18.04 ##
+if [[ "${SYSTEM_UBUNTU_VERSION}" = "18.04" ]]; then
+    ss_apt_install ufw
+fi
+
+####################################################################################################
+#### E. SS-Install-UFW-Packages: Reset Permissions (UFW) ###########################################
+####################################################################################################
+
+## run ss-perms-ufw-packages ##
+source "${PATH_SS_PERMS_UFW_PACKAGES}"
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://linux.die.net/man/8/apt-get
+## Ref: https://wiki.ubuntu.com/UncomplicatedFirewall
+## Ref: https://askubuntu.com/questions/1006834/ufw-rules-disappear-after-manually-adding-them-to-user-rules-ubuntu-16-04
+## Ref: https://serverfault.com/questions/198398/ubuntu-how-to-add-an-iptables-rule-that-ufw-cant-create
+## Ref: https://askubuntu.com/questions/104899/make-apt-get-or-aptitude-run-with-y-but-not-prompt-for-replacement-of-configu
+## Ref: https://linuxhint.com/apt_get_fix_missing_broken_packages/
+## Ref: https://bugs.launchpad.net/ubuntu/+source/apt/+bug/1341611
+## Ref: http://manpages.ubuntu.com/manpages/focal/man1/add-apt-repository.1.html
+
+## SS_EOF

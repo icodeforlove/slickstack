@@ -1,0 +1,85 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: https://mirrors.slickstack.io/bash/ss-perms-ubuntu-utils.txt ##########################
+#### path: /var/www/ss-perms-ubuntu-utils ##########################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Resets all file and user permissions for misc Ubuntu utility apps ####################
+#### module version: Ubuntu 22.04 LTS ##############################################################
+#### sourced by: ss-perms, ss-install-ubuntu-utils #################################################
+#### bash aliases: ss perms ubuntu utils, ss perms utils ###########################################
+####################################################################################################
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Perms-Ubuntu-Utils) #####################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Touch Timestamp File
+## B. Message (Begin Script)
+## C. Reset Permissions (Ubuntu Utils)
+
+####################################################################################################
+#### A. SS-Perms-Ubuntu-Utils: Touch Timestamp File ################################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_PERMS_UBUNTU_UTILS}"
+
+####################################################################################################
+#### B. SS-Perms-Ubuntu-Utils: Message (Begin Script) ##############################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-perms-ubuntu-utils... ${COLOR_RESET}"
+
+####################################################################################################
+#### C. SS-Perms-Ubuntu-Utils: Reset Permissions (Ubuntu Utils) ####################################
+####################################################################################################
+
+## reset /dev/null permissions ##
+# ss_rm /dev/null
+# mknod /dev/null c 1 3
+chmod 666 /dev/null
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://unix.stackexchange.com/questions/146633/bash-dev-null-permission-denied
+
+## SS_EOF

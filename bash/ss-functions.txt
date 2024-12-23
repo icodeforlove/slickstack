@@ -1,0 +1,1999 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/bash/ss-functions.txt ##############################
+#### path: /var/www/ss-functions ###################################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Required functions and variables for SlickStack bash scripts and cron jobs ###########
+#### module version: Ubuntu 24.04 LTS ##############################################################
+#### sourced by: ss bash scripts, ss cron jobs #####################################################
+#### bash aliases: n/a #############################################################################
+####################################################################################################
+
+## SS-FUNCTIONS MUST BE INCLUDED IN ALL SS SCRIPTS IN ORDER FOR THEM TO WORK PROPERLY ##
+## IT DEFINES BASH VARIABLES, FUNCTIONS, REMOTE MIRROR PATHS, AND FILE PATHS ##
+
+## SS-CONFIG SHOULD NOT BE INCLUDED IN THIS SCRIPT
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Functions) ##############################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Mirror Prefixes (FORKABLE)
+## B. Public Mirror Links
+## C. Temporary File Paths
+## D. Permanent File Paths
+## E. Symlink File Paths
+## F. Timestamp File Paths
+## G. Lock File Paths
+## H. Linux Software Package Names
+## I. File Permissions Shorthand
+## J. SlickStack Functions
+## K. SlickStack Variables (Static)
+## L. SlickStack Variables (Dynamic)
+## M. Shell Styling
+
+####################################################################################################
+#### B. Crontab: Set Default Linux System Path #####################################################
+####################################################################################################
+
+## including the default system path setting below ensures wget (etc) works properly ##
+## this setting is also placed in ss-functions for SlickStack bash scripts ##
+
+PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+####################################################################################################
+#### A. SS-Functions: Mirror Prefixes (FORKABLE) ###################################################
+####################################################################################################
+
+## you should customize the Git mirror prefixes below if you decide to fork SlickStack ##
+## after changing these the rest of the paths in ss-functions should work fine ##
+
+## MODIFY THESE IF YOU FORK SLICKSTACK
+
+GITHUB_PREFIX="https://raw.githubusercontent.com/littlebizzy/slickstack/master"
+GITLAB_PREFIX="https://gitlab.com/littlebizzy/slickstack/-/raw/master"
+SOURCEFORGE_PREFIX="https://sourceforge.net/p/slickstack/code/ci/master/tree"
+BITBUCKET_PREFIX=""
+GITEA_PREFIX=""
+
+####################################################################################################
+#### B. SS-Functions: Public Mirror Links ##########################################################
+####################################################################################################
+
+## these are the remote mirror paths for SlickStack bash scripts and other config files ##
+## the repo prefix defined above is required for all these links to work properly ##
+
+## cron jobs (github) ##
+GITHUB_00_CRONTAB="${GITHUB_PREFIX}/crons/00-crontab.txt"
+GITHUB_01_CRON_MINUTELY="${GITHUB_PREFIX}/crons/01-cron-minutely.txt"
+GITHUB_02_CRON_OFTEN="${GITHUB_PREFIX}/crons/02-cron-often.txt"
+GITHUB_03_CRON_REGULAR="${GITHUB_PREFIX}/crons/03-cron-regular.txt"
+GITHUB_04_CRON_QUARTER_HOURLY="${GITHUB_PREFIX}/crons/04-cron-quarter-hourly.txt"
+GITHUB_05_CRON_HALF_HOURLY="${GITHUB_PREFIX}/crons/05-cron-half-hourly.txt"
+GITHUB_06_CRON_HOURLY="${GITHUB_PREFIX}/crons/06-cron-hourly.txt"
+GITHUB_07_CRON_QUARTER_DAILY="${GITHUB_PREFIX}/crons/07-cron-quarter-daily.txt"
+GITHUB_08_CRON_HALF_DAILY="${GITHUB_PREFIX}/crons/08-cron-half-daily.txt"
+GITHUB_09_CRON_DAILY="${GITHUB_PREFIX}/crons/09-cron-daily.txt"
+GITHUB_10_CRON_HALF_WEEKLY="${GITHUB_PREFIX}/crons/10-cron-half-weekly.txt"
+GITHUB_11_CRON_WEEKLY="${GITHUB_PREFIX}/crons/11-cron-weekly.txt"
+GITHUB_12_CRON_HALF_MONTHLY="${GITHUB_PREFIX}/crons/12-cron-half-monthly.txt"
+GITHUB_13_CRON_MONTHLY="${GITHUB_PREFIX}/crons/13-cron-monthly.txt"
+GITHUB_14_CRON_SOMETIMES="${GITHUB_PREFIX}/crons/14-cron-sometimes.txt"
+
+## cron jobs (gitlab) ##
+GITLAB_00_CRONTAB="${GITLAB_PREFIX}/crons/00-crontab.txt"
+GITLAB_01_CRON_MINUTELY="${GITLAB_PREFIX}/crons/01-cron-minutely.txt"
+GITLAB_02_CRON_OFTEN="${GITLAB_PREFIX}/crons/02-cron-often.txt"
+GITLAB_03_CRON_REGULAR="${GITLAB_PREFIX}/crons/03-cron-regular.txt"
+GITLAB_04_CRON_QUARTER_HOURLY="${GITLAB_PREFIX}/crons/04-cron-quarter-hourly.txt"
+GITLAB_05_CRON_HALF_HOURLY="${GITLAB_PREFIX}/crons/05-cron-half-hourly.txt"
+GITLAB_06_CRON_HOURLY="${GITLAB_PREFIX}/crons/06-cron-hourly.txt"
+GITLAB_07_CRON_QUARTER_DAILY="${GITLAB_PREFIX}/crons/07-cron-quarter-daily.txt"
+GITLAB_08_CRON_HALF_DAILY="${GITLAB_PREFIX}/crons/08-cron-half-daily.txt"
+GITLAB_09_CRON_DAILY="${GITLAB_PREFIX}/crons/09-cron-daily.txt"
+GITLAB_10_CRON_HALF_WEEKLY="${GITLAB_PREFIX}/crons/10-cron-half-weekly.txt"
+GITLAB_11_CRON_WEEKLY="${GITLAB_PREFIX}/crons/11-cron-weekly.txt"
+GITLAB_12_CRON_HALF_MONTHLY="${GITLAB_PREFIX}/crons/12-cron-half-monthly.txt"
+GITLAB_13_CRON_MONTHLY="${GITLAB_PREFIX}/crons/13-cron-monthly.txt"
+GITLAB_14_CRON_SOMETIMES="${GITLAB_PREFIX}/crons/14-cron-sometimes.txt"
+
+## cron jobs (sourceforge) ##
+SOURCEFORGE_00_CRONTAB="${SOURCEFORGE_PREFIX}/crons/00-crontab.txt?format=raw"
+SOURCEFORGE_01_CRON_MINUTELY="${SOURCEFORGE_PREFIX}/crons/01-cron-minutely.txt?format=raw"
+SOURCEFORGE_02_CRON_OFTEN="${SOURCEFORGE_PREFIX}/crons/02-cron-often.txt?format=raw"
+SOURCEFORGE_03_CRON_REGULAR="${SOURCEFORGE_PREFIX}/crons/03-cron-regular.txt?format=raw"
+SOURCEFORGE_04_CRON_QUARTER_HOURLY="${SOURCEFORGE_PREFIX}/crons/04-cron-quarter-hourly.txt?format=raw"
+SOURCEFORGE_05_CRON_HALF_HOURLY="${SOURCEFORGE_PREFIX}/crons/05-cron-half-hourly.txt?format=raw"
+SOURCEFORGE_06_CRON_HOURLY="${SOURCEFORGE_PREFIX}/crons/06-cron-hourly.txt?format=raw"
+SOURCEFORGE_07_CRON_QUARTER_DAILY="${SOURCEFORGE_PREFIX}/crons/07-cron-quarter-daily.txt?format=raw"
+SOURCEFORGE_08_CRON_HALF_DAILY="${SOURCEFORGE_PREFIX}/crons/08-cron-half-daily.txt?format=raw"
+SOURCEFORGE_09_CRON_DAILY="${SOURCEFORGE_PREFIX}/crons/09-cron-daily.txt?format=raw"
+SOURCEFORGE_10_CRON_HALF_WEEKLY="${SOURCEFORGE_PREFIX}/crons/10-cron-half-weekly.txt?format=raw"
+SOURCEFORGE_11_CRON_WEEKLY="${SOURCEFORGE_PREFIX}/crons/11-cron-weekly.txt?format=raw"
+SOURCEFORGE_12_CRON_HALF_MONTHLY="${SOURCEFORGE_PREFIX}/crons/12-cron-half-monthly.txt?format=raw"
+SOURCEFORGE_13_CRON_MONTHLY="${SOURCEFORGE_PREFIX}/crons/13-cron-monthly.txt?format=raw"
+SOURCEFORGE_14_CRON_SOMETIMES="${SOURCEFORGE_PREFIX}/crons/14-cron-sometimes.txt?format=raw"
+
+## custom cron jobs (github) ##
+GITHUB_01_CRON_MINUTELY_CUSTOM="${GITHUB_PREFIX}/crons/custom/01-cron-minutely-custom.txt"
+GITHUB_02_CRON_OFTEN_CUSTOM="${GITHUB_PREFIX}/crons/custom/02-cron-often-custom.txt"
+GITHUB_03_CRON_REGULAR_CUSTOM="${GITHUB_PREFIX}/crons/custom/03-cron-regular-custom.txt"
+GITHUB_04_CRON_QUARTER_HOURLY_CUSTOM="${GITHUB_PREFIX}/crons/custom/04-cron-quarter-hourly-custom.txt"
+GITHUB_05_CRON_HALF_HOURLY_CUSTOM="${GITHUB_PREFIX}/crons/custom/05-cron-half-hourly-custom.txt"
+GITHUB_06_CRON_HOURLY_CUSTOM="${GITHUB_PREFIX}/crons/custom/06-cron-hourly-custom.txt"
+GITHUB_07_CRON_QUARTER_DAILY_CUSTOM="${GITHUB_PREFIX}/crons/custom/07-cron-quarter-daily-custom.txt"
+GITHUB_08_CRON_HALF_DAILY_CUSTOM="${GITHUB_PREFIX}/crons/custom/08-cron-half-daily-custom.txt"
+GITHUB_09_CRON_DAILY_CUSTOM="${GITHUB_PREFIX}/crons/custom/09-cron-daily-custom.txt"
+GITHUB_10_CRON_HALF_WEEKLY_CUSTOM="${GITHUB_PREFIX}/crons/custom/10-cron-half-weekly-custom.txt"
+GITHUB_11_CRON_WEEKLY_CUSTOM="${GITHUB_PREFIX}/crons/custom/11-cron-weekly-custom.txt"
+GITHUB_12_CRON_HALF_MONTHLY_CUSTOM="${GITHUB_PREFIX}/crons/custom/12-cron-half-monthly-custom.txt"
+GITHUB_13_CRON_MONTHLY_CUSTOM="${GITHUB_PREFIX}/crons/custom/13-cron-monthly-custom.txt"
+GITHUB_14_CRON_SOMETIMES_CUSTOM="${GITHUB_PREFIX}/crons/custom/14-cron-sometimes-custom.txt"
+
+## custom cron jobs (gitlab) ##
+GITLAB_01_CRON_MINUTELY_CUSTOM="${GITLAB_PREFIX}/crons/custom/01-cron-minutely-custom.txt"
+GITLAB_02_CRON_OFTEN_CUSTOM="${GITLAB_PREFIX}/crons/custom/02-cron-often-custom.txt"
+GITLAB_03_CRON_REGULAR_CUSTOM="${GITLAB_PREFIX}/crons/custom/03-cron-regular-custom.txt"
+GITLAB_04_CRON_QUARTER_HOURLY_CUSTOM="${GITLAB_PREFIX}/crons/custom/04-cron-quarter-hourly-custom.txt"
+GITLAB_05_CRON_HALF_HOURLY_CUSTOM="${GITLAB_PREFIX}/crons/custom/05-cron-half-hourly-custom.txt"
+GITLAB_06_CRON_HOURLY_CUSTOM="${GITLAB_PREFIX}/crons/custom/06-cron-hourly-custom.txt"
+GITLAB_07_CRON_QUARTER_DAILY_CUSTOM="${GITLAB_PREFIX}/crons/custom/07-cron-quarter-daily-custom.txt"
+GITLAB_08_CRON_HALF_DAILY_CUSTOM="${GITLAB_PREFIX}/crons/custom/08-cron-half-daily-custom.txt"
+GITLAB_09_CRON_DAILY_CUSTOM="${GITLAB_PREFIX}/crons/custom/09-cron-daily-custom.txt"
+GITLAB_10_CRON_HALF_WEEKLY_CUSTOM="${GITLAB_PREFIX}/crons/custom/10-cron-half-weekly-custom.txt"
+GITLAB_11_CRON_WEEKLY_CUSTOM="${GITLAB_PREFIX}/crons/custom/11-cron-weekly-custom.txt"
+GITLAB_12_CRON_HALF_MONTHLY_CUSTOM="${GITLAB_PREFIX}/crons/custom/12-cron-half-monthly-custom.txt"
+GITLAB_13_CRON_MONTHLY_CUSTOM="${GITLAB_PREFIX}/crons/custom/13-cron-monthly-custom.txt"
+GITLAB_14_CRON_SOMETIMES_CUSTOM="${GITLAB_PREFIX}/crons/custom/14-cron-sometimes-custom.txt"
+
+## custom cron jobs (sourceforge) ##
+SOURCEFORGE_01_CRON_MINUTELY_CUSTOM="${SOURCEFORGE_PREFIX}/crons/custom/01-cron-minutely-custom.txt?format=raw"
+SOURCEFORGE_02_CRON_OFTEN_CUSTOM="${SOURCEFORGE_PREFIX}/crons/custom/02-cron-often-custom.txt?format=raw"
+SOURCEFORGE_03_CRON_REGULAR_CUSTOM="${SOURCEFORGE_PREFIX}/crons/custom/03-cron-regular-custom.txt?format=raw"
+SOURCEFORGE_04_CRON_QUARTER_HOURLY_CUSTOM="${SOURCEFORGE_PREFIX}/crons/custom/04-cron-quarter-hourly-custom.txt?format=raw"
+SOURCEFORGE_05_CRON_HALF_HOURLY_CUSTOM="${SOURCEFORGE_PREFIX}/crons/custom/05-cron-half-hourly-custom.txt?format=raw"
+SOURCEFORGE_06_CRON_HOURLY_CUSTOM="${SOURCEFORGE_PREFIX}/crons/custom/06-cron-hourly-custom.txt?format=raw"
+SOURCEFORGE_07_CRON_QUARTER_DAILY_CUSTOM="${SOURCEFORGE_PREFIX}/crons/custom/07-cron-quarter-daily-custom.txt?format=raw"
+SOURCEFORGE_08_CRON_HALF_DAILY_CUSTOM="${SOURCEFORGE_PREFIX}/crons/custom/08-cron-half-daily-custom.txt?format=raw"
+SOURCEFORGE_09_CRON_DAILY_CUSTOM="${SOURCEFORGE_PREFIX}/crons/custom/09-cron-daily-custom.txt?format=raw"
+SOURCEFORGE_10_CRON_HALF_WEEKLY_CUSTOM="${SOURCEFORGE_PREFIX}/crons/custom/10-cron-half-weekly-custom.txt?format=raw"
+SOURCEFORGE_11_CRON_WEEKLY_CUSTOM="${SOURCEFORGE_PREFIX}/crons/custom/11-cron-weekly-custom.txt?format=raw"
+SOURCEFORGE_12_CRON_HALF_MONTHLY_CUSTOM="${SOURCEFORGE_PREFIX}/crons/custom/12-cron-half-monthly-custom.txt?format=raw"
+SOURCEFORGE_13_CRON_MONTHLY_CUSTOM="${SOURCEFORGE_PREFIX}/crons/custom/13-cron-monthly-custom.txt?format=raw"
+SOURCEFORGE_14_CRON_SOMETIMES_CUSTOM="${SOURCEFORGE_PREFIX}/crons/custom/14-cron-sometimes-custom.txt?format=raw"
+
+## bash scripts (github) ##
+GITHUB_SS_CHECK="${GITHUB_PREFIX}/bash/ss-check.txt"
+GITHUB_SS_CLEAN_DATABASE="${GITHUB_PREFIX}/bash/ss-clean-database.txt"
+GITHUB_SS_CLEAN_FILES="${GITHUB_PREFIX}/bash/ss-clean-files.txt"
+GITHUB_SS_CONFIG_SAMPLE="${GITHUB_PREFIX}/bash/ss-config-sample.txt"
+GITHUB_SS_DUMP_DATABASE="${GITHUB_PREFIX}/bash/ss-dump-database.txt"
+GITHUB_SS_DUMP_FILES="${GITHUB_PREFIX}/bash/ss-dump-files.txt"
+GITHUB_SS_EMPTY_LOGS="${GITHUB_PREFIX}/bash/ss-empty-logs.txt"
+GITHUB_SS_ENCRYPT_ACME="${GITHUB_PREFIX}/bash/ss-encrypt-acme.txt"
+GITHUB_SS_ENCRYPT_CERTBOT="${GITHUB_PREFIX}/bash/ss-encrypt-certbot.txt"
+GITHUB_SS_ENCRYPT_OPENSSL="${GITHUB_PREFIX}/bash/ss-encrypt-openssl.txt"
+GITHUB_SS_FUNCTIONS="${GITHUB_PREFIX}/bash/ss-functions.txt"
+GITHUB_SS_IMPORT_DATABASE="${GITHUB_PREFIX}/bash/ss-import-database.txt"
+GITHUB_SS_IMPORT_FILES="${GITHUB_PREFIX}/bash/ss-import-files.txt"
+GITHUB_SS_INSTALL="${GITHUB_PREFIX}/bash/ss-install.txt"
+GITHUB_SS_INSTALL_CRAFT_CONFIG="${GITHUB_PREFIX}/bash/ss-install-craft-config.txt"
+GITHUB_SS_INSTALL_CRAFT_PACKAGES="${GITHUB_PREFIX}/bash/ss-install-craft-packages.txt"
+GITHUB_SS_INSTALL_FAIL2BAN_CONFIG="${GITHUB_PREFIX}/bash/ss-install-fail2ban-config.txt"
+GITHUB_SS_INSTALL_FAIL2BAN_PACKAGES="${GITHUB_PREFIX}/bash/ss-install-fail2ban-packages.txt"
+GITHUB_SS_INSTALL_MEDIAWIKI_CONFIG="${GITHUB_PREFIX}/bash/ss-install-mediawiki-config.txt"
+GITHUB_SS_INSTALL_MEDIAWIKI_PACKAGES="${GITHUB_PREFIX}/bash/ss-install-mediawiki-packages.txt"
+GITHUB_SS_INSTALL_MEMCACHED_CONFIG="${GITHUB_PREFIX}/bash/ss-install-memcached-config.txt"
+GITHUB_SS_INSTALL_MEMCACHED_PACKAGES="${GITHUB_PREFIX}/bash/ss-install-memcached-packages.txt"
+GITHUB_SS_INSTALL_MOODLE_CONFIG="${GITHUB_PREFIX}/bash/ss-install-moodle-config.txt"
+GITHUB_SS_INSTALL_MOODLE_PACKAGES="${GITHUB_PREFIX}/bash/ss-install-moodle-packages.txt"
+GITHUB_SS_INSTALL_MYSQL="${GITHUB_PREFIX}/bash/ss-install-mysql.txt"
+GITHUB_SS_INSTALL_MYSQL_CONFIG="${GITHUB_PREFIX}/bash/ss-install-mysql-config.txt"
+GITHUB_SS_INSTALL_MYSQL_DATABASE="${GITHUB_PREFIX}/bash/ss-install-mysql-database.txt"
+GITHUB_SS_INSTALL_MYSQL_PACKAGES="${GITHUB_PREFIX}/bash/ss-install-mysql-packages.txt"
+GITHUB_SS_INSTALL_NGINX_CONFIG="${GITHUB_PREFIX}/bash/ss-install-nginx-config.txt"
+GITHUB_SS_INSTALL_NGINX_PACKAGES="${GITHUB_PREFIX}/bash/ss-install-nginx-packages.txt"
+GITHUB_SS_INSTALL_OPENCART_CONFIG="${GITHUB_PREFIX}/bash/ss-install-opencart-config.txt"
+GITHUB_SS_INSTALL_OPENCART_PACKAGES="${GITHUB_PREFIX}/bash/ss-install-opencart-packages.txt"
+GITHUB_SS_INSTALL_PHP_CONFIG="${GITHUB_PREFIX}/bash/ss-install-php-config.txt"
+GITHUB_SS_INSTALL_PHP_PACKAGES="${GITHUB_PREFIX}/bash/ss-install-php-packages.txt"
+GITHUB_SS_INSTALL_PRESTASHOP_CONFIG="${GITHUB_PREFIX}/bash/ss-install-prestashop-config.txt"
+GITHUB_SS_INSTALL_PRESTASHOP_PACKAGES="${GITHUB_PREFIX}/bash/ss-install-prestashop-packages.txt"
+GITHUB_SS_INSTALL_RCLONE_CONFIG="${GITHUB_PREFIX}/bash/ss-install-rclone-config.txt"
+GITHUB_SS_INSTALL_RCLONE_PACKAGES="${GITHUB_PREFIX}/bash/ss-install-rclone-packages.txt"
+GITHUB_SS_INSTALL_UBUNTU_BASH="${GITHUB_PREFIX}/bash/ss-install-ubuntu-bash.txt"
+GITHUB_SS_INSTALL_UBUNTU_CRONTAB="${GITHUB_PREFIX}/bash/ss-install-ubuntu-crontab.txt"
+GITHUB_SS_INSTALL_UBUNTU_KERNEL="${GITHUB_PREFIX}/bash/ss-install-ubuntu-kernel.txt"
+GITHUB_SS_INSTALL_UBUNTU_SSH="${GITHUB_PREFIX}/bash/ss-install-ubuntu-ssh.txt"
+GITHUB_SS_INSTALL_UBUNTU_SWAPFILE="${GITHUB_PREFIX}/bash/ss-install-ubuntu-swapfile.txt"
+GITHUB_SS_INSTALL_UBUNTU_USERS="${GITHUB_PREFIX}/bash/ss-install-ubuntu-users.txt"
+GITHUB_SS_INSTALL_UBUNTU_UTILS="${GITHUB_PREFIX}/bash/ss-install-ubuntu-utils.txt"
+GITHUB_SS_INSTALL_UFW_CONFIG="${GITHUB_PREFIX}/bash/ss-install-ufw-config.txt"
+GITHUB_SS_INSTALL_UFW_PACKAGES="${GITHUB_PREFIX}/bash/ss-install-ufw-packages.txt"
+GITHUB_SS_INSTALL_WORDPRESS_CLI="${GITHUB_PREFIX}/bash/ss-install-wordpress-cli.txt"
+GITHUB_SS_INSTALL_WORDPRESS_CONFIG="${GITHUB_PREFIX}/bash/ss-install-wordpress-config.txt"
+GITHUB_SS_INSTALL_WORDPRESS_HOVERCRAFT="${GITHUB_PREFIX}/bash/ss-install-wordpress-hovercraft.txt"
+GITHUB_SS_INSTALL_WORDPRESS_MU_PLUGINS="${GITHUB_PREFIX}/bash/ss-install-wordpress-mu-plugins.txt"
+GITHUB_SS_INSTALL_WORDPRESS_PACKAGES="${GITHUB_PREFIX}/bash/ss-install-wordpress-packages.txt"
+GITHUB_SS_MAINTENANCE_DISABLE="${GITHUB_PREFIX}/bash/ss-maintenance-disable.txt"
+GITHUB_SS_MAINTENANCE_ENABLE="${GITHUB_PREFIX}/bash/ss-maintenance-enable.txt"
+GITHUB_SS_MONITOR_RESOURCES="${GITHUB_PREFIX}/bash/ss-monitor-resources.txt"
+GITHUB_SS_OPTIMIZE_DATABASE="${GITHUB_PREFIX}/bash/ss-optimize-database.txt"
+GITHUB_SS_OPTIMIZE_FILES="${GITHUB_PREFIX}/bash/ss-optimize-files.txt"
+GITHUB_SS_PERMS="${GITHUB_PREFIX}/bash/ss-perms.txt"
+GITHUB_SS_PERMS_CRAFT_CONFIG="${GITHUB_PREFIX}/bash/ss-perms-craft-config.txt"
+GITHUB_SS_PERMS_CRAFT_PACKAGES="${GITHUB_PREFIX}/bash/ss-perms-craft-packages.txt"
+GITHUB_SS_PERMS_FAIL2BAN_CONFIG="${GITHUB_PREFIX}/bash/ss-perms-fail2ban-config.txt"
+GITHUB_SS_PERMS_FAIL2BAN_PACKAGES="${GITHUB_PREFIX}/bash/ss-perms-fail2ban-packages.txt"
+GITHUB_SS_PERMS_MEDIAWIKI_CONFIG="${GITHUB_PREFIX}/bash/ss-perms-mediawiki-config.txt"
+GITHUB_SS_PERMS_MEDIAWIKI_PACKAGES="${GITHUB_PREFIX}/bash/ss-perms-mediawiki-packages.txt"
+GITHUB_SS_PERMS_MEMCACHED_CONFIG="${GITHUB_PREFIX}/bash/ss-perms-memcached-config.txt"
+GITHUB_SS_PERMS_MEMCACHED_PACKAGES="${GITHUB_PREFIX}/bash/ss-perms-memcached-packages.txt"
+GITHUB_SS_PERMS_MOODLE_CONFIG="${GITHUB_PREFIX}/bash/ss-perms-moodle-config.txt"
+GITHUB_SS_PERMS_MOODLE_PACKAGES="${GITHUB_PREFIX}/bash/ss-perms-moodle-packages.txt"
+GITHUB_SS_PERMS_MYSQL_CONFIG="${GITHUB_PREFIX}/bash/ss-perms-mysql-config.txt"
+GITHUB_SS_PERMS_MYSQL_DATABASE="${GITHUB_PREFIX}/bash/ss-perms-mysql-database.txt"
+GITHUB_SS_PERMS_MYSQL_PACKAGES="${GITHUB_PREFIX}/bash/ss-perms-mysql-packages.txt"
+GITHUB_SS_PERMS_NGINX_CONFIG="${GITHUB_PREFIX}/bash/ss-perms-nginx-config.txt"
+GITHUB_SS_PERMS_NGINX_PACKAGES="${GITHUB_PREFIX}/bash/ss-perms-nginx-packages.txt"
+GITHUB_SS_PERMS_OPENCART_CONFIG="${GITHUB_PREFIX}/bash/ss-perms-opencart-config.txt"
+GITHUB_SS_PERMS_OPENCART_PACKAGES="${GITHUB_PREFIX}/bash/ss-perms-opencart-packages.txt"
+GITHUB_SS_PERMS_PHP_CONFIG="${GITHUB_PREFIX}/bash/ss-perms-php-config.txt"
+GITHUB_SS_PERMS_PHP_PACKAGES="${GITHUB_PREFIX}/bash/ss-perms-php-packages.txt"
+GITHUB_SS_PERMS_PRESTASHOP_CONFIG="${GITHUB_PREFIX}/bash/ss-perms-prestashop-config.txt"
+GITHUB_SS_PERMS_PRESTASHOP_PACKAGES="${GITHUB_PREFIX}/bash/ss-perms-prestashop-packages.txt"
+GITHUB_SS_PERMS_RCLONE_CONFIG="${GITHUB_PREFIX}/bash/ss-perms-rclone-config.txt"
+GITHUB_SS_PERMS_RCLONE_PACKAGES="${GITHUB_PREFIX}/bash/ss-perms-rclone-packages.txt"
+GITHUB_SS_PERMS_UBUNTU_BASH="${GITHUB_PREFIX}/bash/ss-perms-ubuntu-bash.txt"
+GITHUB_SS_PERMS_UBUNTU_CRONTAB="${GITHUB_PREFIX}/bash/ss-perms-ubuntu-crontab.txt"
+GITHUB_SS_PERMS_UBUNTU_KERNEL="${GITHUB_PREFIX}/bash/ss-perms-ubuntu-kernel.txt"
+GITHUB_SS_PERMS_UBUNTU_SSH="${GITHUB_PREFIX}/bash/ss-perms-ubuntu-ssh.txt"
+GITHUB_SS_PERMS_UBUNTU_SWAPFILE="${GITHUB_PREFIX}/bash/ss-perms-ubuntu-swapfile.txt"
+GITHUB_SS_PERMS_UBUNTU_USERS="${GITHUB_PREFIX}/bash/ss-perms-ubuntu-users.txt"
+GITHUB_SS_PERMS_UBUNTU_UTILS="${GITHUB_PREFIX}/bash/ss-perms-ubuntu-utils.txt"
+GITHUB_SS_PERMS_UFW_CONFIG="${GITHUB_PREFIX}/bash/ss-perms-ufw-config.txt"
+GITHUB_SS_PERMS_UFW_PACKAGES="${GITHUB_PREFIX}/bash/ss-perms-ufw-packages.txt"
+GITHUB_SS_PERMS_WORDPRESS_CLI="${GITHUB_PREFIX}/bash/ss-perms-wordpress-cli.txt"
+GITHUB_SS_PERMS_WORDPRESS_CONFIG="${GITHUB_PREFIX}/bash/ss-perms-wordpress-config.txt"
+GITHUB_SS_PERMS_WORDPRESS_MU_PLUGINS="${GITHUB_PREFIX}/bash/ss-perms-wordpress-mu-plugins.txt"
+GITHUB_SS_PERMS_WORDPRESS_PACKAGES="${GITHUB_PREFIX}/bash/ss-perms-wordpress-packages.txt"
+GITHUB_SS_PURGE_MEMCACHED="${GITHUB_PREFIX}/bash/ss-purge-memcached.txt"
+GITHUB_SS_PURGE_NGINX="${GITHUB_PREFIX}/bash/ss-purge-nginx.txt"
+GITHUB_SS_PURGE_OPCACHE="${GITHUB_PREFIX}/bash/ss-purge-opcache.txt"
+GITHUB_SS_PURGE_TRANSIENTS="${GITHUB_PREFIX}/bash/ss-purge-transients.txt"
+GITHUB_SS_PUSH_DEVELOPMENT="${GITHUB_PREFIX}/bash/ss-push-development.txt"
+GITHUB_SS_PUSH_STAGING="${GITHUB_PREFIX}/bash/ss-push-staging.txt"
+GITHUB_SS_REBOOT_MACHINE="${GITHUB_PREFIX}/bash/ss-reboot-machine.txt"
+GITHUB_SS_REMOTE_BACKUP="${GITHUB_PREFIX}/bash/ss-remote-backup.txt"
+GITHUB_SS_RESET_PASSWORD_SFTP="${GITHUB_PREFIX}/bash/ss-reset-password-sftp.txt"
+GITHUB_SS_RESTART_FAIL2BAN="${GITHUB_PREFIX}/bash/ss-restart-fail2ban.txt"
+GITHUB_SS_RESTART_MEMCACHED="${GITHUB_PREFIX}/bash/ss-restart-memcached.txt"
+GITHUB_SS_RESTART_MYSQL="${GITHUB_PREFIX}/bash/ss-restart-mysql.txt"
+GITHUB_SS_RESTART_NGINX="${GITHUB_PREFIX}/bash/ss-restart-nginx.txt"
+GITHUB_SS_RESTART_PHP="${GITHUB_PREFIX}/bash/ss-restart-php.txt"
+GITHUB_SS_RESTART_UFW="${GITHUB_PREFIX}/bash/ss-restart-ufw.txt"
+GITHUB_SS_STACK_OVERVIEW="${GITHUB_PREFIX}/bash/ss-stack-overview.txt"
+GITHUB_SS_SYNC_DEVELOPMENT="${GITHUB_PREFIX}/bash/ss-sync-development.txt"
+GITHUB_SS_SYNC_STAGING="${GITHUB_PREFIX}/bash/ss-sync-staging.txt"
+GITHUB_SS_UPDATE_CONFIG="${GITHUB_PREFIX}/bash/ss-update-config.txt"
+GITHUB_SS_UPDATE_MODULES="${GITHUB_PREFIX}/bash/ss-update-modules.txt"
+GITHUB_SS_WORKER="${GITHUB_PREFIX}/bash/ss-worker.txt"
+
+## bash scripts (gitlab) ##
+GITLAB_SS_CHECK="${GITLAB_PREFIX}/bash/ss-check.txt"
+GITLAB_SS_CLEAN_DATABASE="${GITLAB_PREFIX}/bash/ss-clean-database.txt"
+GITLAB_SS_CLEAN_FILES="${GITLAB_PREFIX}/bash/ss-clean-files.txt"
+GITLAB_SS_CONFIG_SAMPLE="${GITLAB_PREFIX}/bash/ss-config-sample.txt"
+GITLAB_SS_DUMP_DATABASE="${GITLAB_PREFIX}/bash/ss-dump-database.txt"
+GITLAB_SS_DUMP_FILES="${GITLAB_PREFIX}/bash/ss-dump-files.txt"
+GITLAB_SS_EMPTY_LOGS="${GITLAB_PREFIX}/bash/ss-empty-logs.txt"
+GITLAB_SS_ENCRYPT_ACME="${GITLAB_PREFIX}/bash/ss-encrypt-acme.txt"
+GITLAB_SS_ENCRYPT_CERTBOT="${GITLAB_PREFIX}/bash/ss-encrypt-certbot.txt"
+GITLAB_SS_ENCRYPT_OPENSSL="${GITLAB_PREFIX}/bash/ss-encrypt-openssl.txt"
+GITLAB_SS_FUNCTIONS="${GITLAB_PREFIX}/bash/ss-functions.txt"
+GITLAB_SS_IMPORT_DATABASE="${GITLAB_PREFIX}/bash/ss-import-database.txt"
+GITLAB_SS_IMPORT_FILES="${GITLAB_PREFIX}/bash/ss-import-files.txt"
+GITLAB_SS_INSTALL="${GITLAB_PREFIX}/bash/ss-install.txt"
+GITLAB_SS_INSTALL_CRAFT_CONFIG="${GITLAB_PREFIX}/bash/ss-install-craft-config.txt"
+GITLAB_SS_INSTALL_CRAFT_PACKAGES="${GITLAB_PREFIX}/bash/ss-install-craft-packages.txt"
+GITLAB_SS_INSTALL_FAIL2BAN_CONFIG="${GITLAB_PREFIX}/bash/ss-install-fail2ban-config.txt"
+GITLAB_SS_INSTALL_FAIL2BAN_PACKAGES="${GITLAB_PREFIX}/bash/ss-install-fail2ban-packages.txt"
+GITLAB_SS_INSTALL_MEDIAWIKI_CONFIG="${GITLAB_PREFIX}/bash/ss-install-mediawiki-config.txt"
+GITLAB_SS_INSTALL_MEDIAWIKI_PACKAGES="${GITLAB_PREFIX}/bash/ss-install-mediawiki-packages.txt"
+GITLAB_SS_INSTALL_MEMCACHED_CONFIG="${GITLAB_PREFIX}/bash/ss-install-memcached-config.txt"
+GITLAB_SS_INSTALL_MEMCACHED_PACKAGES="${GITLAB_PREFIX}/bash/ss-install-memcached-packages.txt"
+GITLAB_SS_INSTALL_MOODLE_CONFIG="${GITLAB_PREFIX}/bash/ss-install-moodle-config.txt"
+GITLAB_SS_INSTALL_MOODLE_PACKAGES="${GITLAB_PREFIX}/bash/ss-install-moodle-packages.txt"
+GITLAB_SS_INSTALL_MYSQL="${GITLAB_PREFIX}/bash/ss-install-mysql.txt"
+GITLAB_SS_INSTALL_MYSQL_CONFIG="${GITLAB_PREFIX}/bash/ss-install-mysql-config.txt"
+GITLAB_SS_INSTALL_MYSQL_DATABASE="${GITLAB_PREFIX}/bash/ss-install-mysql-database.txt"
+GITLAB_SS_INSTALL_MYSQL_PACKAGES="${GITLAB_PREFIX}/bash/ss-install-mysql-packages.txt"
+GITLAB_SS_INSTALL_NGINX_CONFIG="${GITLAB_PREFIX}/bash/ss-install-nginx-config.txt"
+GITLAB_SS_INSTALL_NGINX_PACKAGES="${GITLAB_PREFIX}/bash/ss-install-nginx-packages.txt"
+GITLAB_SS_INSTALL_OPENCART_CONFIG="${GITLAB_PREFIX}/bash/ss-install-opencart-config.txt"
+GITLAB_SS_INSTALL_OPENCART_PACKAGES="${GITLAB_PREFIX}/bash/ss-install-opencart-packages.txt"
+GITLAB_SS_INSTALL_PHP_CONFIG="${GITLAB_PREFIX}/bash/ss-install-php-config.txt"
+GITLAB_SS_INSTALL_PHP_PACKAGES="${GITLAB_PREFIX}/bash/ss-install-php-packages.txt"
+GITLAB_SS_INSTALL_PRESTASHOP_CONFIG="${GITLAB_PREFIX}/bash/ss-install-prestashop-config.txt"
+GITLAB_SS_INSTALL_PRESTASHOP_PACKAGES="${GITLAB_PREFIX}/bash/ss-install-prestashop-packages.txt"
+GITLAB_SS_INSTALL_RCLONE_CONFIG="${GITLAB_PREFIX}/bash/ss-install-rclone-config.txt"
+GITLAB_SS_INSTALL_RCLONE_PACKAGES="${GITLAB_PREFIX}/bash/ss-install-rclone-packages.txt"
+GITLAB_SS_INSTALL_UBUNTU_BASH="${GITLAB_PREFIX}/bash/ss-install-ubuntu-bash.txt"
+GITLAB_SS_INSTALL_UBUNTU_CRONTAB="${GITLAB_PREFIX}/bash/ss-install-ubuntu-crontab.txt"
+GITLAB_SS_INSTALL_UBUNTU_KERNEL="${GITLAB_PREFIX}/bash/ss-install-ubuntu-kernel.txt"
+GITLAB_SS_INSTALL_UBUNTU_SSH="${GITLAB_PREFIX}/bash/ss-install-ubuntu-ssh.txt"
+GITLAB_SS_INSTALL_UBUNTU_SWAPFILE="${GITLAB_PREFIX}/bash/ss-install-ubuntu-swapfile.txt"
+GITLAB_SS_INSTALL_UBUNTU_USERS="${GITLAB_PREFIX}/bash/ss-install-ubuntu-users.txt"
+GITLAB_SS_INSTALL_UBUNTU_UTILS="${GITLAB_PREFIX}/bash/ss-install-ubuntu-utils.txt"
+GITLAB_SS_INSTALL_UFW_CONFIG="${GITLAB_PREFIX}/bash/ss-install-ufw-config.txt"
+GITLAB_SS_INSTALL_UFW_PACKAGES="${GITLAB_PREFIX}/bash/ss-install-ufw-packages.txt"
+GITLAB_SS_INSTALL_WORDPRESS_CLI="${GITLAB_PREFIX}/bash/ss-install-wordpress-cli.txt"
+GITLAB_SS_INSTALL_WORDPRESS_CONFIG="${GITLAB_PREFIX}/bash/ss-install-wordpress-config.txt"
+GITLAB_SS_INSTALL_WORDPRESS_HOVERCRAFT="${GITLAB_PREFIX}/bash/ss-install-wordpress-hovercraft.txt"
+GITLAB_SS_INSTALL_WORDPRESS_MU_PLUGINS="${GITLAB_PREFIX}/bash/ss-install-wordpress-mu-plugins.txt"
+GITLAB_SS_INSTALL_WORDPRESS_PACKAGES="${GITLAB_PREFIX}/bash/ss-install-wordpress-packages.txt"
+GITLAB_SS_MAINTENANCE_DISABLE="${GITLAB_PREFIX}/bash/ss-maintenance-disable.txt"
+GITLAB_SS_MAINTENANCE_ENABLE="${GITLAB_PREFIX}/bash/ss-maintenance-enable.txt"
+GITLAB_SS_MONITOR_RESOURCES="${GITLAB_PREFIX}/bash/ss-monitor-resources.txt"
+GITLAB_SS_OPTIMIZE_DATABASE="${GITLAB_PREFIX}/bash/ss-optimize-database.txt"
+GITLAB_SS_OPTIMIZE_FILES="${GITLAB_PREFIX}/bash/ss-optimize-files.txt"
+GITLAB_SS_PERMS="${GITLAB_PREFIX}/bash/ss-perms.txt"
+GITLAB_SS_PERMS_CRAFT_CONFIG="${GITLAB_PREFIX}/bash/ss-perms-craft-config.txt"
+GITLAB_SS_PERMS_CRAFT_PACKAGES="${GITLAB_PREFIX}/bash/ss-perms-craft-packages.txt"
+GITLAB_SS_PERMS_FAIL2BAN_CONFIG="${GITLAB_PREFIX}/bash/ss-perms-fail2ban-config.txt"
+GITLAB_SS_PERMS_FAIL2BAN_PACKAGES="${GITLAB_PREFIX}/bash/ss-perms-fail2ban-packages.txt"
+GITLAB_SS_PERMS_MEDIAWIKI_CONFIG="${GITLAB_PREFIX}/bash/ss-perms-mediawiki-config.txt"
+GITLAB_SS_PERMS_MEDIAWIKI_PACKAGES="${GITLAB_PREFIX}/bash/ss-perms-mediawiki-packages.txt"
+GITLAB_SS_PERMS_MEMCACHED_CONFIG="${GITLAB_PREFIX}/bash/ss-perms-memcached-config.txt"
+GITLAB_SS_PERMS_MEMCACHED_PACKAGES="${GITLAB_PREFIX}/bash/ss-perms-memcached-packages.txt"
+GITLAB_SS_PERMS_MOODLE_CONFIG="${GITLAB_PREFIX}/bash/ss-perms-moodle-config.txt"
+GITLAB_SS_PERMS_MOODLE_PACKAGES="${GITLAB_PREFIX}/bash/ss-perms-moodle-packages.txt"
+GITLAB_SS_PERMS_MYSQL_CONFIG="${GITLAB_PREFIX}/bash/ss-perms-mysql-config.txt"
+GITLAB_SS_PERMS_MYSQL_DATABASE="${GITLAB_PREFIX}/bash/ss-perms-mysql-database.txt"
+GITLAB_SS_PERMS_MYSQL_PACKAGES="${GITLAB_PREFIX}/bash/ss-perms-mysql-packages.txt"
+GITLAB_SS_PERMS_NGINX_CONFIG="${GITLAB_PREFIX}/bash/ss-perms-nginx-config.txt"
+GITLAB_SS_PERMS_NGINX_PACKAGES="${GITLAB_PREFIX}/bash/ss-perms-nginx-packages.txt"
+GITLAB_SS_PERMS_OPENCART_CONFIG="${GITLAB_PREFIX}/bash/ss-perms-opencart-config.txt"
+GITLAB_SS_PERMS_OPENCART_PACKAGES="${GITLAB_PREFIX}/bash/ss-perms-opencart-packages.txt"
+GITLAB_SS_PERMS_PHP_CONFIG="${GITLAB_PREFIX}/bash/ss-perms-php-config.txt"
+GITLAB_SS_PERMS_PHP_PACKAGES="${GITLAB_PREFIX}/bash/ss-perms-php-packages.txt"
+GITLAB_SS_PERMS_PRESTASHOP_CONFIG="${GITLAB_PREFIX}/bash/ss-perms-prestashop-config.txt"
+GITLAB_SS_PERMS_PRESTASHOP_PACKAGES="${GITLAB_PREFIX}/bash/ss-perms-prestashop-packages.txt"
+GITLAB_SS_PERMS_RCLONE_CONFIG="${GITLAB_PREFIX}/bash/ss-perms-rclone-config.txt"
+GITLAB_SS_PERMS_RCLONE_PACKAGES="${GITLAB_PREFIX}/bash/ss-perms-rclone-packages.txt"
+GITLAB_SS_PERMS_UBUNTU_BASH="${GITLAB_PREFIX}/bash/ss-perms-ubuntu-bash.txt"
+GITLAB_SS_PERMS_UBUNTU_CRONTAB="${GITLAB_PREFIX}/bash/ss-perms-ubuntu-crontab.txt"
+GITLAB_SS_PERMS_UBUNTU_KERNEL="${GITLAB_PREFIX}/bash/ss-perms-ubuntu-kernel.txt"
+GITLAB_SS_PERMS_UBUNTU_SSH="${GITLAB_PREFIX}/bash/ss-perms-ubuntu-ssh.txt"
+GITLAB_SS_PERMS_UBUNTU_SWAPFILE="${GITLAB_PREFIX}/bash/ss-perms-ubuntu-swapfile.txt"
+GITLAB_SS_PERMS_UBUNTU_USERS="${GITLAB_PREFIX}/bash/ss-perms-ubuntu-users.txt"
+GITLAB_SS_PERMS_UBUNTU_UTILS="${GITLAB_PREFIX}/bash/ss-perms-ubuntu-utils.txt"
+GITLAB_SS_PERMS_UFW_CONFIG="${GITLAB_PREFIX}/bash/ss-perms-ufw-config.txt"
+GITLAB_SS_PERMS_UFW_PACKAGES="${GITLAB_PREFIX}/bash/ss-perms-ufw-packages.txt"
+GITLAB_SS_PERMS_WORDPRESS_CLI="${GITLAB_PREFIX}/bash/ss-perms-wordpress-cli.txt"
+GITLAB_SS_PERMS_WORDPRESS_CONFIG="${GITLAB_PREFIX}/bash/ss-perms-wordpress-config.txt"
+GITLAB_SS_PERMS_WORDPRESS_MU_PLUGINS="${GITLAB_PREFIX}/bash/ss-perms-wordpress-mu-plugins.txt"
+GITLAB_SS_PERMS_WORDPRESS_PACKAGES="${GITLAB_PREFIX}/bash/ss-perms-wordpress-packages.txt"
+GITLAB_SS_PURGE_MEMCACHED="${GITLAB_PREFIX}/bash/ss-purge-memcached.txt"
+GITLAB_SS_PURGE_NGINX="${GITLAB_PREFIX}/bash/ss-purge-nginx.txt"
+GITLAB_SS_PURGE_OPCACHE="${GITLAB_PREFIX}/bash/ss-purge-opcache.txt"
+GITLAB_SS_PURGE_TRANSIENTS="${GITLAB_PREFIX}/bash/ss-purge-transients.txt"
+GITLAB_SS_PUSH_DEVELOPMENT="${GITLAB_PREFIX}/bash/ss-push-development.txt"
+GITLAB_SS_PUSH_STAGING="${GITLAB_PREFIX}/bash/ss-push-staging.txt"
+GITLAB_SS_REBOOT_MACHINE="${GITLAB_PREFIX}/bash/ss-reboot-machine.txt"
+GITLAB_SS_REMOTE_BACKUP="${GITLAB_PREFIX}/bash/ss-remote-backup.txt"
+GITLAB_SS_RESET_PASSWORD_SFTP="${GITLAB_PREFIX}/bash/ss-reset-password-sftp.txt"
+GITLAB_SS_RESTART_FAIL2BAN="${GITLAB_PREFIX}/bash/ss-restart-fail2ban.txt"
+GITLAB_SS_RESTART_MEMCACHED="${GITLAB_PREFIX}/bash/ss-restart-memcached.txt"
+GITLAB_SS_RESTART_MYSQL="${GITLAB_PREFIX}/bash/ss-restart-mysql.txt"
+GITLAB_SS_RESTART_NGINX="${GITLAB_PREFIX}/bash/ss-restart-nginx.txt"
+GITLAB_SS_RESTART_PHP="${GITLAB_PREFIX}/bash/ss-restart-php.txt"
+GITLAB_SS_RESTART_UFW="${GITLAB_PREFIX}/bash/ss-restart-ufw.txt"
+GITLAB_SS_STACK_OVERVIEW="${GITLAB_PREFIX}/bash/ss-stack-overview.txt"
+GITLAB_SS_SYNC_DEVELOPMENT="${GITLAB_PREFIX}/bash/ss-sync-development.txt"
+GITLAB_SS_SYNC_STAGING="${GITLAB_PREFIX}/bash/ss-sync-staging.txt"
+GITLAB_SS_UPDATE_CONFIG="${GITLAB_PREFIX}/bash/ss-update-config.txt"
+GITLAB_SS_UPDATE_MODULES="${GITLAB_PREFIX}/bash/ss-update-modules.txt"
+GITLAB_SS_WORKER="${GITLAB_PREFIX}/bash/ss-worker.txt"
+
+## bash scripts (sourceforge) ##
+SOURCEFORGE_SS_CHECK="${SOURCEFORGE_PREFIX}/bash/ss-check.txt?format=raw"
+SOURCEFORGE_SS_CLEAN_DATABASE="${SOURCEFORGE_PREFIX}/bash/ss-clean-database.txt?format=raw"
+SOURCEFORGE_SS_CLEAN_FILES="${SOURCEFORGE_PREFIX}/bash/ss-clean-files.txt?format=raw"
+SOURCEFORGE_SS_CONFIG_SAMPLE="${SOURCEFORGE_PREFIX}/bash/ss-config-sample.txt?format=raw"
+SOURCEFORGE_SS_DUMP_DATABASE="${SOURCEFORGE_PREFIX}/bash/ss-dump-database.txt?format=raw"
+SOURCEFORGE_SS_DUMP_FILES="${SOURCEFORGE_PREFIX}/bash/ss-dump-files.txt?format=raw"
+SOURCEFORGE_SS_EMPTY_LOGS="${SOURCEFORGE_PREFIX}/bash/ss-empty-logs.txt?format=raw"
+SOURCEFORGE_SS_ENCRYPT_ACME="${SOURCEFORGE_PREFIX}/bash/ss-encrypt-acme.txt?format=raw"
+SOURCEFORGE_SS_ENCRYPT_CERTBOT="${SOURCEFORGE_PREFIX}/bash/ss-encrypt-certbot.txt?format=raw"
+SOURCEFORGE_SS_ENCRYPT_OPENSSL="${SOURCEFORGE_PREFIX}/bash/ss-encrypt-openssl.txt?format=raw"
+SOURCEFORGE_SS_FUNCTIONS="${SOURCEFORGE_PREFIX}/bash/ss-functions.txt?format=raw"
+SOURCEFORGE_SS_IMPORT_DATABASE="${SOURCEFORGE_PREFIX}/bash/ss-import-database.txt?format=raw"
+SOURCEFORGE_SS_IMPORT_FILES="${SOURCEFORGE_PREFIX}/bash/ss-import-files.txt?format=raw"
+SOURCEFORGE_SS_INSTALL="${SOURCEFORGE_PREFIX}/bash/ss-install.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_CRAFT_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-install-craft-config.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_CRAFT_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-install-craft-packages.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_FAIL2BAN_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-install-fail2ban-config.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_FAIL2BAN_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-install-fail2ban-packages.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_MEDIAWIKI_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-install-mediawiki-config.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_MEDIAWIKI_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-install-mediawiki-packages.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_MEMCACHED_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-install-memcached-config.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_MEMCACHED_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-install-memcached-packages.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_MOODLE_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-install-moodle-config.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_MOODLE_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-install-moodle-packages.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_MYSQL="${SOURCEFORGE_PREFIX}/bash/ss-install-mysql.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_MYSQL_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-install-mysql-config.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_MYSQL_DATABASE="${SOURCEFORGE_PREFIX}/bash/ss-install-mysql-database.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_MYSQL_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-install-mysql-packages.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_NGINX_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-install-nginx-config.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_NGINX_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-install-nginx-packages.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_OPENCART_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-install-opencart-config.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_OPENCART_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-install-opencart-packages.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_PHP_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-install-php-config.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_PHP_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-install-php-packages.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_PRESTASHOP_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-install-prestashop-config.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_PRESTASHOP_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-install-prestashop-packages.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_RCLONE_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-install-rclone-config.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_RCLONE_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-install-rclone-packages.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_UBUNTU_BASH="${SOURCEFORGE_PREFIX}/bash/ss-install-ubuntu-bash.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_UBUNTU_CRONTAB="${SOURCEFORGE_PREFIX}/bash/ss-install-ubuntu-crontab.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_UBUNTU_KERNEL="${SOURCEFORGE_PREFIX}/bash/ss-install-ubuntu-kernel.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_UBUNTU_SSH="${SOURCEFORGE_PREFIX}/bash/ss-install-ubuntu-ssh.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_UBUNTU_SWAPFILE="${SOURCEFORGE_PREFIX}/bash/ss-install-ubuntu-swapfile.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_UBUNTU_USERS="${SOURCEFORGE_PREFIX}/bash/ss-install-ubuntu-users.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_UBUNTU_UTILS="${SOURCEFORGE_PREFIX}/bash/ss-install-ubuntu-utils.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_UFW_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-install-ufw-config.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_UFW_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-install-ufw-packages.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_WORDPRESS_CLI="${SOURCEFORGE_PREFIX}/bash/ss-install-wordpress-cli.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_WORDPRESS_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-install-wordpress-config.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_WORDPRESS_HOVERCRAFT="${SOURCEFORGE_PREFIX}/bash/ss-install-wordpress-hovercraft.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_WORDPRESS_MU_PLUGINS="${SOURCEFORGE_PREFIX}/bash/ss-install-wordpress-mu-plugins.txt?format=raw"
+SOURCEFORGE_SS_INSTALL_WORDPRESS_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-install-wordpress-packages.txt?format=raw"
+SOURCEFORGE_SS_MAINTENANCE_DISABLE="${SOURCEFORGE_PREFIX}/bash/ss-maintenance-disable.txt?format=raw"
+SOURCEFORGE_SS_MAINTENANCE_ENABLE="${SOURCEFORGE_PREFIX}/bash/ss-maintenance-enable.txt?format=raw"
+SOURCEFORGE_SS_MONITOR_RESOURCES="${SOURCEFORGE_PREFIX}/bash/ss-monitor-resources.txt?format=raw"
+SOURCEFORGE_SS_OPTIMIZE_DATABASE="${SOURCEFORGE_PREFIX}/bash/ss-optimize-database.txt?format=raw"
+SOURCEFORGE_SS_OPTIMIZE_FILES="${SOURCEFORGE_PREFIX}/bash/ss-optimize-files.txt?format=raw"
+SOURCEFORGE_SS_PERMS="${SOURCEFORGE_PREFIX}/bash/ss-perms.txt?format=raw"
+SOURCEFORGE_SS_PERMS_CRAFT_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-perms-craft-config.txt?format=raw"
+SOURCEFORGE_SS_PERMS_CRAFT_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-perms-craft-packages.txt?format=raw"
+SOURCEFORGE_SS_PERMS_FAIL2BAN_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-perms-fail2ban-config.txt?format=raw"
+SOURCEFORGE_SS_PERMS_FAIL2BAN_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-perms-fail2ban-packages.txt?format=raw"
+SOURCEFORGE_SS_PERMS_MEDIAWIKI_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-perms-mediawiki-config.txt?format=raw"
+SOURCEFORGE_SS_PERMS_MEDIAWIKI_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-perms-mediawiki-packages.txt?format=raw"
+SOURCEFORGE_SS_PERMS_MEMCACHED_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-perms-memcached-config.txt?format=raw"
+SOURCEFORGE_SS_PERMS_MEMCACHED_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-perms-memcached-packages.txt?format=raw"
+SOURCEFORGE_SS_PERMS_MOODLE_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-perms-moodle-config.txt?format=raw"
+SOURCEFORGE_SS_PERMS_MOODLE_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-perms-moodle-packages.txt?format=raw"
+SOURCEFORGE_SS_PERMS_MYSQL_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-perms-mysql-config.txt?format=raw"
+SOURCEFORGE_SS_PERMS_MYSQL_DATABASE="${SOURCEFORGE_PREFIX}/bash/ss-perms-mysql-database.txt?format=raw"
+SOURCEFORGE_SS_PERMS_MYSQL_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-perms-mysql-packages.txt?format=raw"
+SOURCEFORGE_SS_PERMS_NGINX_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-perms-nginx-config.txt?format=raw"
+SOURCEFORGE_SS_PERMS_NGINX_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-perms-nginx-packages.txt?format=raw"
+SOURCEFORGE_SS_PERMS_OPENCART_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-perms-opencart-config.txt?format=raw"
+SOURCEFORGE_SS_PERMS_OPENCART_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-perms-opencart-packages.txt?format=raw"
+SOURCEFORGE_SS_PERMS_PHP_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-perms-php-config.txt?format=raw"
+SOURCEFORGE_SS_PERMS_PHP_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-perms-php-packages.txt?format=raw"
+SOURCEFORGE_SS_PERMS_PRESTASHOP_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-perms-prestashop-config.txt?format=raw"
+SOURCEFORGE_SS_PERMS_PRESTASHOP_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-perms-prestashop-packages.txt?format=raw"
+SOURCEFORGE_SS_PERMS_RCLONE_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-perms-rclone-config.txt?format=raw"
+SOURCEFORGE_SS_PERMS_RCLONE_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-perms-rclone-packages.txt?format=raw"
+SOURCEFORGE_SS_PERMS_UBUNTU_BASH="${SOURCEFORGE_PREFIX}/bash/ss-perms-ubuntu-bash.txt?format=raw"
+SOURCEFORGE_SS_PERMS_UBUNTU_CRONTAB="${SOURCEFORGE_PREFIX}/bash/ss-perms-ubuntu-crontab.txt?format=raw"
+SOURCEFORGE_SS_PERMS_UBUNTU_KERNEL="${SOURCEFORGE_PREFIX}/bash/ss-perms-ubuntu-kernel.txt?format=raw"
+SOURCEFORGE_SS_PERMS_UBUNTU_SSH="${SOURCEFORGE_PREFIX}/bash/ss-perms-ubuntu-ssh.txt?format=raw"
+SOURCEFORGE_SS_PERMS_UBUNTU_SWAPFILE="${SOURCEFORGE_PREFIX}/bash/ss-perms-ubuntu-swapfile.txt?format=raw"
+SOURCEFORGE_SS_PERMS_UBUNTU_USERS="${SOURCEFORGE_PREFIX}/bash/ss-perms-ubuntu-users.txt?format=raw"
+SOURCEFORGE_SS_PERMS_UBUNTU_UTILS="${SOURCEFORGE_PREFIX}/bash/ss-perms-ubuntu-utils.txt?format=raw"
+SOURCEFORGE_SS_PERMS_UFW_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-perms-ufw-config.txt?format=raw"
+SOURCEFORGE_SS_PERMS_UFW_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-perms-ufw-packages.txt?format=raw"
+SOURCEFORGE_SS_PERMS_WORDPRESS_CLI="${SOURCEFORGE_PREFIX}/bash/ss-perms-wordpress-cli.txt?format=raw"
+SOURCEFORGE_SS_PERMS_WORDPRESS_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-perms-wordpress-config.txt?format=raw"
+SOURCEFORGE_SS_PERMS_WORDPRESS_MU_PLUGINS="${SOURCEFORGE_PREFIX}/bash/ss-perms-wordpress-mu-plugins.txt?format=raw"
+SOURCEFORGE_SS_PERMS_WORDPRESS_PACKAGES="${SOURCEFORGE_PREFIX}/bash/ss-perms-wordpress-packages.txt?format=raw"
+SOURCEFORGE_SS_PURGE_MEMCACHED="${SOURCEFORGE_PREFIX}/bash/ss-purge-memcached.txt?format=raw"
+SOURCEFORGE_SS_PURGE_NGINX="${SOURCEFORGE_PREFIX}/bash/ss-purge-nginx.txt?format=raw"
+SOURCEFORGE_SS_PURGE_OPCACHE="${SOURCEFORGE_PREFIX}/bash/ss-purge-opcache.txt?format=raw"
+SOURCEFORGE_SS_PURGE_TRANSIENTS="${SOURCEFORGE_PREFIX}/bash/ss-purge-transients.txt?format=raw"
+SOURCEFORGE_SS_PUSH_DEVELOPMENT="${SOURCEFORGE_PREFIX}/bash/ss-push-development.txt?format=raw"
+SOURCEFORGE_SS_PUSH_STAGING="${SOURCEFORGE_PREFIX}/bash/ss-push-staging.txt?format=raw"
+SOURCEFORGE_SS_REBOOT_MACHINE="${SOURCEFORGE_PREFIX}/bash/ss-reboot-machine.txt?format=raw"
+SOURCEFORGE_SS_REMOTE_BACKUP="${SOURCEFORGE_PREFIX}/bash/ss-remote-backup.txt?format=raw"
+SOURCEFORGE_SS_RESET_PASSWORD_SFTP="${SOURCEFORGE_PREFIX}/bash/ss-reset-password-sftp.txt?format=raw"
+SOURCEFORGE_SS_RESTART_FAIL2BAN="${SOURCEFORGE_PREFIX}/bash/ss-restart-fail2ban.txt?format=raw"
+SOURCEFORGE_SS_RESTART_MEMCACHED="${SOURCEFORGE_PREFIX}/bash/ss-restart-memcached.txt?format=raw"
+SOURCEFORGE_SS_RESTART_MYSQL="${SOURCEFORGE_PREFIX}/bash/ss-restart-mysql.txt?format=raw"
+SOURCEFORGE_SS_RESTART_NGINX="${SOURCEFORGE_PREFIX}/bash/ss-restart-nginx.txt?format=raw"
+SOURCEFORGE_SS_RESTART_PHP="${SOURCEFORGE_PREFIX}/bash/ss-restart-php.txt?format=raw"
+SOURCEFORGE_SS_RESTART_UFW="${SOURCEFORGE_PREFIX}/bash/ss-restart-ufw.txt?format=raw"
+SOURCEFORGE_SS_STACK_OVERVIEW="${SOURCEFORGE_PREFIX}/bash/ss-stack-overview.txt?format=raw"
+SOURCEFORGE_SS_SYNC_DEVELOPMENT="${SOURCEFORGE_PREFIX}/bash/ss-sync-development.txt?format=raw"
+SOURCEFORGE_SS_SYNC_STAGING="${SOURCEFORGE_PREFIX}/bash/ss-sync-staging.txt?format=raw"
+SOURCEFORGE_SS_UPDATE_CONFIG="${SOURCEFORGE_PREFIX}/bash/ss-update-config.txt?format=raw"
+SOURCEFORGE_SS_UPDATE_MODULES="${SOURCEFORGE_PREFIX}/bash/ss-update-modules.txt?format=raw"
+SOURCEFORGE_SS_WORKER="${SOURCEFORGE_PREFIX}/bash/ss-worker.txt?format=raw"
+
+## module config files (github) ##
+GITHUB_ADMINER_CONF="${GITHUB_PREFIX}/modules/nginx/includes/adminer-conf.txt"
+GITHUB_ADMINER_PHP="${GITHUB_PREFIX}/modules/adminer/adminer.txt"
+GITHUB_ALLOWED_IPS_CONF="${GITHUB_PREFIX}/modules/nginx/includes/allowed-ips-conf.txt"
+GITHUB_AUTHENTICATED_ORIGIN_CONF="${GITHUB_PREFIX}/modules/nginx/includes/authenticated-origin-conf.txt"
+GITHUB_BASH_ALIASES="${GITHUB_PREFIX}/modules/ubuntu/bash-aliases.txt"
+GITHUB_BASHRC="${GITHUB_PREFIX}/modules/ubuntu/bashrc.txt"
+GITHUB_BLACKLIST_TXT="${GITHUB_PREFIX}/modules/wordpress/blacklist.txt"
+GITHUB_CLOUDFLARE_CONF="${GITHUB_PREFIX}/modules/nginx/includes/cloudflare-conf.txt"
+GITHUB_CUSTOM_SHELL_PROMPT="${GITHUB_PREFIX}/modules/ubuntu/custom-shell-prompt.txt"
+GITHUB_ERROR_404_HTML="${GITHUB_PREFIX}/modules/nginx/error_pages/error_404.html"
+GITHUB_ERROR_50X_HTML="${GITHUB_PREFIX}/modules/nginx/error_pages/error_50x.html"
+GITHUB_HOVERCRAFT_ZIP="https://github.com/littlebizzy/hovercraft/archive/master.zip"
+GITHUB_LETSENCRYPT_CONF="${GITHUB_PREFIX}/modules/nginx/letsencrypt-conf.txt"
+GITHUB_LINUX_KERNEL="${GITHUB_PREFIX}/modules/ubuntu/sysctl.txt"
+GITHUB_MAINTENANCE_HTML="${GITHUB_PREFIX}/modules/nginx/maintenance.txt"
+GITHUB_MEMCACHED_CONF="${GITHUB_PREFIX}/modules/memcached/memcached-conf.txt"
+GITHUB_MY_CNF="${GITHUB_PREFIX}/modules/mysql/8.0/my-cnf.txt"
+GITHUB_MY_CNF_57="${GITHUB_PREFIX}/modules/mysql/5.7/my-cnf.txt"
+GITHUB_MY_CNF_80="${GITHUB_PREFIX}/modules/mysql/8.0/my-cnf.txt"
+GITHUB_NGINX_BLOCK_DEVELOPMENT="${GITHUB_PREFIX}/modules/nginx/sites/development.txt"
+GITHUB_NGINX_BLOCK_PRODUCTION="${GITHUB_PREFIX}/modules/nginx/sites/production.txt"
+GITHUB_NGINX_BLOCK_PRODUCTION_MULTISITE="${GITHUB_PREFIX}/modules/nginx/sites/multisite-subdomains.txt"
+GITHUB_NGINX_BLOCK_STAGING="${GITHUB_PREFIX}/modules/nginx/sites/staging.txt"
+GITHUB_NGINX_CONF="${GITHUB_PREFIX}/modules/nginx/nginx-conf.txt"
+GITHUB_OPCACHE_INI_83="${GITHUB_PREFIX}/modules/php-fpm/8.3/opcache-ini.txt"
+GITHUB_OPENSSL_CONF="${GITHUB_PREFIX}/modules/nginx/openssl-conf.txt"
+GITHUB_PHP_FPM_CONF="${GITHUB_PREFIX}/modules/php-fpm/7.4/php-fpm-conf.txt"
+GITHUB_PHP_FPM_CONF_72="${GITHUB_PREFIX}/modules/php-fpm/7.2/php-fpm-conf.txt"
+GITHUB_PHP_FPM_CONF_74="${GITHUB_PREFIX}/modules/php-fpm/7.4/php-fpm-conf.txt"
+GITHUB_PHP_FPM_CONF_81="${GITHUB_PREFIX}/modules/php-fpm/8.1/php-fpm-conf.txt"
+GITHUB_PHP_FPM_CONF_83="${GITHUB_PREFIX}/modules/php-fpm/8.3/php-fpm-conf.txt"
+GITHUB_PHP_INI="${GITHUB_PREFIX}/modules/php-fpm/7.4/php-ini.txt"
+GITHUB_PHP_INI_72="${GITHUB_PREFIX}/modules/php-fpm/7.2/php-ini.txt"
+GITHUB_PHP_INI_74="${GITHUB_PREFIX}/modules/php-fpm/7.4/php-ini.txt"
+GITHUB_PHP_INI_81="${GITHUB_PREFIX}/modules/php-fpm/8.1/php-ini.txt"
+GITHUB_PHP_INI_83="${GITHUB_PREFIX}/modules/php-fpm/8.3/php-ini.txt"
+# GITHUB_PRESTASHOP_ZIP=$(curl -s https://api.github.com/repos/PrestaShop/PrestaShop/releases/latest | grep browser_download_url | cut -d '"' -f 4)
+GITHUB_RCLONE_CONF="${GITHUB_PREFIX}/modules/rclone/rclone-conf.txt"
+GITHUB_ROBOTS_TXT="${GITHUB_PREFIX}/modules/wordpress/robots.txt"
+GITHUB_SS_CONSTANTS_PHP="${GITHUB_PREFIX}/modules/php-fpm/ss-constants.txt"
+GITHUB_SS_ICON_SVG="${GITHUB_PREFIX}/modules/wordpress/mu-plugins/ss-icon.svg"
+GITHUB_SSHD_CONFIG="${GITHUB_PREFIX}/modules/ubuntu/sshd-config.txt"
+GITHUB_SSHD_CONFIG_2404="${GITHUB_PREFIX}/modules/ubuntu/24.04/sshd-config.txt"
+GITHUB_SSHD_CONFIG_2204="${GITHUB_PREFIX}/modules/ubuntu/22.04/sshd-config.txt"
+GITHUB_SSHD_CONFIG_2004="${GITHUB_PREFIX}/modules/ubuntu/20.04/sshd-config.txt"
+GITHUB_SSHD_CONFIG_1804="${GITHUB_PREFIX}/modules/ubuntu/18.04/sshd-config.txt"
+GITHUB_SUDOERS="${GITHUB_PREFIX}/modules/ubuntu/sudoers.txt"
+GITHUB_SUDOERS_2404="${GITHUB_PREFIX}/modules/ubuntu/24.04/sudoers.txt"
+GITHUB_SUDOERS_2204="${GITHUB_PREFIX}/modules/ubuntu/22.04/sudoers.txt"
+GITHUB_SUDOERS_2004="${GITHUB_PREFIX}/modules/ubuntu/20.04/sudoers.txt"
+GITHUB_SUDOERS_1804="${GITHUB_PREFIX}/modules/ubuntu/18.04/sudoers.txt"
+GITHUB_THIRDPARTY_CONF="${GITHUB_PREFIX}/modules/nginx/thirdparty-conf.txt"
+GITHUB_UFW_UFW="${GITHUB_PREFIX}/modules/ufw-firewall/ufw.txt"
+GITHUB_UFW_CONF="${GITHUB_PREFIX}/modules/ufw-firewall/ufw-conf.txt"
+GITHUB_USER_RULES="${GITHUB_PREFIX}/modules/ufw-firewall/user-rules.txt"
+GITHUB_USER6_RULES="${GITHUB_PREFIX}/modules/ufw-firewall/user6-rules.txt"
+GITHUB_WP_CLI_YML="${GITHUB_PREFIX}/modules/wordpress/wp-cli/wp-cli-yml.txt"
+GITHUB_WP_COMPLETION="${GITHUB_PREFIX}/modules/wordpress/wp-cli/wp-completion-bash.txt"
+GITHUB_WP_CONFIG="${GITHUB_PREFIX}/modules/wordpress/wp-config-production.txt"
+GITHUB_WP_CONFIG_PRODUCTION_SINGLE_SITE="${GITHUB_PREFIX}/modules/wordpress/wp-config-production.txt"
+GITHUB_WP_CONFIG_PRODUCTION_MULTISITE="${GITHUB_PREFIX}/modules/wordpress/wp-config-multisite.txt"
+GITHUB_WP_CONFIG_PRODUCTION_MULTISITE_SUBDOMAINS="${GITHUB_PREFIX}/modules/wordpress/wp-config-multisite.txt"
+GITHUB_WP_CONFIG_PHP="${GITHUB_PREFIX}/modules/wordpress/wp-config-production.txt"
+GITHUB_WP_CONFIG_PHP_PRODUCTION_SINGLE_SITE="${GITHUB_PREFIX}/modules/wordpress/wp-config-production.txt"
+GITHUB_WP_CONFIG_PHP_PRODUCTION_MULTISITE="${GITHUB_PREFIX}/modules/wordpress/wp-config-multisite.txt"
+GITHUB_WP_CONFIG_PHP_PRODUCTION_MULTISITE_SUBDOMAINS="${GITHUB_PREFIX}/modules/wordpress/wp-config-multisite.txt"
+GITHUB_WP_CONFIG_STAGING="${GITHUB_PREFIX}/modules/wordpress/wp-config-staging.txt"
+GITHUB_WP_CONFIG_DEV="${GITHUB_PREFIX}/modules/wordpress/wp-config-development.txt"
+GITHUB_WP_CONFIG_PHP_STAGING="${GITHUB_PREFIX}/modules/wordpress/wp-config-staging.txt"
+GITHUB_WP_CONFIG_PHP_DEV="${GITHUB_PREFIX}/modules/wordpress/wp-config-development.txt"
+GITHUB_WWW_CONF="${GITHUB_PREFIX}/modules/php-fpm/7.4/www-conf.txt"
+GITHUB_WWW_CONF_72="${GITHUB_PREFIX}/modules/php-fpm/7.2/www-conf.txt"
+GITHUB_WWW_CONF_74="${GITHUB_PREFIX}/modules/php-fpm/7.4/www-conf.txt"
+GITHUB_WWW_CONF_81="${GITHUB_PREFIX}/modules/php-fpm/8.1/www-conf.txt"
+GITHUB_WWW_CONF_83="${GITHUB_PREFIX}/modules/php-fpm/8.3/www-conf.txt"
+
+## module config files (gitlab) ##
+GITLAB_ADMINER_CONF="${GITLAB_PREFIX}/modules/nginx/includes/adminer-conf.txt"
+GITLAB_ADMINER_PHP="${GITLAB_PREFIX}/modules/adminer/adminer.txt"
+GITLAB_ALLOWED_IPS_CONF="${GITHUB_PREFIX}/modules/nginx/includes/allowed-ips-conf.txt"
+GITLAB_AUTHENTICATED_ORIGIN_CONF="${GITLAB_PREFIX}/modules/nginx/includes/authenticated-origin-conf.txt"
+GITLAB_BASH_ALIASES="${GITLAB_PREFIX}/modules/ubuntu/bash-aliases.txt"
+GITLAB_BASHRC="${GITLAB_PREFIX}/modules/ubuntu/bashrc.txt"
+GITLAB_BLACKLIST_TXT="${GITLAB_PREFIX}/modules/wordpress/blacklist.txt"
+GITLAB_CLOUDFLARE_CONF="${GITLAB_PREFIX}/modules/nginx/includes/cloudflare-conf.txt"
+GITLAB_CUSTOM_SHELL_PROMPT="${GITLAB_PREFIX}/modules/ubuntu/custom-shell-prompt.txt"
+GITLAB_ERROR_404_HTML="${GITLAB_PREFIX}/modules/nginx/error_pages/error_404.html"
+GITLAB_ERROR_50X_HTML="${GITLAB_PREFIX}/modules/nginx/error_pages/error_50x.html"
+GITLAB_LETSENCRYPT_CONF="${GITLAB_PREFIX}/modules/nginx/letsencrypt-conf.txt"
+GITLAB_LINUX_KERNEL="${GITLAB_PREFIX}/modules/ubuntu/sysctl.txt"
+GITLAB_MAINTENANCE_HTML="${GITLAB_PREFIX}/modules/nginx/maintenance.txt"
+GITLAB_MEMCACHED_CONF="${GITLAB_PREFIX}/modules/memcached/memcached-conf.txt"
+GITLAB_MY_CNF="${GITLAB_PREFIX}/modules/mysql/8.0/my-cnf.txt"
+GITLAB_MY_CNF_57="${GITLAB_PREFIX}/modules/mysql/5.7/my-cnf.txt"
+GITLAB_MY_CNF_80="${GITLAB_PREFIX}/modules/mysql/8.0/my-cnf.txt"
+GITLAB_NGINX_BLOCK_DEVELOPMENT="${GITLAB_PREFIX}/modules/nginx/sites/development.txt"
+GITLAB_NGINX_BLOCK_PRODUCTION="${GITLAB_PREFIX}/modules/nginx/sites/production.txt"
+GITLAB_NGINX_BLOCK_PRODUCTION_MULTISITE="${GITLAB_PREFIX}/modules/nginx/sites/multisite-subdomains.txt"
+GITLAB_NGINX_BLOCK_STAGING="${GITLAB_PREFIX}/modules/nginx/sites/staging.txt"
+GITLAB_NGINX_CONF="${GITLAB_PREFIX}/modules/nginx/nginx-conf.txt"
+GITLAB_OPENSSL_CONF="${GITLAB_PREFIX}/modules/nginx/openssl-conf.txt"
+GITLAB_PHP_FPM_CONF="${GITLAB_PREFIX}/modules/php-fpm/7.4/php-fpm-conf.txt"
+GITLAB_PHP_FPM_CONF_72="${GITLAB_PREFIX}/modules/php-fpm/7.2/php-fpm-conf.txt"
+GITLAB_PHP_FPM_CONF_74="${GITLAB_PREFIX}/modules/php-fpm/7.4/php-fpm-conf.txt"
+GITLAB_PHP_FPM_CONF_81="${GITLAB_PREFIX}/modules/php-fpm/8.1/php-fpm-conf.txt"
+GITLAB_PHP_FPM_CONF_83="${GITLAB_PREFIX}/modules/php-fpm/8.3/php-fpm-conf.txt"
+GITLAB_PHP_INI="${GITLAB_PREFIX}/modules/php-fpm/7.4/php-ini.txt"
+GITLAB_PHP_INI_72="${GITLAB_PREFIX}/modules/php-fpm/7.2/php-ini.txt"
+GITLAB_PHP_INI_74="${GITLAB_PREFIX}/modules/php-fpm/7.4/php-ini.txt"
+GITLAB_PHP_INI_81="${GITLAB_PREFIX}/modules/php-fpm/8.1/php-ini.txt"
+GITLAB_PHP_INI_83="${GITLAB_PREFIX}/modules/php-fpm/8.3/php-ini.txt"
+# GITLAB_PRESTASHOP_ZIP=$(curl -s https://api.github.com/repos/PrestaShop/PrestaShop/releases/latest | grep browser_download_url | cut -d '"' -f 4)
+GITLAB_RCLONE_CONF="${GITLAB_PREFIX}/modules/rclone/rclone-conf.txt"
+GITLAB_ROBOTS_TXT="${GITLAB_PREFIX}/modules/wordpress/robots.txt"
+GITLAB_SS_CONSTANTS_PHP="${GITLAB_PREFIX}/modules/php-fpm/ss-constants.txt"
+GITLAB_SS_ICON_SVG="${GITLAB_PREFIX}/modules/wordpress/mu-plugins/ss-icon.svg"
+GITLAB_SSHD_CONFIG="${GITLAB_PREFIX}/modules/ubuntu/sshd-config.txt"
+GITLAB_SSHD_CONFIG_2404="${GITLAB_PREFIX}/modules/ubuntu/24.04/sshd-config.txt"
+GITLAB_SSHD_CONFIG_2204="${GITLAB_PREFIX}/modules/ubuntu/22.04/sshd-config.txt"
+GITLAB_SSHD_CONFIG_2004="${GITLAB_PREFIX}/modules/ubuntu/20.04/sshd-config.txt"
+GITLAB_SSHD_CONFIG_1804="${GITLAB_PREFIX}/modules/ubuntu/18.04/sshd-config.txt"
+GITLAB_SUDOERS="${GITLAB_PREFIX}/modules/ubuntu/sudoers.txt"
+GITLAB_SUDOERS_2404="${GITLAB_PREFIX}/modules/ubuntu/24.04/sudoers.txt"
+GITLAB_SUDOERS_2204="${GITLAB_PREFIX}/modules/ubuntu/22.04/sudoers.txt"
+GITLAB_SUDOERS_2004="${GITLAB_PREFIX}/modules/ubuntu/20.04/sudoers.txt"
+GITLAB_SUDOERS_1804="${GITLAB_PREFIX}/modules/ubuntu/18.04/sudoers.txt"
+GITLAB_THIRDPARTY_CONF="${GITLAB_PREFIX}/modules/nginx/thirdparty-conf.txt"
+GITLAB_UFW_UFW="${GITLAB_PREFIX}/modules/ufw-firewall/ufw.txt"
+GITLAB_UFW_CONF="${GITLAB_PREFIX}/modules/ufw-firewall/ufw-conf.txt"
+GITLAB_USER_RULES="${GITLAB_PREFIX}/modules/ufw-firewall/user-rules.txt"
+GITLAB_USER6_RULES="${GITLAB_PREFIX}/modules/ufw-firewall/user6-rules.txt"
+GITLAB_WP_CLI_YML="${GITLAB_PREFIX}/modules/wordpress/wp-cli/wp-cli-yml.txt"
+GITLAB_WP_COMPLETION="${GITLAB_PREFIX}/modules/wordpress/wp-cli/wp-completion-bash.txt"
+GITLAB_WP_CONFIG="${GITLAB_PREFIX}/modules/wordpress/wp-config-production.txt"
+GITLAB_WP_CONFIG_PRODUCTION_SINGLE_SITE="${GITLAB_PREFIX}/modules/wordpress/wp-config-production.txt"
+GITLAB_WP_CONFIG_PRODUCTION_MULTISITE="${GITLAB_PREFIX}/modules/wordpress/wp-config-multisite.txt"
+GITLAB_WP_CONFIG_PRODUCTION_MULTISITE_SUBDOMAINS="${GITLAB_PREFIX}/modules/wordpress/wp-config-multisite.txt"
+GITLAB_WP_CONFIG_PHP="${GITLAB_PREFIX}/modules/wordpress/wp-config-production.txt"
+GITLAB_WP_CONFIG_PHP_PRODUCTION_SINGLE_SITE="${GITLAB_PREFIX}/modules/wordpress/wp-config-production.txt"
+GITLAB_WP_CONFIG_PHP_PRODUCTION_MULTISITE="${GITLAB_PREFIX}/modules/wordpress/wp-config-multisite.txt"
+GITLAB_WP_CONFIG_PHP_PRODUCTION_MULTISITE_SUBDOMAINS="${GITLAB_PREFIX}/modules/wordpress/wp-config-multisite.txt"
+GITLAB_WP_CONFIG_STAGING="${GITLAB_PREFIX}/modules/wordpress/wp-config-staging.txt"
+GITLAB_WP_CONFIG_DEV="${GITLAB_PREFIX}/modules/wordpress/wp-config-development.txt"
+GITLAB_WP_CONFIG_PHP_STAGING="${GITLAB_PREFIX}/modules/wordpress/wp-config-staging.txt"
+GITLAB_WP_CONFIG_PHP_DEV="${GITLAB_PREFIX}/modules/wordpress/wp-config-development.txt"
+GITLAB_WWW_CONF="${GITLAB_PREFIX}/modules/php-fpm/7.4/www-conf.txt"
+GITLAB_WWW_CONF_72="${GITLAB_PREFIX}/modules/php-fpm/7.2/www-conf.txt"
+GITLAB_WWW_CONF_74="${GITLAB_PREFIX}/modules/php-fpm/7.4/www-conf.txt"
+GITLAB_WWW_CONF_81="${GITLAB_PREFIX}/modules/php-fpm/8.1/www-conf.txt"
+GITLAB_WWW_CONF_83="${GITLAB_PREFIX}/modules/php-fpm/8.3/www-conf.txt"
+
+## module config files (sourceforge) ##
+SOURCEFORGE_ADMINER_CONF="${SOURCEFORGE_PREFIX}/modules/nginx/includes/adminer-conf.txt?format=raw"
+SOURCEFORGE_ADMINER_PHP="${SOURCEFORGE_PREFIX}/modules/adminer/adminer.txt?format=raw"
+SOURCEFORGE_ALLOWED_IPS_CONF="${SOURCEFORGE_PREFIX}/modules/nginx/includes/allowed-ips-conf.txt?format=raw"
+SOURCEFORGE_AUTHENTICATED_ORIGIN_CONF="${SOURCEFORGE_PREFIX}/modules/nginx/includes/authenticated-origin-conf.txt?format=raw"
+SOURCEFORGE_BASH_ALIASES="${SOURCEFORGE_PREFIX}/modules/ubuntu/bash-aliases.txt?format=raw"
+SOURCEFORGE_BASHRC="${SOURCEFORGE_PREFIX}/modules/ubuntu/bashrc.txt?format=raw"
+SOURCEFORGE_BLACKLIST_TXT="${SOURCEFORGE_PREFIX}/modules/wordpress/blacklist.txt?format=raw"
+SOURCEFORGE_CLOUDFLARE_CONF="${SOURCEFORGE_PREFIX}/modules/nginx/includes/cloudflare-conf.txt?format=raw"
+SOURCEFORGE_CUSTOM_SHELL_PROMPT="${SOURCEFORGE_PREFIX}/modules/ubuntu/custom-shell-prompt.txt?format=raw"
+SOURCEFORGE_ERROR_404_HTML="${SOURCEFORGE_PREFIX}/modules/nginx/error_pages/error_404.html?format=raw"
+SOURCEFORGE_ERROR_50X_HTML="${SOURCEFORGE_PREFIX}/modules/nginx/error_pages/error_50x.html?format=raw"
+SOURCEFORGE_LETSENCRYPT_CONF="${SOURCEFORGE_PREFIX}/modules/nginx/letsencrypt-conf.txt?format=raw"
+SOURCEFORGE_LINUX_KERNEL="${SOURCEFORGE_PREFIX}/modules/ubuntu/sysctl.txt?format=raw"
+SOURCEFORGE_MAINTENANCE_HTML="${SOURCEFORGE_PREFIX}/modules/nginx/maintenance.txt?format=raw"
+SOURCEFORGE_MEMCACHED_CONF="${SOURCEFORGE_PREFIX}/modules/memcached/memcached-conf.txt?format=raw"
+SOURCEFORGE_MY_CNF="${SOURCEFORGE_PREFIX}/modules/mysql/8.0/my-cnf.txt?format=raw"
+SOURCEFORGE_MY_CNF_57="${SOURCEFORGE_PREFIX}/modules/mysql/5.7/my-cnf.txt?format=raw"
+SOURCEFORGE_MY_CNF_80="${SOURCEFORGE_PREFIX}/modules/mysql/8.0/my-cnf.txt?format=raw"
+SOURCEFORGE_NGINX_BLOCK_DEVELOPMENT="${SOURCEFORGE_PREFIX}/modules/nginx/sites/development.txt?format=raw"
+SOURCEFORGE_NGINX_BLOCK_PRODUCTION="${SOURCEFORGE_PREFIX}/modules/nginx/sites/production.txt?format=raw"
+SOURCEFORGE_NGINX_BLOCK_PRODUCTION_MULTISITE="${SOURCEFORGE_PREFIX}/modules/nginx/sites/multisite-subdomains.txt?format=raw"
+SOURCEFORGE_NGINX_BLOCK_STAGING="${SOURCEFORGE_PREFIX}/modules/nginx/sites/staging.txt?format=raw"
+SOURCEFORGE_NGINX_CONF="${SOURCEFORGE_PREFIX}/modules/nginx/nginx-conf.txt?format=raw"
+SOURCEFORGE_OPENSSL_CONF="${SOURCEFORGE_PREFIX}/modules/nginx/openssl-conf.txt?format=raw"
+SOURCEFORGE_PHP_FPM_CONF="${SOURCEFORGE_PREFIX}/modules/php-fpm/7.4/php-fpm-conf.txt?format=raw"
+SOURCEFORGE_PHP_FPM_CONF_72="${SOURCEFORGE_PREFIX}/modules/php-fpm/7.2/php-fpm-conf.txt?format=raw"
+SOURCEFORGE_PHP_FPM_CONF_74="${SOURCEFORGE_PREFIX}/modules/php-fpm/7.4/php-fpm-conf.txt?format=raw"
+SOURCEFORGE_PHP_FPM_CONF_81="${SOURCEFORGE_PREFIX}/modules/php-fpm/8.1/php-fpm-conf.txt?format=raw"
+SOURCEFORGE_PHP_FPM_CONF_83="${SOURCEFORGE_PREFIX}/modules/php-fpm/8.3/php-fpm-conf.txt?format=raw"
+SOURCEFORGE_PHP_INI="${SOURCEFORGE_PREFIX}/modules/php-fpm/7.4/php-ini.txt?format=raw"
+SOURCEFORGE_PHP_INI_72="${SOURCEFORGE_PREFIX}/modules/php-fpm/7.2/php-ini.txt?format=raw"
+SOURCEFORGE_PHP_INI_74="${SOURCEFORGE_PREFIX}/modules/php-fpm/7.4/php-ini.txt?format=raw"
+SOURCEFORGE_PHP_INI_81="${SOURCEFORGE_PREFIX}/modules/php-fpm/8.1/php-ini.txt?format=raw"
+SOURCEFORGE_PHP_INI_83="${SOURCEFORGE_PREFIX}/modules/php-fpm/8.3/php-ini.txt?format=raw"
+# SOURCEFORGE_PRESTASHOP_ZIP=$(curl -s https://api.github.com/repos/PrestaShop/PrestaShop/releases/latest | grep browser_download_url | cut -d '"' -f 4)
+SOURCEFORGE_RCLONE_CONF="${SOURCEFORGE_PREFIX}/modules/rclone/rclone-conf.txt?format=raw"
+SOURCEFORGE_ROBOTS_TXT="${SOURCEFORGE_PREFIX}/modules/wordpress/robots.txt?format=raw"
+SOURCEFORGE_SS_CONSTANTS_PHP="${SOURCEFORGE_PREFIX}/modules/php-fpm/ss-constants.txt?format=raw"
+SOURCEFORGE_SS_ICON_SVG="${SOURCEFORGE_PREFIX}/modules/wordpress/mu-plugins/ss-icon.svg?format=raw"
+SOURCEFORGE_SSHD_CONFIG="${SOURCEFORGE_PREFIX}/modules/ubuntu/sshd-config.txt?format=raw"
+SOURCEFORGE_SSHD_CONFIG_2404="${SOURCEFORGE_PREFIX}/modules/ubuntu/24.04/sshd-config.txt?format=raw"
+SOURCEFORGE_SSHD_CONFIG_2204="${SOURCEFORGE_PREFIX}/modules/ubuntu/22.04/sshd-config.txt?format=raw"
+SOURCEFORGE_SSHD_CONFIG_2004="${SOURCEFORGE_PREFIX}/modules/ubuntu/20.04/sshd-config.txt?format=raw"
+SOURCEFORGE_SSHD_CONFIG_1804="${SOURCEFORGE_PREFIX}/modules/ubuntu/18.04/sshd-config.txt?format=raw"
+SOURCEFORGE_SUDOERS="${SOURCEFORGE_PREFIX}/modules/ubuntu/sudoers.txt?format=raw"
+SOURCEFORGE_SUDOERS_2404="${SOURCEFORGE_PREFIX}/modules/ubuntu/24.04/sudoers.txt?format=raw"
+SOURCEFORGE_SUDOERS_2204="${SOURCEFORGE_PREFIX}/modules/ubuntu/22.04/sudoers.txt?format=raw"
+SOURCEFORGE_SUDOERS_2004="${SOURCEFORGE_PREFIX}/modules/ubuntu/20.04/sudoers.txt?format=raw"
+SOURCEFORGE_SUDOERS_1804="${SOURCEFORGE_PREFIX}/modules/ubuntu/18.04/sudoers.txt?format=raw"
+SOURCEFORGE_THIRDPARTY_CONF="${SOURCEFORGE_PREFIX}/modules/nginx/thirdparty-conf.txt?format=raw"
+SOURCEFORGE_UFW_UFW="${SOURCEFORGE_PREFIX}/modules/ufw-firewall/ufw.txt?format=raw"
+SOURCEFORGE_UFW_CONF="${SOURCEFORGE_PREFIX}/modules/ufw-firewall/ufw-conf.txt?format=raw"
+SOURCEFORGE_USER_RULES="${SOURCEFORGE_PREFIX}/modules/ufw-firewall/user-rules.txt?format=raw"
+SOURCEFORGE_USER6_RULES="${SOURCEFORGE_PREFIX}/modules/ufw-firewall/user6-rules.txt?format=raw"
+SOURCEFORGE_WP_CLI_YML="${SOURCEFORGE_PREFIX}/modules/wordpress/wp-cli/wp-cli-yml.txt?format=raw"
+SOURCEFORGE_WP_COMPLETION="${SOURCEFORGE_PREFIX}/modules/wordpress/wp-cli/wp-completion-bash.txt?format=raw"
+SOURCEFORGE_WP_CONFIG="${SOURCEFORGE_PREFIX}/modules/wordpress/wp-config-production.txt?format=raw"
+SOURCEFORGE_WP_CONFIG_PRODUCTION_SINGLE_SITE="${SOURCEFORGE_PREFIX}/modules/wordpress/wp-config-production.txt?format=raw"
+SOURCEFORGE_WP_CONFIG_PRODUCTION_MULTISITE="${SOURCEFORGE_PREFIX}/modules/wordpress/wp-config-multisite.txt?format=raw"
+SOURCEFORGE_WP_CONFIG_PRODUCTION_MULTISITE_SUBDOMAINS="${SOURCEFORGE_PREFIX}/modules/wordpress/wp-config-multisite.txt?format=raw"
+SOURCEFORGE_WP_CONFIG_PHP="${SOURCEFORGE_PREFIX}/modules/wordpress/wp-config-production.txt?format=raw"
+SOURCEFORGE_WP_CONFIG_PHP_PRODUCTION_SINGLE_SITE="${SOURCEFORGE_PREFIX}/modules/wordpress/wp-config-production.txt?format=raw"
+SOURCEFORGE_WP_CONFIG_PHP_PRODUCTION_MULTISITE="${SOURCEFORGE_PREFIX}/modules/wordpress/wp-config-multisite.txt?format=raw"
+SOURCEFORGE_WP_CONFIG_PHP_PRODUCTION_MULTISITE_SUBDOMAINS="${SOURCEFORGE_PREFIX}/modules/wordpress/wp-config-multisite.txt?format=raw"
+SOURCEFORGE_WP_CONFIG_STAGING="${SOURCEFORGE_PREFIX}/modules/wordpress/wp-config-staging.txt?format=raw"
+SOURCEFORGE_WP_CONFIG_DEV="${SOURCEFORGE_PREFIX}/modules/wordpress/wp-config-development.txt?format=raw"
+SOURCEFORGE_WP_CONFIG_PHP_STAGING="${SOURCEFORGE_PREFIX}/modules/wordpress/wp-config-staging.txt?format=raw"
+SOURCEFORGE_WP_CONFIG_PHP_DEV="${SOURCEFORGE_PREFIX}/modules/wordpress/wp-config-development.txt?format=raw"
+SOURCEFORGE_WWW_CONF="${SOURCEFORGE_PREFIX}/modules/php-fpm/7.4/www-conf.txt?format=raw"
+SOURCEFORGE_WWW_CONF_72="${SOURCEFORGE_PREFIX}/modules/php-fpm/7.2/www-conf.txt?format=raw"
+SOURCEFORGE_WWW_CONF_74="${SOURCEFORGE_PREFIX}/modules/php-fpm/7.4/www-conf.txt?format=raw"
+SOURCEFORGE_WWW_CONF_81="${SOURCEFORGE_PREFIX}/modules/php-fpm/8.1/www-conf.txt?format=raw"
+SOURCEFORGE_WWW_CONF_83="${SOURCEFORGE_PREFIX}/modules/php-fpm/8.3/www-conf.txt?format=raw"
+
+## wordpress mu plugins (github) ##
+GITHUB_AUTOLOADER_PHP="${GITHUB_PREFIX}/modules/wordpress/mu-plugins/autoloader.txt"
+GITHUB_CLEAR_CACHES_ZIP="${GITHUB_PREFIX}/modules/wordpress/mu-plugins/clear-caches.zip"
+GITHUB_DISABLE_EMPTY_TRASH_ZIP="${GITHUB_PREFIX}/modules/wordpress/mu-plugins/disable-empty-trash.zip"
+GITHUB_DISABLE_IMAGE_COMPRESSION_ZIP="${GITHUB_PREFIX}/modules/wordpress/mu-plugins/disable-image-compression.zip"
+GITHUB_DISABLE_POST_VIA_EMAIL_ZIP="${GITHUB_PREFIX}/modules/wordpress/mu-plugins/disable-post-via-email.zip"
+GITHUB_DISABLE_XML_RPC_ZIP="${GITHUB_PREFIX}/modules/wordpress/mu-plugins/disable-xml-rpc.zip"
+GITHUB_FORCE_HTTPS_ZIP="${GITHUB_PREFIX}/modules/wordpress/mu-plugins/force-https.zip"
+GITHUB_PLUGIN_BLACKLIST_ZIP="${GITHUB_PREFIX}/modules/wordpress/mu-plugins/plugin-blacklist.zip"
+GITHUB_REPOMAN_ZIP="${GITHUB_PREFIX}/modules/wordpress/mu-plugins/repoman.zip"
+
+## new approach but unreliable due to GitHub API rate-limits ##
+# GITHUB_DISABLE_EMPTY_TRASH_LATEST_TAG=$(curl -s https://api.github.com/repos/littlebizzy/disable-empty-trash/releases/latest | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
+# GITHUB_DISABLE_EMPTY_TRASH_DOWNLOAD_URL="https://github.com/littlebizzy/disable-empty-trash/archive/refs/tags/${GITHUB_PLUGIN_BLACKLIST_LATEST_TAG}.zip"
+# GITHUB_PLUGIN_BLACKLIST_LATEST_TAG=$(curl -s https://api.github.com/repos/littlebizzy/plugin-blacklist/releases/latest | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
+# GITHUB_PLUGIN_BLACKLIST_DOWNLOAD_URL="https://github.com/littlebizzy/plugin-blacklist/archive/refs/tags/${GITHUB_PLUGIN_BLACKLIST_LATEST_TAG}.zip"
+
+GITHUB_000_COMMON_PHP="${GITHUB_PREFIX}/modules/wordpress/mu-plugins/000-common.txt"
+GITHUB_DISABLE_EMAILS_ZIP="${GITHUB_PREFIX}/modules/wordpress/mu-plugins/disable-emails.zip" ## staging only
+GITHUB_DISABLE_DEFAULT_RUNNER_ZIP="${GITHUB_PREFIX}/modules/wordpress/mu-plugins/disable-default-runner.zip" ## staging only
+
+## wordpress mu plugins (gitlab) ##
+GITLAB_AUTOLOADER_PHP="${GITLAB_PREFIX}/modules/wordpress/mu-plugins/autoloader.txt"
+GITLAB_CLEAR_CACHES_ZIP="${GITLAB_PREFIX}/modules/wordpress/mu-plugins/clear-caches.zip"
+GITLAB_DISABLE_EMPTY_TRASH_ZIP="${GITLAB_PREFIX}/modules/wordpress/mu-plugins/disable-empty-trash.zip"
+GITLAB_DISABLE_IMAGE_COMPRESSION_ZIP="${GITLAB_PREFIX}/modules/wordpress/mu-plugins/disable-image-compression.zip"
+GITLAB_DISABLE_POST_VIA_EMAIL_ZIP="${GITLAB_PREFIX}/modules/wordpress/mu-plugins/disable-post-via-email.zip"
+GITLAB_DISABLE_XML_RPC_ZIP="${GITLAB_PREFIX}/modules/wordpress/mu-plugins/disable-xml-rpc.zip"
+GITLAB_FORCE_HTTPS_ZIP="${GITLAB_PREFIX}/modules/wordpress/mu-plugins/force-https.zip"
+GITLAB_PLUGIN_BLACKLIST_ZIP="${GITLAB_PREFIX}/modules/wordpress/mu-plugins/plugin-blacklist.zip"
+GITLAB_REPOMAN_ZIP="${GITLAB_PREFIX}/modules/wordpress/mu-plugins/repoman.zip"
+
+GITLAB_000_COMMON_PHP="${GITLAB_PREFIX}/modules/wordpress/mu-plugins/000-common.txt"
+GITLAB_DISABLE_EMAILS_ZIP="${GITLAB_PREFIX}/modules/wordpress/mu-plugins/disable-emails.zip" ## staging only
+GITLAB_DISABLE_DEFAULT_RUNNER_ZIP="${GITLAB_PREFIX}/modules/wordpress/mu-plugins/disable-default-runner.zip" ## staging only
+
+## wordpress mu plugins (sourceforge) ##
+SOURCEFORGE_AUTOLOADER_PHP="${SOURCEFORGE_PREFIX}/modules/wordpress/mu-plugins/autoloader.txt?format=raw"
+SOURCEFORGE_CLEAR_CACHES_ZIP="${SOURCEFORGE_PREFIX}/modules/wordpress/mu-plugins/clear-caches.zip?format=raw"
+SOURCEFORGE_DISABLE_EMPTY_TRASH_ZIP="${SOURCEFORGE_PREFIX}/modules/wordpress/mu-plugins/disable-empty-trash.zip?format=raw"
+SOURCEFORGE_DISABLE_IMAGE_COMPRESSION_ZIP="${SOURCEFORGE_PREFIX}/modules/wordpress/mu-plugins/disable-image-compression.zip?format=raw"
+SOURCEFORGE_DISABLE_POST_VIA_EMAIL_ZIP="${SOURCEFORGE_PREFIX}/modules/wordpress/mu-plugins/disable-post-via-email.zip?format=raw"
+SOURCEFORGE_DISABLE_XML_RPC_ZIP="${SOURCEFORGE_PREFIX}/modules/wordpress/mu-plugins/disable-xml-rpc.zip?format=raw"
+SOURCEFORGE_FORCE_HTTPS_ZIP="${SOURCEFORGE_PREFIX}/modules/wordpress/mu-plugins/force-https.zip?format=raw"
+SOURCEFORGE_PLUGIN_BLACKLIST_ZIP="${SOURCEFORGE_PREFIX}/modules/wordpress/mu-plugins/plugin-blacklist.zip?format=raw"
+SOURCEFORGE_REPOMAN_ZIP="${SOURCEFORGE_PREFIX}/modules/wordpress/mu-plugins/repoman.zip?format=raw"
+
+SOURCEFORGE_000_COMMON_PHP="${SOURCEFORGE_PREFIX}/modules/wordpress/mu-plugins/000-common.txt?format=raw"
+SOURCEFORGE_DISABLE_EMAILS_ZIP="${SOURCEFORGE_PREFIX}/modules/wordpress/mu-plugins/disable-emails.zip?format=raw" ## staging only
+SOURCEFORGE_DISABLE_DEFAULT_RUNNER_ZIP="${SOURCEFORGE_PREFIX}/modules/wordpress/mu-plugins/disable-default-runner.zip?format=raw" ## staging only
+
+## other stuff ##
+WPORG_MEMCACHED_OBJECT_CACHE_PHP="https://plugins.trac.wordpress.org/browser/memcached/trunk/object-cache.php?format=txt"
+REMOTE_CLOUDFLARE_PEM="https://developers.cloudflare.com/ssl/static/authenticated_origin_pull_ca.pem"
+REMOTE_OBJECT_CACHE_PHP="https://plugins.trac.wordpress.org/browser/memcached/trunk/object-cache.php?format=txt"
+REMOTE_WORDPRESS_ZIP="https://wordpress.org/latest.zip"
+REMOTE_WP_CLI_PHAR="https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar"
+
+####################################################################################################
+#### C. SS-Functions: Temporary File Paths #########################################################
+####################################################################################################
+
+## these are temporary file paths used by SlickStack to prepare permanent file paths ##
+## we use the /tmp/ directory to simplify permissions and security concerns ##
+
+## cron jobs ##
+TMP_00_CRONTAB="/tmp/00-crontab"
+TMP_01_CRON_MINUTELY="/tmp/01-cron-minutely"
+TMP_02_CRON_OFTEN="/tmp/02-cron-often"
+TMP_03_CRON_REGULAR="/tmp/03-cron-regular"
+TMP_04_CRON_QUARTER_HOURLY="/tmp/04-cron-quarter-hourly"
+TMP_05_CRON_HALF_HOURLY="/tmp/05-cron-half-hourly"
+TMP_06_CRON_HOURLY="/tmp/06-cron-hourly"
+TMP_07_CRON_QUARTER_DAILY="/tmp/07-cron-quarter-daily"
+TMP_08_CRON_HALF_DAILY="/tmp/08-cron-half-daily"
+TMP_09_CRON_DAILY="/tmp/09-cron-daily"
+TMP_10_CRON_HALF_WEEKLY="/tmp/10-cron-half-weekly"
+TMP_11_CRON_WEEKLY="/tmp/11-cron-weekly"
+TMP_12_CRON_HALF_MONTHLY="/tmp/12-cron-half-monthly"
+TMP_13_CRON_MONTHLY="/tmp/13-cron-monthly"
+TMP_14_CRON_SOMETIMES="/tmp/14-cron-sometimes"
+
+## custom cron jobs ##
+TMP_01_CRON_MINUTELY_CUSTOM="/tmp/01-cron-minutely-custom"
+TMP_02_CRON_OFTEN_CUSTOM="/tmp/02-cron-often-custom"
+TMP_03_CRON_REGULAR_CUSTOM="/tmp/03-cron-regular-custom"
+TMP_04_CRON_QUARTER_HOURLY_CUSTOM="/tmp/04-cron-quarter-hourly-custom"
+TMP_05_CRON_HALF_HOURLY_CUSTOM="/tmp/05-cron-half-hourly-custom"
+TMP_06_CRON_HOURLY_CUSTOM="/tmp/06-cron-hourly-custom"
+TMP_07_CRON_QUARTER_DAILY_CUSTOM="/tmp/07-cron-quarter-daily-custom"
+TMP_08_CRON_HALF_DAILY_CUSTOM="/tmp/08-cron-half-daily-custom"
+TMP_09_CRON_DAILY_CUSTOM="/tmp/09-cron-daily-custom"
+TMP_10_CRON_HALF_WEEKLY_CUSTOM="/tmp/10-cron-half-weekly-custom"
+TMP_11_CRON_WEEKLY_CUSTOM="/tmp/11-cron-weekly-custom"
+TMP_12_CRON_HALF_MONTHLY_CUSTOM="/tmp/12-cron-half-monthly-custom"
+TMP_13_CRON_MONTHLY_CUSTOM="/tmp/13-cron-monthly-custom"
+TMP_14_CRON_SOMETIMES_CUSTOM="/tmp/14-cron-sometimes-custom"
+
+## bash scripts ##
+TMP_SS_CHECK="/tmp/ss-check"
+TMP_SS_CLEAN_DATABASE="/tmp/ss-clean-database"
+TMP_SS_CLEAN_FILES="/tmp/ss-clean-files"
+TMP_SS_CONFIG="/tmp/ss-config"
+TMP_SS_CONFIG_SAMPLE="/tmp/ss-config-sample"
+TMP_SS_CONFIG_UPDATE="/tmp/ss-config-update"
+TMP_SS_CONFIG_WIZARD="/tmp/ss-config-wizard"
+TMP_SS_DOS2UNIX="/tmp/ss-optimize-files"
+TMP_SS_DOS2UNIX_FILES="/tmp/ss-optimize-files"
+TMP_SS_DUMP_DATABASE="/tmp/ss-dump-database"
+TMP_SS_DUMP_FILES="/tmp/ss-dump-files"
+TMP_SS_EMPTY_LOGS="/tmp/ss-empty-logs"
+TMP_SS_ENCRYPT_ACME="/tmp/ss-encrypt-acme"
+TMP_SS_ENCRYPT_CERTBOT="/tmp/ss-encrypt-certbot"
+TMP_SS_ENCRYPT_OPENSSL="/tmp/ss-encrypt-openssl"
+TMP_SS_FUNCTIONS="/tmp/ss-functions"
+TMP_SS_IMPORT_DATABASE="/tmp/ss-import-database"
+TMP_SS_IMPORT_FILES="/tmp/ss-import-files"
+TMP_SS_INSTALL="/tmp/ss-install"
+TMP_SS_INSTALL_CRAFT_CONFIG="/tmp/ss-install-craft-config"
+TMP_SS_INSTALL_CRAFT_PACKAGES="/tmp/ss-install-craft-packages"
+TMP_SS_INSTALL_FAIL2BAN_CONFIG="/tmp/ss-install-fail2ban-config"
+TMP_SS_INSTALL_FAIL2BAN_PACKAGES="/tmp/ss-install-fail2ban-packages"
+TMP_SS_INSTALL_MEDIAWIKI_CONFIG="/tmp/ss-install-mediawiki-config"
+TMP_SS_INSTALL_MEDIAWIKI_PACKAGES="/tmp/ss-install-mediawiki-packages"
+TMP_SS_INSTALL_MEMCACHED_CONFIG="/tmp/ss-install-memcached-config"
+TMP_SS_INSTALL_MEMCACHED_PACKAGES="/tmp/ss-install-memcached-packages"
+TMP_SS_INSTALL_MOODLE_CONFIG="/tmp/ss-install-moodle-config"
+TMP_SS_INSTALL_MOODLE_PACKAGES="/tmp/ss-install-moodle-packages"
+TMP_SS_INSTALL_MYSQL_CONFIG="/tmp/ss-install-mysql-config"
+TMP_SS_INSTALL_MYSQL_DATABASE="/tmp/ss-install-mysql-database"
+TMP_SS_INSTALL_MYSQL_PACKAGES="/tmp/ss-install-mysql-packages"
+TMP_SS_INSTALL_NGINX_CONFIG="/tmp/ss-install-nginx-config"
+TMP_SS_INSTALL_NGINX_PACKAGES="/tmp/ss-install-nginx-packages"
+TMP_SS_INSTALL_OPENCART_CONFIG="/tmp/ss-install-opencart-config"
+TMP_SS_INSTALL_OPENCART_PACKAGES="/tmp/ss-install-opencart-packages"
+TMP_SS_INSTALL_PHP_CONFIG="/tmp/ss-install-php-config"
+TMP_SS_INSTALL_PHP_PACKAGES="/tmp/ss-install-php-packages"
+TMP_SS_INSTALL_PRESTASHOP_CONFIG="/tmp/ss-install-prestashop-config"
+TMP_SS_INSTALL_PRESTASHOP_PACKAGES="/tmp/ss-install-prestashop-packages"
+TMP_SS_INSTALL_RCLONE_CONFIG="/tmp/ss-install-rclone-config"
+TMP_SS_INSTALL_RCLONE_PACKAGES="/tmp/ss-install-rclone-packages"
+TMP_SS_INSTALL_UBUNTU_BASH="/tmp/ss-install-ubuntu-bash"
+TMP_SS_INSTALL_UBUNTU_CRONTAB="/tmp/ss-install-ubuntu-crontab"
+TMP_SS_INSTALL_UBUNTU_KERNEL="/tmp/ss-install-ubuntu-kernel"
+TMP_SS_INSTALL_UBUNTU_SSH="/tmp/ss-install-ubuntu-ssh"
+TMP_SS_INSTALL_UBUNTU_SWAP="/tmp/ss-install-ubuntu-swapfile"
+TMP_SS_INSTALL_UBUNTU_SWAPFILE="/tmp/ss-install-ubuntu-swapfile"
+TMP_SS_INSTALL_UBUNTU_USERS="/tmp/ss-install-ubuntu-users"
+TMP_SS_INSTALL_UBUNTU_UTILS="/tmp/ss-install-ubuntu-utils"
+TMP_SS_INSTALL_UFW_CONFIG="/tmp/ss-install-ufw-config"
+TMP_SS_INSTALL_UFW_PACKAGES="/tmp/ss-install-ufw-packages"
+TMP_SS_INSTALL_WORDPRESS_CLI="/tmp/ss-install-wordpress-cli"
+TMP_SS_INSTALL_WORDPRESS_CONFIG="/tmp/ss-install-wordpress-config"
+TMP_SS_INSTALL_WORDPRESS_HOVERCRAFT="/tmp/ss-install-wordpress-hovercraft"
+TMP_SS_INSTALL_WORDPRESS_MU_PLUGINS="/tmp/ss-install-wordpress-mu-plugins"
+TMP_SS_INSTALL_WORDPRESS_PACKAGES="/tmp/ss-install-wordpress-packages"
+TMP_SS_MAINTENANCE_DISABLE="/tmp/ss-maintenance-disable"
+TMP_SS_MAINTENANCE_ENABLE="/tmp/ss-maintenance-enable"
+TMP_SS_MONITOR_RESOURCES="/tmp/ss-monitor-resources"
+TMP_SS_OPTIMIZE_DATABASE="/tmp/ss-optimize-database"
+TMP_SS_OPTIMIZE_FILES="/tmp/ss-optimize-files"
+TMP_SS_PERMS="/tmp/ss-perms"
+TMP_SS_PERMS_CRAFT_CONFIG="/tmp/ss-perms-craft-config"
+TMP_SS_PERMS_CRAFT_PACKAGES="/tmp/ss-perms-craft-packages"
+TMP_SS_PERMS_FAIL2BAN_CONFIG="/tmp/ss-perms-fail2ban-config"
+TMP_SS_PERMS_FAIL2BAN_PACKAGES="/tmp/ss-perms-fail2ban-packages"
+TMP_SS_PERMS_MEDIAWIKI_CONFIG="/tmp/ss-perms-mediawiki-config"
+TMP_SS_PERMS_MEDIAWIKI_PACKAGES="/tmp/ss-perms-mediawiki-packages"
+TMP_SS_PERMS_MEMCACHED_CONFIG="/tmp/ss-perms-memcached-config"
+TMP_SS_PERMS_MEMCACHED_PACKAGES="/tmp/ss-perms-memcached-packages"
+TMP_SS_PERMS_MOODLE_CONFIG="/tmp/ss-perms-moodle-config"
+TMP_SS_PERMS_MOODLE_PACKAGES="/tmp/ss-perms-moodle-packages"
+TMP_SS_PERMS_MYSQL_CONFIG="/tmp/ss-perms-mysql-config"
+TMP_SS_PERMS_MYSQL_DATABASE="/tmp/ss-perms-mysql-database"
+TMP_SS_PERMS_MYSQL_PACKAGES="/tmp/ss-perms-mysql-packages"
+TMP_SS_PERMS_NGINX_CONFIG="/tmp/ss-perms-nginx-config"
+TMP_SS_PERMS_NGINX_PACKAGES="/tmp/ss-perms-nginx-packages"
+TMP_SS_PERMS_OPENCART_CONFIG="/tmp/ss-perms-opencart-config"
+TMP_SS_PERMS_OPENCART_PACKAGES="/tmp/ss-perms-opencart-packages"
+TMP_SS_PERMS_PHP_CONFIG="/tmp/ss-perms-php-config"
+TMP_SS_PERMS_PHP_PACKAGES="/tmp/ss-perms-php-packages"
+TMP_SS_PERMS_PRESTASHOP_CONFIG="/tmp/ss-perms-prestashop-config"
+TMP_SS_PERMS_PRESTASHOP_PACKAGES="/tmp/ss-perms-prestashop-packages"
+TMP_SS_PERMS_RCLONE_CONFIG="/tmp/ss-perms-rclone-config"
+TMP_SS_PERMS_RCLONE_PACKAGES="/tmp/ss-perms-rclone-packages"
+TMP_SS_PERMS_UBUNTU_BASH="/tmp/ss-perms-ubuntu-bash"
+TMP_SS_PERMS_UBUNTU_CRONTAB="/tmp/ss-perms-ubuntu-crontab"
+TMP_SS_PERMS_UBUNTU_KERNEL="/tmp/ss-perms-ubuntu-kernel"
+TMP_SS_PERMS_UBUNTU_SSH="/tmp/ss-perms-ubuntu-ssh"
+TMP_SS_PERMS_UBUNTU_SWAP="/tmp/ss-perms-ubuntu-swapfile"
+TMP_SS_PERMS_UBUNTU_SWAPFILE="/tmp/ss-perms-ubuntu-swapfile"
+TMP_SS_PERMS_UBUNTU_USERS="/tmp/ss-perms-ubuntu-users"
+TMP_SS_PERMS_UBUNTU_UTILS="/tmp/ss-perms-ubuntu-utils"
+TMP_SS_PERMS_UFW_CONFIG="/tmp/ss-perms-ufw-config"
+TMP_SS_PERMS_UFW_PACKAGES="/tmp/ss-perms-ufw-packages"
+TMP_SS_PERMS_WORDPRESS_CLI="/tmp/ss-perms-wordpress-cli"
+TMP_SS_PERMS_WORDPRESS_CONFIG="/tmp/ss-perms-wordpress-config"
+TMP_SS_PERMS_WORDPRESS_MU_PLUGINS="/tmp/ss-perms-wordpress-mu-plugins"
+TMP_SS_PERMS_WORDPRESS_PACKAGES="/tmp/ss-perms-wordpress-packages"
+TMP_SS_PURGE_MEMCACHED="/tmp/ss-purge-memcached"
+TMP_SS_PURGE_NGINX="/tmp/ss-purge-nginx"
+TMP_SS_PURGE_OPCACHE="/tmp/ss-purge-opcache"
+TMP_SS_PURGE_TRANSIENTS="/tmp/ss-purge-transients"
+TMP_SS_PUSH_DEVELOPMENT="/tmp/ss-push-development"
+TMP_SS_PUSH_STAGING="/tmp/ss-push-staging"
+TMP_SS_REBOOT_MACHINE="/tmp/ss-reboot-machine"
+TMP_SS_REMOTE="/tmp/ss-remote-backup"
+TMP_SS_REMOTE_BACKUP="/tmp/ss-remote-backup"
+TMP_SS_RESET_LOGS="/tmp/ss-empty-logs"
+TMP_SS_RESET_PASSWORD_SFTP="/tmp/ss-reset-password-sftp"
+TMP_SS_RESTART_FAIL2BAN="/tmp/ss-restart-fail2ban"
+TMP_SS_RESTART_MEMCACHED="/tmp/ss-restart-memcached"
+TMP_SS_RESTART_MYSQL="/tmp/ss-restart-mysql"
+TMP_SS_RESTART_NGINX="/tmp/ss-restart-nginx"
+TMP_SS_RESTART_PHP="/tmp/ss-restart-php"
+TMP_SS_RESTART_UFW="/tmp/ss-restart-ufw"
+TMP_SS_STACK_OVERVIEW="/tmp/ss-stack-overview"
+TMP_SS_SYNC_DEVELOPMENT="/tmp/ss-sync-development"
+TMP_SS_SYNC_STAGING="/tmp/ss-sync-staging"
+TMP_SS_UPDATE="/tmp/ss-update"
+TMP_SS_UPDATE_CONFIG="/tmp/ss-update-config"
+TMP_SS_UPDATE_MODULES="/tmp/ss-update-modules"
+TMP_SS_UPDATE_PACKAGES="/tmp/ss-update-packages"
+TMP_SS_WORKER="/tmp/ss-worker"
+
+## module config files ##
+TMP_ADMINER_CONF="/tmp/adminer.conf"
+TMP_ADMINER_PHP="/tmp/adminer.php"
+TMP_ALLOWED_IPS_CONF="/tmp/allowed-ips.conf"
+TMP_AUTHENTICATED_ORIGIN_CONF="/tmp/authenticated-origin.conf"
+TMP_BASH_ALIASES="/tmp/bash-aliases.txt"
+TMP_BASHRC="/tmp/bashrc.txt"
+TMP_BLACKLIST_TXT="/tmp/blacklist.txt"
+TMP_CLOUDFLARE_CONF="/tmp/cloudflare.conf"
+TMP_CLOUDFLARE_PEM="/tmp/cloudflare.pem"
+TMP_ERROR_404_HTML="/tmp/error_404.html"
+TMP_ERROR_50X_HTML="/tmp/error_50x.html"
+TMP_HOVERCRAFT_ZIP="/tmp/hovercraft.zip"
+TMP_LETSENCRYPT_CONF="/tmp/letsencrypt.conf"
+TMP_MAINTENANCE_HTML="/tmp/maintenance.html"
+TMP_MEDIAWIKI_ZIP="/tmp/mediawiki.zip"
+TMP_MEMCACHED_CONF="/tmp/memcached.conf"
+TMP_MY_CNF="/tmp/my.cnf"
+TMP_NGINX_BLOCK_DEVELOPMENT="/tmp/server-block-dev"
+TMP_NGINX_BLOCK_PRODUCTION="/tmp/server-block-production"
+TMP_NGINX_BLOCK_STAGING="/tmp/server-block-staging"
+TMP_NGINX_CONF="/tmp/nginx.conf"
+TMP_OPCACHE_INI="/tmp/opcache.ini"
+TMP_OPENSSL_CONF="/tmp/openssl.conf"
+TMP_PHP_FPM_CONF="/tmp/php-fpm.conf"
+TMP_PHP_INI="/tmp/php.ini"
+TMP_PRESTASHOP_ZIP="/tmp/prestashop.zip"
+TMP_WWW_CONF="/tmp/www.conf"
+TMP_RCLONE_CONF="/tmp/rclone.conf"
+TMP_ROBOTS_TXT="/tmp/robots.txt"
+TMP_SS_CONSTANTS_PHP="/tmp/ss-constants.php"
+TMP_SS_ICON_SVG="/tmp/ss-icon.svg"
+TMP_SS_PILOT_FILE="/tmp/ss-pilot"
+TMP_SSHD_CONFIG="/tmp/sshd_config"
+TMP_SUDOERS="/tmp/sudoers"
+TMP_SYSCTL_CONF="/tmp/sysctl.conf"
+TMP_THIRDPARTY_CONF="/tmp/thirdparty.conf"
+TMP_UFW_CONF="/tmp/ufw.conf"
+TMP_WORDPRESS_CONFIG_DEV="/tmp/wp-config-dev.php"
+TMP_WORDPRESS_CONFIG_PRODUCTION="/tmp/wp-config-production.php"
+TMP_WORDPRESS_CONFIG_STAGING="/tmp/wp-config-staging.php"
+TMP_WORDPRESS_ZIP="/tmp/wordpress.zip"
+TMP_WP_CONFIG="/tmp/wp-config-production.php"
+TMP_WP_CONFIG_PHP="/tmp/wp-config-production.php"
+TMP_000_COMMON_PHP="/tmp/000-common.php"
+TMP_WP_CLI_PHAR="/tmp/wp-cli.phar"
+TMP_WP_CLI_YML="/tmp/wp-cli.yml"
+TMP_WP_COMPLETION="/tmp/wp-completion.bash"
+TMP_WORDPRESS_CONFIG_PRODUCTION="/tmp/wp-config-production.txt"
+TMP_WORDPRESS_CONFIG_STAGING="/tmp/wp-config-staging.txt"
+TMP_WORDPRESS_CONFIG_DEV="/tmp/wp-config-dev.txt"
+
+## wordpress mu plugins ##
+TMP_OBJECT_CACHE_PHP="/tmp/object-cache.php"
+
+####################################################################################################
+#### D. SS-Functions: Permanent File Paths #########################################################
+####################################################################################################
+
+## the permanent file paths are reserved to define long-term physical file locations ##
+## this is usually meant for SlickStack bash scripts and module config files ##
+
+## cron jobs ##
+PATH_00_CRONTAB="/var/www/crons/00-crontab"
+PATH_01_CRON_MINUTELY="/var/www/crons/01-cron-minutely"
+PATH_02_CRON_OFTEN="/var/www/crons/02-cron-often"
+PATH_03_CRON_REGULAR="/var/www/crons/03-cron-regular"
+PATH_04_CRON_QUARTER_HOURLY="/var/www/crons/04-cron-quarter-hourly"
+PATH_05_CRON_HALF_HOURLY="/var/www/crons/05-cron-half-hourly"
+PATH_06_CRON_HOURLY="/var/www/crons/06-cron-hourly"
+PATH_07_CRON_QUARTER_DAILY="/var/www/crons/07-cron-quarter-daily"
+PATH_08_CRON_HALF_DAILY="/var/www/crons/08-cron-half-daily"
+PATH_09_CRON_DAILY="/var/www/crons/09-cron-daily"
+PATH_10_CRON_HALF_WEEKLY="/var/www/crons/10-cron-half-weekly"
+PATH_11_CRON_WEEKLY="/var/www/crons/11-cron-weekly"
+PATH_12_CRON_HALF_MONTHLY="/var/www/crons/12-cron-half-monthly"
+PATH_13_CRON_MONTHLY="/var/www/crons/13-cron-monthly"
+PATH_14_CRON_SOMETIMES="/var/www/crons/14-cron-sometimes"
+
+## custom cron jobs ##
+PATH_01_CRON_MINUTELY_CUSTOM="/var/www/crons/custom/01-cron-minutely-custom"
+PATH_02_CRON_OFTEN_CUSTOM="/var/www/crons/custom/02-cron-often-custom"
+PATH_03_CRON_REGULAR_CUSTOM="/var/www/crons/custom/03-cron-regular-custom"
+PATH_04_CRON_QUARTER_HOURLY_CUSTOM="/var/www/crons/custom/04-cron-quarter-hourly-custom"
+PATH_05_CRON_HALF_HOURLY_CUSTOM="/var/www/crons/custom/05-cron-half-hourly-custom"
+PATH_06_CRON_HOURLY_CUSTOM="/var/www/crons/custom/06-cron-hourly-custom"
+PATH_07_CRON_QUARTER_DAILY_CUSTOM="/var/www/crons/custom/07-cron-quarter-daily-custom"
+PATH_08_CRON_HALF_DAILY_CUSTOM="/var/www/crons/custom/08-cron-half-daily-custom"
+PATH_09_CRON_DAILY_CUSTOM="/var/www/crons/custom/09-cron-daily-custom"
+PATH_10_CRON_HALF_WEEKLY_CUSTOM="/var/www/crons/custom/10-cron-half-weekly-custom"
+PATH_11_CRON_WEEKLY_CUSTOM="/var/www/crons/custom/11-cron-weekly-custom"
+PATH_12_CRON_HALF_MONTHLY_CUSTOM="/var/www/crons/custom/12-cron-half-monthly-custom"
+PATH_13_CRON_MONTHLY_CUSTOM="/var/www/crons/custom/13-cron-monthly-custom"
+PATH_14_CRON_SOMETIMES_CUSTOM="/var/www/crons/custom/14-cron-sometimes-custom"
+
+## bash scripts ##
+PATH_SS_CHECK="/var/www/ss-check"
+PATH_SS_CLEAN_DATABASE="/var/www/ss-clean-database"
+PATH_SS_CLEAN_FILES="/var/www/ss-clean-files"
+PATH_SS_CONFIG="/var/www/ss-config"
+PATH_SS_CONFIG_SAMPLE="/var/www/ss-config-sample"
+PATH_SS_DUMP_DATABASE="/var/www/ss-dump-database"
+PATH_SS_DUMP_FILES="/var/www/ss-dump-files"
+PATH_SS_EMPTY_LOGS="/var/www/ss-empty-logs"
+PATH_SS_ENCRYPT_ACME="/var/www/ss-encrypt-acme"
+PATH_SS_ENCRYPT_CERTBOT="/var/www/ss-encrypt-certbot"
+PATH_SS_ENCRYPT_OPENSSL="/var/www/ss-encrypt-openssl"
+PATH_SS_FUNCTIONS="/var/www/ss-functions"
+PATH_SS_IMPORT_DATABASE="/var/www/ss-import-database"
+PATH_SS_IMPORT_FILES="/var/www/ss-import-files"
+PATH_SS_INSTALL="/var/www/ss-install"
+PATH_SS_INSTALL_CRAFT_CONFIG="/var/www/ss-install-craft-config"
+PATH_SS_INSTALL_CRAFT_PACKAGES="/var/www/ss-install-craft-packages"
+PATH_SS_INSTALL_FAIL2BAN_CONFIG="/var/www/ss-install-fail2ban-config"
+PATH_SS_INSTALL_FAIL2BAN_PACKAGES="/var/www/ss-install-fail2ban-packages"
+PATH_SS_INSTALL_MEDIAWIKI_CONFIG="/var/www/ss-install-mediawiki-config"
+PATH_SS_INSTALL_MEDIAWIKI_PACKAGES="/var/www/ss-install-mediawiki-packages"
+PATH_SS_INSTALL_MEMCACHED_CONFIG="/var/www/ss-install-memcached-config"
+PATH_SS_INSTALL_MEMCACHED_PACKAGES="/var/www/ss-install-memcached-packages"
+PATH_SS_INSTALL_MOODLE_CONFIG="/var/www/ss-install-moodle-config"
+PATH_SS_INSTALL_MOODLE_PACKAGES="/var/www/ss-install-moodle-packages"
+PATH_SS_INSTALL_MYSQL_CONFIG="/var/www/ss-install-mysql-config"
+PATH_SS_INSTALL_MYSQL_DATABASE="/var/www/ss-install-mysql-database"
+PATH_SS_INSTALL_MYSQL_PACKAGES="/var/www/ss-install-mysql-packages"
+PATH_SS_INSTALL_NGINX_CONFIG="/var/www/ss-install-nginx-config"
+PATH_SS_INSTALL_NGINX_PACKAGES="/var/www/ss-install-nginx-packages"
+PATH_SS_INSTALL_OPENCART_CONFIG="/var/www/ss-install-opencart-config"
+PATH_SS_INSTALL_OPENCART_PACKAGES="/var/www/ss-install-opencart-packages"
+PATH_SS_INSTALL_PHP_CONFIG="/var/www/ss-install-php-config"
+PATH_SS_INSTALL_PHP_PACKAGES="/var/www/ss-install-php-packages"
+PATH_SS_INSTALL_PRESTASHOP_CONFIG="/var/www/ss-install-prestashop-config"
+PATH_SS_INSTALL_PRESTASHOP_PACKAGES="/var/www/ss-install-prestashop-packages"
+PATH_SS_INSTALL_RCLONE_CONFIG="/var/www/ss-install-rclone-config"
+PATH_SS_INSTALL_RCLONE_PACKAGES="/var/www/ss-install-rclone-packages"
+PATH_SS_INSTALL_UBUNTU_BASH="/var/www/ss-install-ubuntu-bash"
+PATH_SS_INSTALL_UBUNTU_CRONTAB="/var/www/ss-install-ubuntu-crontab"
+PATH_SS_INSTALL_UBUNTU_KERNEL="/var/www/ss-install-ubuntu-kernel"
+PATH_SS_INSTALL_UBUNTU_SSH="/var/www/ss-install-ubuntu-ssh"
+PATH_SS_INSTALL_UBUNTU_SWAPFILE="/var/www/ss-install-ubuntu-swapfile"
+PATH_SS_INSTALL_UBUNTU_USERS="/var/www/ss-install-ubuntu-users"
+PATH_SS_INSTALL_UBUNTU_UTILS="/var/www/ss-install-ubuntu-utils"
+PATH_SS_INSTALL_UFW_CONFIG="/var/www/ss-install-ufw-config"
+PATH_SS_INSTALL_UFW_PACKAGES="/var/www/ss-install-ufw-packages"
+PATH_SS_INSTALL_WORDPRESS_CLI="/var/www/ss-install-wordpress-cli"
+PATH_SS_INSTALL_WORDPRESS_CONFIG="/var/www/ss-install-wordpress-config"
+PATH_SS_INSTALL_WORDPRESS_HOVERCRAFT="/var/www/ss-install-wordpress-hovercraft"
+PATH_SS_INSTALL_WORDPRESS_MU_PLUGINS="/var/www/ss-install-wordpress-mu-plugins"
+PATH_SS_INSTALL_WORDPRESS_PACKAGES="/var/www/ss-install-wordpress-packages"
+PATH_SS_MAINTENANCE_DISABLE="/var/www/ss-maintenance-disable"
+PATH_SS_MAINTENANCE_ENABLE="/var/www/ss-maintenance-enable"
+PATH_SS_MONITOR_RESOURCES="/var/www/ss-monitor-resources"
+PATH_SS_OPTIMIZE_DATABASE="/var/www/ss-optimize-database"
+PATH_SS_OPTIMIZE_FILES="/var/www/ss-optimize-files"
+PATH_SS_PERMS="/var/www/ss-perms"
+PATH_SS_PERMS_CRAFT_CONFIG="/var/www/ss-perms-craft-config"
+PATH_SS_PERMS_CRAFT_PACKAGES="/var/www/ss-perms-craft-packages"
+PATH_SS_PERMS_FAIL2BAN_CONFIG="/var/www/ss-perms-fail2ban-config"
+PATH_SS_PERMS_FAIL2BAN_PACKAGES="/var/www/ss-perms-fail2ban-packages"
+PATH_SS_PERMS_MEDIAWIKI_CONFIG="/var/www/ss-perms-mediawiki-config"
+PATH_SS_PERMS_MEDIAWIKI_PACKAGES="/var/www/ss-perms-mediawiki-packages"
+PATH_SS_PERMS_MEMCACHED_CONFIG="/var/www/ss-perms-memcached-config"
+PATH_SS_PERMS_MEMCACHED_PACKAGES="/var/www/ss-perms-memcached-packages"
+PATH_SS_PERMS_MOODLE_CONFIG="/var/www/ss-perms-moodle-config"
+PATH_SS_PERMS_MOODLE_PACKAGES="/var/www/ss-perms-moodle-packages"
+PATH_SS_PERMS_MYSQL_CONFIG="/var/www/ss-perms-mysql-config"
+PATH_SS_PERMS_MYSQL_DATABASE="/var/www/ss-perms-mysql-database"
+PATH_SS_PERMS_MYSQL_PACKAGES="/var/www/ss-perms-mysql-packages"
+PATH_SS_PERMS_NGINX_CONFIG="/var/www/ss-perms-nginx-config"
+PATH_SS_PERMS_NGINX_PACKAGES="/var/www/ss-perms-nginx-packages"
+PATH_SS_PERMS_OPENCART_CONFIG="/var/www/ss-perms-opencart-config"
+PATH_SS_PERMS_OPENCART_PACKAGES="/var/www/ss-perms-opencart-packages"
+PATH_SS_PERMS_PHP_CONFIG="/var/www/ss-perms-php-config"
+PATH_SS_PERMS_PHP_PACKAGES="/var/www/ss-perms-php-packages"
+PATH_SS_PERMS_PRESTASHOP_CONFIG="/var/www/ss-perms-prestashop-config"
+PATH_SS_PERMS_PRESTASHOP_PACKAGES="/var/www/ss-perms-prestashop-packages"
+PATH_SS_PERMS_RCLONE_CONFIG="/var/www/ss-perms-rclone-config"
+PATH_SS_PERMS_RCLONE_PACKAGES="/var/www/ss-perms-rclone-packages"
+PATH_SS_PERMS_UBUNTU_BASH="/var/www/ss-perms-ubuntu-bash"
+PATH_SS_PERMS_UBUNTU_CRONTAB="/var/www/ss-perms-ubuntu-crontab"
+PATH_SS_PERMS_UBUNTU_KERNEL="/var/www/ss-perms-ubuntu-kernel"
+PATH_SS_PERMS_UBUNTU_SSH="/var/www/ss-perms-ubuntu-ssh"
+PATH_SS_PERMS_UBUNTU_SWAPFILE="/var/www/ss-perms-ubuntu-swapfile"
+PATH_SS_PERMS_UBUNTU_USERS="/var/www/ss-perms-ubuntu-users"
+PATH_SS_PERMS_UBUNTU_UTILS="/var/www/ss-perms-ubuntu-utils"
+PATH_SS_PERMS_UFW_CONFIG="/var/www/ss-perms-ufw-config"
+PATH_SS_PERMS_UFW_PACKAGES="/var/www/ss-perms-ufw-packages"
+PATH_SS_PERMS_WORDPRESS_CLI="/var/www/ss-perms-wordpress-cli"
+PATH_SS_PERMS_WORDPRESS_CONFIG="/var/www/ss-perms-wordpress-config"
+PATH_SS_PERMS_WORDPRESS_MU_PLUGINS="/var/www/ss-perms-wordpress-mu-plugins"
+PATH_SS_PERMS_WORDPRESS_PACKAGES="/var/www/ss-perms-wordpress-packages"
+PATH_SS_PURGE_MEMCACHED="/var/www/ss-purge-memcached"
+PATH_SS_PURGE_NGINX="/var/www/ss-purge-nginx"
+PATH_SS_PURGE_OPCACHE="/var/www/ss-purge-opcache"
+PATH_SS_PURGE_TRANSIENTS="/var/www/ss-purge-transients"
+PATH_SS_PUSH_DEVELOPMENT="/var/www/ss-push-development"
+PATH_SS_PUSH_STAGING="/var/www/ss-push-staging"
+PATH_SS_REBOOT_MACHINE="/var/www/ss-reboot-machine"
+PATH_SS_REMOTE_BACKUP="/var/www/ss-remote-backup"
+PATH_SS_RESET_PASSWORD_SFTP="/var/www/ss-reset-password-sftp"
+PATH_SS_RESTART_FAIL2BAN="/var/www/ss-restart-fail2ban"
+PATH_SS_RESTART_MEMCACHED="/var/www/ss-restart-memcached"
+PATH_SS_RESTART_MYSQL="/var/www/ss-restart-mysql"
+PATH_SS_RESTART_NGINX="/var/www/ss-restart-nginx"
+PATH_SS_RESTART_PHP="/var/www/ss-restart-php"
+PATH_SS_RESTART_UFW="/var/www/ss-restart-ufw"
+PATH_SS_STACK_OVERVIEW="/var/www/ss-stack-overview"
+PATH_SS_SYNC_DEVELOPMENT="/var/www/ss-sync-development"
+PATH_SS_SYNC_STAGING="/var/www/ss-sync-staging"
+PATH_SS_UPDATE_CONFIG="/var/www/ss-update-config"
+PATH_SS_UPDATE_MODULES="/var/www/ss-update-modules"
+PATH_SS_WORKER="/var/www/ss-worker"
+
+## module config files ##
+PATH_ADMINER_CONF="/var/www/sites/includes/adminer.conf"
+PATH_ADMINER_PHP="/var/www/meta/adminer.php"
+PATH_ALLOWED_IPS_CONF="/var/www/sites/includes/allowed-ips.conf"
+PATH_AUTHENTICATED_ORIGIN_CONF="/var/www/sites/includes/authenticated-origin.conf"
+PATH_BASHRC="/var/www/meta/.bashrc"
+PATH_BLACKLIST_TXT="/var/www/html/wp-content/blacklist.txt"
+PATH_CLOUDFLARE_CONF="/var/www/sites/includes/cloudflare.conf"
+PATH_CLOUDFLARE_PEM="/var/www/certs/cloudflare.pem"
+PATH_DHPARAM_PEM="/var/www/certs/dhparam.pem"
+PATH_ERROR_404_HTML="/var/www/sites/error_pages/error_404.html"
+PATH_ERROR_50X_HTML="/var/www/sites/error_pages/error_50x.html"
+PATH_FIFO="/var/www/meta/command_queue.fifo"
+PATH_HTPASSWD="/var/www/meta/.htpasswd"
+PATH_OPENSSL_CERT="/var/www/certs/slickstack.crt"
+PATH_OPENSSL_CERTIFICATE="/var/www/certs/slickstack.crt"
+PATH_OPENSSL_KEY="/var/www/certs/slickstack.key"
+PATH_CRONTAB_ROOT="/var/spool/cron/crontabs/root"
+PATH_MEMCACHED_CONF="/etc/memcached.conf"
+PATH_MY_CNF="/etc/mysql/my.cnf"
+PATH_LETSENCRYPT_CERT_CERT="/etc/letsencrypt/live/slickstack/cert.pem"
+PATH_LETSENCRYPT_CERT_CHAIN="/etc/letsencrypt/live/slickstack/chain.pem"
+PATH_LETSENCRYPT_CERT_FULLCHAIN="/etc/letsencrypt/live/slickstack/fullchain.pem"
+PATH_LETSENCRYPT_CERT_PRIVKEY="/etc/letsencrypt/live/slickstack/privkey.pem"
+PATH_LETSENCRYPT_CONF="/var/www/sites/includes/letsencrypt.conf"
+PATH_MAINTENANCE_HTML="/var/www/meta/maintenance.html"
+PATH_MAINTENANCE_HTML_LIVE="/var/www/html/maintenance.html"
+PATH_NGINX_CONF="/etc/nginx/nginx.conf"
+PATH_NGINX_BLOCK_DEVELOPMENT="/var/www/sites/development.conf"
+PATH_NGINX_BLOCK_PRODUCTION="/var/www/sites/production.conf"
+PATH_NGINX_BLOCK_STAGING="/var/www/sites/staging.conf"
+PATH_OPENSSL_CONF="/var/www/sites/includes/openssl.conf"
+PATH_PHP_FPM_CONF_83="/etc/php/8.3/fpm/php-fpm.conf"
+PATH_PHP_FPM_CONF_81="/etc/php/8.1/fpm/php-fpm.conf"
+PATH_PHP_FPM_CONF_74="/etc/php/7.4/fpm/php-fpm.conf"
+PATH_PHP_FPM_CONF_72="/etc/php/7.2/fpm/php-fpm.conf"
+PATH_PHP_INI_FPM_83="/etc/php/8.3/fpm/php.ini"
+PATH_PHP_INI_FPM_81="/etc/php/8.1/fpm/php.ini"
+PATH_PHP_INI_FPM_74="/etc/php/7.4/fpm/php.ini"
+PATH_PHP_INI_FPM_72="/etc/php/7.2/fpm/php.ini"
+PATH_PHP_INI_CLI_83="/etc/php/8.3/cli/php.ini"
+PATH_PHP_INI_CLI_81="/etc/php/8.1/cli/php.ini"
+PATH_PHP_INI_CLI_74="/etc/php/7.4/cli/php.ini"
+PATH_PHP_INI_CLI_72="/etc/php/7.2/cli/php.ini"
+PATH_WWW_CONF_83="/etc/php/8.3/fpm/pool.d/www.conf"
+PATH_WWW_CONF_81="/etc/php/8.1/fpm/pool.d/www.conf"
+PATH_WWW_CONF_74="/etc/php/7.4/fpm/pool.d/www.conf"
+PATH_WWW_CONF_72="/etc/php/7.2/fpm/pool.d/www.conf"
+PATH_WP_CLI_PHAR="/usr/local/bin/wp"
+PATH_WP_CLI_YML="/var/www/meta/wp-cli.yml"
+PATH_WP_COMPLETION_BASH="/var/www/meta/.wp-completion"
+PATH_WP_CONFIG_DEV="/var/www/html/dev/wp-config.php"
+PATH_WP_CONFIG_STAGING="/var/www/html/staging/wp-config.php"
+PATH_WP_CONFIG="/var/www/html/wp-config.php"
+PATH_WP_CONFIG_PHP="/var/www/html/wp-config.php"
+PATH_000_COMMON_PHP="/var/www/html/wp-content/mu-plugins/000-common.php"
+PATH_RCLONE_CONF="/var/www/meta/rclone.conf"
+PATH_ROBOTS_TXT="/var/www/html/robots.txt"
+PATH_ROOT_BASHRC="/root/.bashrc"
+PATH_SS_CONSTANTS_PHP="/var/www/meta/ss-constants.php"
+PATH_SS_ICON_SVG="/var/www/html/wp-content/mu-plugins/ss-icon.svg"
+PATH_SSH_AUTHORIZED_KEYS_FILE="/var/www/auth/authorized_keys"
+PATH_SSH_PUBLIC_KEY_FILE="/var/www/auth/id_rsa.pub"
+PATH_SSH_PRIVATE_KEY_FILE="/var/www/auth/id_rsa"
+PATH_SSHD_CONFIG="/etc/ssh/sshd_config"
+PATH_SFTP_BASHRC="/home/${SFTP_USER}/.bashrc"
+PATH_SUDO_BASHRC="/home/${SUDO_USER}/.bashrc"
+PATH_SUDOERS="/etc/sudoers"
+PATH_SYSCTL_CONF="/etc/sysctl.conf"
+PATH_THIRDPARTY_CONF="/var/www/sites/includes/thirdparty.conf"
+PATH_BASHRC_ROOT="/root/.bashrc"
+PATH_BASHRC_SUDO="/home/${SUDO_USER}/.bashrc"
+PATH_BASHRC_SLICKSTACK="/var/www/meta/.bashrc_slickstack"
+
+## directories ##
+PATH_CACHE_NGINX="/var/www/cache/nginx/"
+PATH_CACHE_OPCACHE="/var/www/cache/opcache/"
+PATH_DIR_AUTH="/var/www/auth"
+PATH_DATABASE_FILES_01="/var/lib/mysql"
+PATH_DATABASE_FILES_02="/var/lib/mysql-files"
+PATH_DATABASE_FILES_03="/var/lib/mysql-keyring"
+PATH_WORDPRESS_UPLOADS_PRODUCTION="/var/www/html/wp-content/uploads"
+PATH_WORDPRESS_UPLOADS_STAGING="/var/www/html/staging/wp-content/uploads"
+
+## bash scripts snippets - dump mysql ##
+PATH_DUMP_MYSQL_DATABASE="/var/www/backups/mysql/wp.sql"
+PATH_DUMP_DATABASE_PRODUCTION="/var/www/backups/mysql/production.sql"
+PATH_DUMP_DATABASE_STAGING="/var/www/backups/mysql/staging.sql"
+PATH_DUMP_DATABASE_DEVELOPMENT="/var/www/backups/mysql/development.sql"
+PATH_DUMP_DATABASE_FILES_01="/var/www/backups/mysql/data/mysql.bak"
+PATH_DUMP_DATABASE_FILES_02="/var/www/backups/mysql/data/mysql-files.bak"
+PATH_DUMP_DATABASE_FILES_03="/var/www/backups/mysql/data/mysql-keyring.bak"
+
+## bash scripts snippets - dump files ##
+PATH_DUMP_FILES_PRODUCTION="/var/www/backups/html/production.tar.gz"
+PATH_DUMP_FILES_STAGING="/var/www/backups/html/staging.tar.gz"
+PATH_DUMP_FILES_DEVELOPMENT="/var/www/backups/html/development.tar.gz"
+
+####################################################################################################
+#### E. SS-Functions: Symlink File Paths ###########################################################
+####################################################################################################
+
+## in a few situations SlickStack uses symlinks for better predictability and usability ##
+## this helps us hardcode module config files in case of dynamic permanent paths ##
+
+SYMLINK_LETSENCRYPT_CERT="/var/www/certs/cert.pem"
+SYMLINK_LETSENCRYPT_CHAIN="/var/www/certs/chain.pem"
+SYMLINK_LETSENCRYPT_FULLCHAIN="/var/www/certs/fullchain.pem"
+SYMLINK_LETSENCRYPT_PRIVKEY="/var/www/certs/keys/privkey.pem"
+
+####################################################################################################
+#### F. SS-Functions: Timestamp File Paths #########################################################
+####################################################################################################
+
+## cron jobs ##
+TIMESTAMP_01_CRON_MINUTELY="/var/www/meta/timestamps/01-cron-minutely.timestamp"
+TIMESTAMP_02_CRON_OFTEN="/var/www/meta/timestamps/02-cron-often.timestamp"
+TIMESTAMP_03_CRON_REGULAR="/var/www/meta/timestamps/03-cron-regular.timestamp"
+TIMESTAMP_04_CRON_QUARTER_HOURLY="/var/www/meta/timestamps/04-cron-quarter-hourly.timestamp"
+TIMESTAMP_05_CRON_HALF_HOURLY="/var/www/meta/timestamps/05-cron-half-hourly.timestamp"
+TIMESTAMP_06_CRON_HOURLY="/var/www/meta/timestamps/06-cron-hourly.timestamp"
+TIMESTAMP_07_CRON_QUARTER_DAILY="/var/www/meta/timestamps/07-cron-quarter-daily.timestamp"
+TIMESTAMP_08_CRON_HALF_DAILY="/var/www/meta/timestamps/08-cron-half-daily.timestamp"
+TIMESTAMP_09_CRON_DAILY="/var/www/meta/timestamps/09-cron-daily.timestamp"
+TIMESTAMP_10_CRON_HALF_WEEKLY="/var/www/meta/timestamps/10-cron-half-weekly.timestamp"
+TIMESTAMP_11_CRON_WEEKLY="/var/www/meta/timestamps/11-cron-weekly.timestamp"
+TIMESTAMP_12_CRON_HALF_MONTHLY="/var/www/meta/timestamps/12-cron-half-monthly.timestamp"
+TIMESTAMP_13_CRON_MONTHLY="/var/www/meta/timestamps/13-cron-monthly.timestamp"
+TIMESTAMP_14_CRON_SOMETIMES="/var/www/meta/timestamps/14-cron-sometimes.timestamp"
+
+## custom cron jobs ##
+TIMESTAMP_01_CRON_MINUTELY_CUSTOM="/var/www/meta/timestamps/01-cron-minutely-custom.timestamp"
+TIMESTAMP_02_CRON_OFTEN_CUSTOM="/var/www/meta/timestamps/02-cron-often-custom.timestamp"
+TIMESTAMP_03_CRON_REGULAR_CUSTOM="/var/www/meta/timestamps/03-cron-regular-custom.timestamp"
+TIMESTAMP_04_CRON_QUARTER_HOURLY_CUSTOM="/var/www/meta/timestamps/04-cron-quarter-hourly-custom.timestamp"
+TIMESTAMP_05_CRON_HALF_HOURLY_CUSTOM="/var/www/meta/timestamps/05-cron-half-hourly-custom.timestamp"
+TIMESTAMP_06_CRON_HOURLY_CUSTOM="/var/www/meta/timestamps/06-cron-hourly-custom.timestamp"
+TIMESTAMP_07_CRON_QUARTER_DAILY_CUSTOM="/var/www/meta/timestamps/07-cron-quarter-daily-custom.timestamp"
+TIMESTAMP_08_CRON_HALF_DAILY_CUSTOM="/var/www/meta/timestamps/08-cron-half-daily-custom.timestamp"
+TIMESTAMP_09_CRON_DAILY_CUSTOM="/var/www/meta/timestamps/09-cron-daily-custom.timestamp"
+TIMESTAMP_10_CRON_HALF_WEEKLY_CUSTOM="/var/www/meta/timestamps/10-cron-half-weekly-custom.timestamp"
+TIMESTAMP_11_CRON_WEEKLY_CUSTOM="/var/www/meta/timestamps/11-cron-weekly-custom.timestamp"
+TIMESTAMP_12_CRON_HALF_MONTHLY_CUSTOM="/var/www/meta/timestamps/12-cron-half-monthly-custom.timestamp"
+TIMESTAMP_13_CRON_MONTHLY_CUSTOM="/var/www/meta/timestamps/13-cron-monthly-custom.timestamp"
+TIMESTAMP_14_CRON_SOMETIMES_CUSTOM="/var/www/meta/timestamps/14-cron-sometimes-custom.timestamp"
+
+## bash scripts ##
+TIMESTAMP_SS_CHECK="/var/www/meta/timestamps/ss-check.timestamp"
+TIMESTAMP_SS_CLEAN_DATABASE="/var/www/meta/timestamps/ss-clean-database.timestamp"
+TIMESTAMP_SS_CLEAN_FILES="/var/www/meta/timestamps/ss-clean-files.timestamp"
+TIMESTAMP_SS_DELETE_DATABASE="/var/www/meta/timestamps/ss-delete-database.timestamp"
+TIMESTAMP_SS_DELETE_FILES="/var/www/meta/timestamps/ss-delete-files.timestamp"
+TIMESTAMP_SS_DUMP_DATABASE="/var/www/meta/timestamps/ss-dump-database.timestamp"
+TIMESTAMP_SS_DUMP_FILES="/var/www/meta/timestamps/ss-dump-files.timestamp"
+TIMESTAMP_SS_EMPTY_LOGS="/var/www/meta/timestamps/ss-empty-logs.timestamp"
+TIMESTAMP_SS_ENCRYPT_ACME="/var/www/meta/timestamps/ss-encrypt-acme.timestamp"
+TIMESTAMP_SS_ENCRYPT_CERTBOT="/var/www/meta/timestamps/ss-encrypt-certbot.timestamp"
+TIMESTAMP_SS_ENCRYPT_OPENSSL="/var/www/meta/timestamps/ss-encrypt-openssl.timestamp"
+TIMESTAMP_SS_IMPORT_DATABASE="/var/www/meta/timestamps/ss-import-database.timestamp"
+TIMESTAMP_SS_IMPORT_FILES="/var/www/meta/timestamps/ss-import-files.timestamp"
+TIMESTAMP_SS_INSTALL="/var/www/meta/timestamps/ss-install.timestamp"
+TIMESTAMP_SS_INSTALL_CRAFT_CONFIG="/var/www/meta/timestamps/ss-install-craft-config.timestamp"
+TIMESTAMP_SS_INSTALL_CRAFT_PACKAGES="/var/www/meta/timestamps/ss-install-craft-packages.timestamp"
+TIMESTAMP_SS_INSTALL_FAIL2BAN_CONFIG="/var/www/meta/timestamps/ss-install-fail2ban-config.timestamp"
+TIMESTAMP_SS_INSTALL_FAIL2BAN_PACKAGES="/var/www/meta/timestamps/ss-install-fail2ban-packages.timestamp"
+TIMESTAMP_SS_INSTALL_MEDIAWIKI_CONFIG="/var/www/meta/timestamps/ss-install-mediawiki-config.timestamp"
+TIMESTAMP_SS_INSTALL_MEDIAWIKI_PACKAGES="/var/www/meta/timestamps/ss-install-mediawiki-packages.timestamp"
+TIMESTAMP_SS_INSTALL_MEMCACHED_CONFIG="/var/www/meta/timestamps/ss-install-memcached-config.timestamp"
+TIMESTAMP_SS_INSTALL_MEMCACHED_PACKAGES="/var/www/meta/timestamps/ss-install-memcached-packages.timestamp"
+TIMESTAMP_SS_INSTALL_MOODLE_CONFIG="/var/www/meta/timestamps/ss-install-moodle-config.timestamp"
+TIMESTAMP_SS_INSTALL_MOODLE_PACKAGES="/var/www/meta/timestamps/ss-install-moodle-packages.timestamp"
+TIMESTAMP_SS_INSTALL_MYSQL_CONFIG="/var/www/meta/timestamps/ss-install-mysql-config.timestamp"
+TIMESTAMP_SS_INSTALL_MYSQL_DATABASE="/var/www/meta/timestamps/ss-install-mysql-database.timestamp"
+TIMESTAMP_SS_INSTALL_MYSQL_PACKAGES="/var/www/meta/timestamps/ss-install-mysql-packages.timestamp"
+TIMESTAMP_SS_INSTALL_NGINX_CONFIG="/var/www/meta/timestamps/ss-install-nginx-config.timestamp"
+TIMESTAMP_SS_INSTALL_NGINX_PACKAGES="/var/www/meta/timestamps/ss-install-nginx-packages.timestamp"
+TIMESTAMP_SS_INSTALL_OPENCART_CONFIG="/var/www/meta/timestamps/ss-install-opencart-config.timestamp"
+TIMESTAMP_SS_INSTALL_OPENCART_PACKAGES="/var/www/meta/timestamps/ss-install-opencart-packages.timestamp"
+TIMESTAMP_SS_INSTALL_PHP_CONFIG="/var/www/meta/timestamps/ss-install-php-config.timestamp"
+TIMESTAMP_SS_INSTALL_PHP_PACKAGES="/var/www/meta/timestamps/ss-install-php-packages.timestamp"
+TIMESTAMP_SS_INSTALL_PRESTASHOP_CONFIG="/var/www/meta/timestamps/ss-install-prestashop-config.timestamp"
+TIMESTAMP_SS_INSTALL_PRESTASHOP_PACKAGES="/var/www/meta/timestamps/ss-install-prestashop-packages.timestamp"
+TIMESTAMP_SS_INSTALL_RCLONE_CONFIG="/var/www/meta/timestamps/ss-install-rclone-config.timestamp"
+TIMESTAMP_SS_INSTALL_RCLONE_PACKAGES="/var/www/meta/timestamps/ss-install-rclone-packages.timestamp"
+TIMESTAMP_SS_INSTALL_UBUNTU_BASH="/var/www/meta/timestamps/ss-install-ubuntu-bash.timestamp"
+TIMESTAMP_SS_INSTALL_UBUNTU_CRONTAB="/var/www/meta/timestamps/ss-install-ubuntu-crontab.timestamp"
+TIMESTAMP_SS_INSTALL_UBUNTU_KERNEL="/var/www/meta/timestamps/ss-install-ubuntu-kernel.timestamp"
+TIMESTAMP_SS_INSTALL_UBUNTU_SSH="/var/www/meta/timestamps/ss-install-ubuntu-ssh.timestamp"
+TIMESTAMP_SS_INSTALL_UBUNTU_SWAPFILE="/var/www/meta/timestamps/ss-install-ubuntu-swapfile.timestamp"
+TIMESTAMP_SS_INSTALL_UBUNTU_USERS="/var/www/meta/timestamps/ss-install-ubuntu-users.timestamp"
+TIMESTAMP_SS_INSTALL_UBUNTU_UTILS="/var/www/meta/timestamps/ss-install-ubuntu-utils.timestamp"
+TIMESTAMP_SS_INSTALL_UFW_CONFIG="/var/www/meta/timestamps/ss-install-ufw-config.timestamp"
+TIMESTAMP_SS_INSTALL_UFW_PACKAGES="/var/www/meta/timestamps/ss-install-ufw-packages.timestamp"
+TIMESTAMP_SS_INSTALL_WORDPRESS_CLI="/var/www/meta/timestamps/ss-install-wordpress-cli.timestamp"
+TIMESTAMP_SS_INSTALL_WORDPRESS_CONFIG="/var/www/meta/timestamps/ss-install-wordpress-config.timestamp"
+TIMESTAMP_SS_INSTALL_WORDPRESS_HOVERCRAFT="/var/www/meta/timestamps/ss-install-wordpress-hovercraft.timestamp"
+TIMESTAMP_SS_INSTALL_WORDPRESS_MU_PLUGINS="/var/www/meta/timestamps/ss-install-wordpress-mu-plugins.timestamp"
+TIMESTAMP_SS_INSTALL_WORDPRESS_PACKAGES="/var/www/meta/timestamps/ss-install-wordpress-packages.timestamp"
+TIMESTAMP_SS_MAINTENANCE_DISABLE="/var/www/meta/timestamps/ss-maintenance-disable.timestamp"
+TIMESTAMP_SS_MAINTENANCE_ENABLE="/var/www/meta/timestamps/ss-maintenance-enable.timestamp"
+TIMESTAMP_SS_MONITOR_RESOURCES="/var/www/meta/timestamps/ss-monitor-resources.timestamp"
+TIMESTAMP_SS_OPTIMIZE_DATABASE="/var/www/meta/timestamps/ss-optimize-database.timestamp"
+TIMESTAMP_SS_OPTIMIZE_FILES="/var/www/meta/timestamps/ss-optimize-files.timestamp"
+TIMESTAMP_SS_PERMS="/var/www/meta/timestamps/ss-perms.timestamp"
+TIMESTAMP_SS_PERMS_CRAFT_CONFIG="/var/www/meta/timestamps/ss-perms-craft-config.timestamp"
+TIMESTAMP_SS_PERMS_CRAFT_PACKAGES="/var/www/meta/timestamps/ss-perms-craft-packages.timestamp"
+TIMESTAMP_SS_PERMS_FAIL2BAN_CONFIG="/var/www/meta/timestamps/ss-perms-fail2ban-config.timestamp"
+TIMESTAMP_SS_PERMS_FAIL2BAN_PACKAGES="/var/www/meta/timestamps/ss-perms-fail2ban-packages.timestamp"
+TIMESTAMP_SS_PERMS_MEDIAWIKI_CONFIG="/var/www/meta/timestamps/ss-perms-mediawiki-config.timestamp"
+TIMESTAMP_SS_PERMS_MEDIAWIKI_PACKAGES="/var/www/meta/timestamps/ss-perms-mediawiki-packages.timestamp"
+TIMESTAMP_SS_PERMS_MEMCACHED_CONFIG="/var/www/meta/timestamps/ss-perms-memcached-config.timestamp"
+TIMESTAMP_SS_PERMS_MEMCACHED_PACKAGES="/var/www/meta/timestamps/ss-perms-memcached-packages.timestamp"
+TIMESTAMP_SS_PERMS_MOODLE_CONFIG="/var/www/meta/timestamps/ss-perms-moodle-config.timestamp"
+TIMESTAMP_SS_PERMS_MOODLE_PACKAGES="/var/www/meta/timestamps/ss-perms-moodle-packages.timestamp"
+TIMESTAMP_SS_PERMS_MYSQL_CONFIG="/var/www/meta/timestamps/ss-perms-mysql-config.timestamp"
+TIMESTAMP_SS_PERMS_MYSQL_DATABASE="/var/www/meta/timestamps/ss-perms-mysql-database.timestamp"
+TIMESTAMP_SS_PERMS_MYSQL_PACKAGES="/var/www/meta/timestamps/ss-perms-mysql-packages.timestamp"
+TIMESTAMP_SS_PERMS_NGINX_CONFIG="/var/www/meta/timestamps/ss-perms-nginx-config.timestamp"
+TIMESTAMP_SS_PERMS_NGINX_PACKAGES="/var/www/meta/timestamps/ss-perms-nginx-packages.timestamp"
+TIMESTAMP_SS_PERMS_OPENCART_CONFIG="/var/www/meta/timestamps/ss-perms-opencart-config.timestamp"
+TIMESTAMP_SS_PERMS_OPENCART_PACKAGES="/var/www/meta/timestamps/ss-perms-opencart-packages.timestamp"
+TIMESTAMP_SS_PERMS_PHP_CONFIG="/var/www/meta/timestamps/ss-perms-php-config.timestamp"
+TIMESTAMP_SS_PERMS_PHP_PACKAGES="/var/www/meta/timestamps/ss-perms-php-packages.timestamp"
+TIMESTAMP_SS_PERMS_POSTFIX="/var/www/meta/timestamps/ss-perms-postfix.timestamp"
+TIMESTAMP_SS_PERMS_PRESTASHOP_CONFIG="/var/www/meta/timestamps/ss-perms-prestashop-config.timestamp"
+TIMESTAMP_SS_PERMS_PRESTASHOP_PACKAGES="/var/www/meta/timestamps/ss-perms-prestashop-packages.timestamp"
+TIMESTAMP_SS_PERMS_RCLONE_CONFIG="/var/www/meta/timestamps/ss-perms-rclone-config.timestamp"
+TIMESTAMP_SS_PERMS_RCLONE_PACKAGES="/var/www/meta/timestamps/ss-perms-rclone-packages.timestamp"
+TIMESTAMP_SS_PERMS_UBUNTU_BASH="/var/www/meta/timestamps/ss-perms-ubuntu-bash.timestamp"
+TIMESTAMP_SS_PERMS_UBUNTU_CRONTAB="/var/www/meta/timestamps/ss-perms-ubuntu-crontab.timestamp"
+TIMESTAMP_SS_PERMS_UBUNTU_KERNEL="/var/www/meta/timestamps/ss-perms-ubuntu-kernel.timestamp"
+TIMESTAMP_SS_PERMS_UBUNTU_SSH="/var/www/meta/timestamps/ss-perms-ubuntu-ssh.timestamp"
+TIMESTAMP_SS_PERMS_UBUNTU_SWAPFILE="/var/www/meta/timestamps/ss-perms-ubuntu-swapfile.timestamp"
+TIMESTAMP_SS_PERMS_UBUNTU_USERS="/var/www/meta/timestamps/ss-perms-ubuntu-users.timestamp"
+TIMESTAMP_SS_PERMS_UBUNTU_UTILS="/var/www/meta/timestamps/ss-perms-ubuntu-utils.timestamp"
+TIMESTAMP_SS_PERMS_UFW_CONFIG="/var/www/meta/timestamps/ss-perms-ufw-config.timestamp"
+TIMESTAMP_SS_PERMS_UFW_PACKAGES="/var/www/meta/timestamps/ss-perms-ufw-packages.timestamp"
+TIMESTAMP_SS_PERMS_WORDPRESS_CLI="/var/www/meta/timestamps/ss-perms-wordpress-cli.timestamp"
+TIMESTAMP_SS_PERMS_WORDPRESS_CONFIG="/var/www/meta/timestamps/ss-perms-wordpress-config.timestamp"
+TIMESTAMP_SS_PERMS_WORDPRESS_MU_PLUGINS="/var/www/meta/timestamps/ss-perms-wordpress-mu-plugins.timestamp"
+TIMESTAMP_SS_PERMS_WORDPRESS_PACKAGES="/var/www/meta/timestamps/ss-perms-wordpress-packages.timestamp"
+TIMESTAMP_SS_PURGE_MEMCACHED="/var/www/meta/timestamps/ss-purge-memcached.timestamp"
+TIMESTAMP_SS_PURGE_NGINX="/var/www/meta/timestamps/ss-purge-nginx.timestamp"
+TIMESTAMP_SS_PURGE_OPCACHE="/var/www/meta/timestamps/ss-purge-opcache.timestamp"
+TIMESTAMP_SS_PURGE_TRANSIENTS="/var/www/meta/timestamps/ss-purge-transients.timestamp"
+TIMESTAMP_SS_PUSH_DEVELOPMENT="/var/www/meta/timestamps/ss-push-development.timestamp"
+TIMESTAMP_SS_PUSH_STAGING="/var/www/meta/timestamps/ss-push-staging.timestamp"
+TIMESTAMP_SS_REBOOT_MACHINE="/var/www/meta/timestamps/ss-reboot-machine.timestamp"
+TIMESTAMP_SS_REMOTE_BACKUP="/var/www/meta/timestamps/ss-remote-backup.timestamp"
+TIMESTAMP_SS_RESET_PASSWORD_SFTP="/var/www/meta/timestamps/ss-reset-password-sftp.timestamp"
+TIMESTAMP_SS_RESTART_FAIL2BAN="/var/www/meta/timestamps/ss-restart-fail2ban.timestamp"
+TIMESTAMP_SS_RESTART_MEMCACHED="/var/www/meta/timestamps/ss-restart-memcached.timestamp"
+TIMESTAMP_SS_RESTART_MYSQL="/var/www/meta/timestamps/ss-restart-mysql.timestamp"
+TIMESTAMP_SS_RESTART_NGINX="/var/www/meta/timestamps/ss-restart-nginx.timestamp"
+TIMESTAMP_SS_RESTART_PHP="/var/www/meta/timestamps/ss-restart-php.timestamp"
+TIMESTAMP_SS_RESTART_UFW="/var/www/meta/timestamps/ss-restart-ufw.timestamp"
+TIMESTAMP_SS_STACK_OVERVIEW="/var/www/meta/timestamps/ss-stack-overview.timestamp"
+TIMESTAMP_SS_SYNC_DEVELOPMENT="/var/www/meta/timestamps/ss-sync-development.timestamp"
+TIMESTAMP_SS_SYNC_STAGING="/var/www/meta/timestamps/ss-sync-staging.timestamp"
+TIMESTAMP_SS_UPDATE_CONFIG="/var/www/meta/timestamps/ss-update-config.timestamp"
+TIMESTAMP_SS_UPDATE_MODULES="/var/www/meta/timestamps/ss-update-modules.timestamp"
+TIMESTAMP_SS_WORKER="/var/www/meta/timestamps/ss-worker.timestamp"
+
+####################################################################################################
+#### G. SS-Functions: Lock File Paths ##############################################################
+####################################################################################################
+
+## these lock files are used by Linux to ensure cron jobs do not overrun each other ##
+## custom cron jobs run as child scripts thus a single lock file is enough ##
+
+LOCK_01_CRON_MINUTELY="/tmp/01-cron-minutely.lock"
+LOCK_02_CRON_OFTEN="/tmp/02-cron-often.lock"
+LOCK_03_CRON_REGULAR="/tmp/03-cron-regular.lock"
+LOCK_04_CRON_QUARTER_HOURLY="/tmp/04-cron-quarter-hourly.lock"
+LOCK_05_CRON_HALF_HOURLY="/tmp/05-cron-half-hourly.lock"
+LOCK_06_CRON_HOURLY="/tmp/06-cron-hourly.lock"
+LOCK_07_CRON_QUARTER_DAILY="/tmp/07-cron-quarter-daily.lock"
+LOCK_08_CRON_HALF_DAILY="/tmp/08-cron-half-daily.lock"
+LOCK_09_CRON_DAILY="/tmp/09-cron-daily.lock"
+LOCK_10_CRON_HALF_WEEKLY="/tmp/10-cron-half-weekly.lock"
+LOCK_11_CRON_WEEKLY="/tmp/11-cron-weekly.lock"
+LOCK_12_CRON_HALF_MONTHLY="/tmp/12-cron-half-monthly.lock"
+LOCK_13_CRON_MONTHLY="/tmp/13-cron-monthly.lock"
+LOCK_14_CRON_SOMETIMES="/tmp/14-cron-sometimes.lock"
+
+####################################################################################################
+#### H. SS-Functions: Linux Software Package Names #################################################
+####################################################################################################
+
+## ubuntu packages ##
+PACKAGE_DOS2UNIX="dos2unix"
+PACKAGE_EXIFTOOL="libimage-exiftool-perl"
+
+####################################################################################################
+#### I. SS-Functions: File Permissions Shorthand ###################################################
+####################################################################################################
+
+OWNER_GROUP_PUBLIC_HTML="www-data:slickstack"
+OWNER_GROUP_SFTP_FRIENDLY="${SFTP_USER}:slickstack"
+
+####################################################################################################
+#### J. SS-Functions: SlickStack Functions #########################################################
+####################################################################################################
+
+## these functions are sourced in SlickStack cron jobs and bash scripts for efficiency ##
+## this also speeds up processing time by avoiding repeat inline bash commands ##
+
+## ss_add_apt_repository ##
+function ss_add_apt_repository {
+    export DEBIAN_FRONTEND=noninteractive
+    export DEBIAN_PRIORITY=critical
+    export PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+    command /usr/bin/add-apt-repository --yes "$@"
+}
+
+## ss_apt ##
+function ss_apt {
+    export DEBIAN_FRONTEND=noninteractive
+    export DEBIAN_PRIORITY=critical
+    export PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+    command /usr/bin/apt --yes --quiet --option Dpkg::Options::=--force-confold --option Dpkg::Options::=--force-confdef "$@"
+}
+
+## ss_apt_autoremove ##
+function ss_apt_autoremove {
+    ss_apt autoremove > /dev/null 2>&1
+}
+
+## ss_apt_clean ##
+function ss_apt_clean {
+    ss_apt clean > /dev/null 2>&1
+}
+
+## ss_apt_full_upgrade ##
+function ss_apt_full_upgrade {
+    ss_apt full-upgrade > /dev/null 2>&1
+}
+
+## ss_apt_install ##
+function ss_apt_install {
+    ss_apt install "$@" > /dev/null 2>&1
+}
+
+## ss_apt_remove ##
+function ss_apt_remove {
+    ss_apt remove "$@" > /dev/null 2>&1
+}
+
+## ss_apt_remove_purge ##
+function ss_apt_remove_purge {
+    ss_apt remove --purge "$@" > /dev/null 2>&1
+}
+
+## ss_apt_update ##
+function ss_apt_update {
+    ss_apt update > /dev/null 2>&1
+}
+
+## ss_apt_upgrade ##
+function ss_apt_upgrade {
+    ss_apt upgrade > /dev/null 2>&1
+}
+
+## ss_adduser ##
+function ss_adduser {
+    adduser --disabled-password --quiet --shell /bin/bash --gecos "" "$@" 2> /dev/null
+}
+
+## ss_cd_default ##
+function ss_cd_default {
+    cd /var/www
+}
+
+## ss_certbot ##
+function ss_certbot {
+    command certbot certonly --noninteractive --agree-tos --register-unsafely-without-email --cert-name slickstack --webroot -w /var/www/html/ "$@"
+}
+
+## ss_chmod ##
+function ss_chmod {
+    command chmod -R "$@"
+}
+
+## ss_chown ##
+function ss_chown {
+    command chown -R "$@"
+}
+
+## ss_cp ##
+function ss_cp {
+    command /bin/cp -R -f -d --no-preserve=mode,ownership "$@"
+}
+
+## ss_cp_if_not_exists ##
+function ss_cp_if_not_exists {
+    mkdir -p $(dirname "$2") && /bin/cp --no-clobber "$1" "$2"
+}
+
+## ss_dhparam ##
+function ss_dhparam {
+    command openssl dhparam -out "$@" 2048 2> /dev/null
+}
+
+## ss_echo (interpret) ##
+function ss_echo {
+    command echo -e "$@"
+}
+
+## ss_echo_literal ##
+function ss_echo_literal {
+    command echo "$@"
+}
+
+## ss_fallocate ##
+function ss_fallocate {
+    sudo fallocate -l "$@" 2> /dev/null
+}
+
+## ss_grep ##
+function ss_grep {
+    command grep -q "$@"
+}
+
+## ss_grep_boolean ##
+function ss_grep_boolean {
+    command grep --no-messages "$@"
+}
+
+## ss_ln ##
+function ss_ln {
+    command ln -s -f "$@"
+}
+
+## ss_mkdir ##
+function ss_mkdir {
+    command mkdir -p "$@"
+}
+
+## ss_mkswap ##
+function ss_mkswap {
+    sudo mkswap "$@" 2> /dev/null
+}
+
+## ss_mv ##
+function ss_mv {
+    mkdir -p $(dirname "$2") && mv -f "$@"
+    # command mv -f "$@"
+}
+
+## ss_mysql_admin ##
+function ss_mysql_admin {
+    command mysql --user=admin --password="${DB_PASSWORD_ROOT}" --host="${DB_HOST}" --protocol=tcp --port="${DB_PORT}" --force "$@" 2> /dev/null
+}
+
+## ss_mysql_root ##
+function ss_mysql_root {
+    command mysql --user=root --host=localhost --protocol=socket --port="${DB_PORT}" --force "$@" 2> /dev/null
+}
+
+## ss_mysql_sudo ##
+function ss_mysql_sudo {
+    command mysql --user="${SUDO_USER}" --host=localhost --protocol=socket --port="${DB_PORT}" --force "$@" 2> /dev/null
+}
+
+## ss_mysql_user ##
+## --max_allowed_packet=1GB ... add this after test?
+function ss_mysql_user {
+    command mysql --user="${DB_USER}" --password="${DB_PASSWORD}" --host="${DB_HOST}" --protocol=tcp --port="${DB_PORT}" --force "$@" 2> /dev/null
+}
+
+## ss_mysqldump_admin ##
+function ss_mysqldump_admin {
+    command mysqldump --user=admin --password="${DB_PASSWORD_ROOT}" --host="${DB_HOST}" --protocol=tcp --port="${DB_PORT}" --no-create-db --no-tablespaces --single-transaction --dump-date --force "$@"
+}
+
+## ss_mysqldump_user ##
+function ss_mysqldump_user {
+    command mysqldump --user="${DB_USER}" --password="${DB_PASSWORD}" --host="${DB_HOST}" --protocol=tcp --port="${DB_PORT}" --no-create-db --no-tablespaces --single-transaction --dump-date --force "$@"
+}
+
+## ss_null ##
+function ss_null {
+    cat /dev/null > "$@"
+}
+
+## ss_print ##
+function ss_print {
+    command printf "$@"
+}
+
+## ss_rm ##
+function ss_rm {
+    command rm -R -f "$@"
+}
+
+## ss_rsync_backup ##
+function ss_rsync_backup {
+    command rsync -acz --mkpath --rsh="sshpass -p ${RSYNC_PASSWORD} ssh -o StrictHostKeyChecking=no -l ${RSYNC_USER}" "$@"
+    # command rsync -acze "ssh -o StrictHostKeyChecking=no" --mkpath --rsh='sshpass -p "${RSYNC_PASSWORD}" -e ssh -l test' "$@"
+}
+
+## ss_sed ##
+function ss_sed {
+    sed -i "$@"
+}
+
+## ss_truncate ##
+function ss_truncate {
+    truncate -s 0 "$@" > /dev/null 2>&1
+}
+
+## ss_swapon ##
+function ss_swapon {
+    sudo swapon "$@" 2> /dev/null
+}
+
+## ss_reload ##
+function ss_reload {
+    systemctl reload "$@".service > /dev/null 2>&1
+}
+
+## ss_restart ##
+function ss_restart {
+    /etc/init.d/"$@" restart > /dev/null 2>&1
+}
+
+## ss_rsync ##
+function ss_rsync {
+    command rsync -aI --no-links --ignore-errors "$@"
+}
+
+## ss_tar ##
+function ss_tar {
+    command tar -cf "$@"
+}
+
+## ss_targz ##
+function ss_targz {
+    command tar -zcf "$@" ## flags must remain in this order
+}
+
+## ss_touch ##
+function ss_touch {
+    mkdir -p $(dirname "$1") && touch -am "$@"
+}
+
+## ss_untar ##
+function ss_untar {
+    command tar -xf "$@"
+}
+
+## ss_untargz ##
+function ss_untargz {
+    command tar -zxf "$@" ## flags must remain in this order
+}
+
+## ss_unzip ##
+function ss_unzip {
+    command unzip -q -o "$@"
+}
+
+## ss_wget ##
+function ss_wget {
+    command wget --no-check-certificate --no-cache --no-cookies --quiet --inet4-only --tries=30 --timeout=300 --waitretry=15 -O "$@"
+}
+
+####################################################################################################
+#### K. SS-Functions: SlickStack Variables (Static) ################################################
+####################################################################################################
+
+## these are kind of like enviroment variables that are used within various scripts ##
+## we keep these variables here for easy reference and better organization ##
+
+SYSTEM_CPU_CORES=$(grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu || echo "${NUMBER_OF_PROCESSORS}")
+SYSTEM_CURRENT_TIME=$(date "+%Y.%b.%d-%H:%M:%S")
+SYSTEM_DISK_TOTAL=$(df | grep '^/dev/' | awk '{s+=$2} END {print s/1048576}')
+SYSTEM_DISK_FREE=$(df -k --output=avail "${PWD}" | tail -n1)
+SYSTEM_DISK_FREE_HUMAN=$(df -kh --output=avail "${PWD}" | tail -n1)
+SYSTEM_DISK_TOTAL_EASY=$(df -kh . | tail -n1 | awk '{print $2}')
+SYSTEM_DISK_FREE_EASY=$(df -kh . | tail -n1 | awk '{print $4}')
+SYSTEM_DISK_USED_PERCENT=$(df -kh . | tail -n1 | awk '{print $5}')
+SYSTEM_HOSTNAME=$(/bin/hostname -f) ## remove -f in future
+# SYSTEM_HOSTNAME_ALL=`/bin/hostname -A`
+# SYSTEM_HOSTNAME_FQDN=`/bin/hostname -f`
+SYSTEM_HOSTNAME_TLD=$(/bin/hostname -d)
+SYSTEM_LINUX_KERNEL=$(uname -a)
+SYSTEM_MYSQL_SIZE=$(du -sh /var/lib/mysql |& sed 's#/var/lib/mysql##')
+SYSTEM_OS_PRETTY_NAME=$(lsb_release -ds)
+SYSTEM_RAM_MEMORY=$(echo $(($(getconf _PHYS_PAGES) * $(getconf PAGE_SIZE) / (1024 * 1024))) 2> /dev/null)
+SYSTEM_RAM_TOTAL=$(free -mh | head -2 | tail -1 | awk '{print $2}' | sed 's/i//')
+SYSTEM_SERVER_SOFTWARE=$(nginx -v |& sed 's#nginx version: nginx/##')
+SYSTEM_SWAP_TOTAL=$(free -mh | tail -1 | awk '{print $2}' | sed 's/i//')
+SYSTEM_UBUNTU_VERSION=$(lsb_release -rs)
+SYSTEM_UPTIME=$(date -d "$(uptime -s)" +%s)
+SYSTEM_VIRTUAL=$(systemd-detect-virt)
+SYSTEM_VIRTUAL_UPPERCASE=${SYSTEM_VIRTUAL^^}
+
+## networking ##
+SYSTEM_DIG_IPV4_ADDRESS=$(dig whoami.cloudflare ch txt @1.1.1.1 +short | awk -F'"' '{print $2}')
+SYSTEM_DIG_IPV6_ADDRESS=$(dig whoami.cloudflare ch txt @2606:4700:4700::1111 +short | awk -F'"' '{print $2}')
+# SYSTEM_NETWORK_INTERFACE_IPV4=$(ip route get 1.1.1.1 | head -n1 | awk '{print $5}')
+# SYSTEM_NETWORK_INTERFACE_IPV6=$(ip -6 route get 2606:4700:4700::1111 | head -n1 | awk '{print $5}')
+# SYSTEM_NETWORK_INTERFACE_IPV4_SHOW=$(ip addr show "${SYSTEM_NETWORK_INTERFACE_IPV4}" | grep "inet " | awk '{ print $2;exit }' | cut -d/ -f1)
+# SYSTEM_NETWORK_INTERFACE_IPV6_SHOW=$(ip addr show "${SYSTEM_NETWORK_INTERFACE_IPV6}" | grep "inet6 " | awk '{ print $2;exit }' | cut -d/ -f1)
+
+## script variables ##
+SS_EOF="SS_EOF"
+SLEEP_MESSAGE_BEGIN="0s"
+FILLER="################################################################################"
+
+####################################################################################################
+#### L. SS-Functions: SlickStack Variables (Dynamic) ###############################################
+####################################################################################################
+
+## these are kind of like enviroment variables that are used within various scripts ##
+## we keep these variables here for easy reference and better organization ##
+
+if [[ -z "${SYSTEM_SWAP_TOTAL}" ]]; then
+    SYSTEM_SWAP_TOTAL_FINAL="N/A"
+else 
+    SYSTEM_SWAP_TOTAL_FINAL="${SYSTEM_SWAP_TOTAL}"
+fi
+
+## https://stackoverflow.com/questions/14594151/methods-to-detect-public-ip-address-in-bash
+## https://github.com/littlebizzy/slickstack/issues/171
+
+## determine ipv4 with various methods ##
+if [[ "${SYSTEM_DIG_IPV4_ADDRESS}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    SYSTEM_IPV4_ADDRESS="${SYSTEM_DIG_IPV4_ADDRESS}"
+else
+    SYSTEM_IPV4_ADDRESS="N/A"
+fi
+
+## determine ipv6 with various methods ##
+if [[ "${SYSTEM_DIG_IPV6_ADDRESS}" =~ ^([0-9a-fA-F]{0,4}:){1,7}[0-9a-fA-F]{0,4}$ ]]; then
+    SYSTEM_IPV6_ADDRESS="${SYSTEM_DIG_IPV6_ADDRESS}"
+else
+    SYSTEM_IPV6_ADDRESS="N/A"
+fi
+
+## domains ##
+SITE_DOMAIN_EXCLUDING_WWW=$(echo "${SITE_FULL_DOMAIN/www./}")
+if [[ "${SITE_FULL_DOMAIN}" == www.* ]]; then
+    SITE_DOMAIN_INCLUDING_WWW="${SITE_FULL_DOMAIN}"
+else 
+    SITE_DOMAIN_INCLUDING_WWW="www.${SITE_FULL_DOMAIN}"
+fi
+
+## php stuff ##
+if [[ -d /etc/php ]]; then
+    SYSTEM_PHP_EXTENSIONS=$(php -m | paste -s -d , | sed -e 's/,/, /g' | awk -F 'zlib' '{print $1"zlib"}' | sed -e 's#\[PHP Modules\], ##g')
+    SYSTEM_PHP_VERSION=$(php -v | awk '/^PHP/{print $2}' | awk -F '\\-*' '{print $1""}')
+fi
+
+####################################################################################################
+#### M. SS-Functions: Shell Styling ################################################################
+####################################################################################################
+
+## these styling variables enable cleaner and more aesthetic shell scripting feedback ##
+## we use e.g. ${COLOR_INFO} within any echo then use ${COLOR_RESET} to revert ##
+
+## pretty colors old ##
+DARKRED='\033[0;31m'
+LIGHTRED='\033[1;31m'
+DARKGREEN='\033[0;32m'
+LIGHTGREEN='\033[1;32m'
+DARKCYAN='\033[0;36m'
+LIGHTCYAN='\033[1;36m'
+DARKBLUE='\033[0;34m'
+LIGHTBLUE='\033[1;34m'
+DARKPURPLE='\033[0;35m'
+LIGHTPURPLE='\033[1;35m'
+DARKGRAY='\033[1;30m'
+LIGHTGRAY='\033[0;37m'
+
+## new ##
+GREEN='\033[1;32m'
+ORANGE='\033[0;33m'
+PINK='\033[1;35m'
+PURPLE='\033[0;35m'
+YELLOW='\033[1;33m'
+WHITE='\033[1;37m'
+
+## newest ##
+GREEN_DARK='\033[0;32m'
+GREEN_LIGHT='\033[1;32m'
+RED_DARK='\033[0;31m'
+RED_LIGHT='\033[1;31m'
+CYAN_DARK='\033[0;36m'
+CYAN_LIGHT='\033[1;36m'
+BLUE_DARK='\033[0;34m'
+BLUE_LIGHT='\033[1;34m'
+PURPLE_DARK='\033[0;35m'
+PURPLE_LIGHT='\033[1;35m'
+GRAY_DARK='\033[1;30m'
+GRAY_LIGHT='\033[0;37m'
+
+## even newest ##
+COLOR_RESET='\033[0m' ## default (light grey)
+COLOR_INFO='\033[0;35m' ## dark purple
+COLOR_WARN='\033[0;33m' ## orange
+COLOR_ERROR='\033[1;31m' ## light red
+
+
+# https://gist.github.com/vratiu/9780109
+# Background
+On_Black="\[\033[40m\]"       # Black
+On_Red="\[\033[41m\]"         # Red
+On_Green="\[\033[42m\]"       # Green
+BGG_YELLOW='\033[43m'
+On_Blue="\[\033[44m\]"        # Blue
+On_Purple="\[\033[45m\]"      # Purple
+On_Cyan="\[\033[46m\]"        # Cyan
+On_White="\[\033[47m\]"       # White
+
+
+## background colors ##
+BGBLACK=$(tput setab 0) # black
+BGRED=$(tput setab 1) # red
+BGGREEN=$(tput setab 2) # green
+BGYELLOW=$(tput setab 3) # yellow
+BGBLUE=$(tput setab 4) # blue
+BGPINK=$(tput setab 5) # magenta (pink)
+BGCYAN=$(tput setab 6) # cyan
+BGWHITE=$(tput setab 7) # white
+
+## pretty styles ##
+BOLD=$(tput bold) # bold (strong)
+DIM=$(tput dim) # dim (half-bright)
+NORMAL=$(tput sgr0) # reset all styles (normal)
+RESET=$(tput sgr0) # reset all styles (normal)
+BLINK=$(tput blink) # blink
+UNDERLINE=$(tput smul) # underline
+ENDUNDER=$(tput rmul) # end underline
+REVERSE=$(tput rev) # reverse
+STANDOUT=$(tput smso) # standout (highlight)
+ENDSTAND=$(tput rmso) # end standout
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://refspecs.linuxfoundation.org/LSB_3.0.0/LSB-PDA/LSB-PDA/lsbrelease.html
+## Ref: https://www.tecmint.com/8-pratical-examples-of-linux-touch-command/
+## Ref: https://stackoverflow.com/questions/6481005/how-to-obtain-the-number-of-cpus-cores-in-linux-from-the-command-line
+## Ref: https://ostechnix.com/find-out-the-linux-distribution-name-version-and-kernel-details/
+## Ref: https://linuxize.com/post/how-to-check-mysql-version/
+## Ref: https://www.cyberciti.biz/faq/find-my-linux-machine-name/
+## Ref: https://unix.stackexchange.com/questions/471521/how-to-get-only-the-version-number-of-php
+## Ref: https://www.geeksforgeeks.org/how-to-create-comma-separated-list-from-array-in-php/
+## Ref: https://stackoverflow.com/questions/478844/how-do-i-see-the-extensions-loaded-by-php
+## Ref: https://linux.die.net/man/1/dnsdomainname
+## Ref: https://serverfault.com/questions/739684/why-hostname-f-gives-me-subdomain-back-when-only-domain-is-in-etc-hostname
+## Ref: https://serverfault.com/questions/545215/change-ps1-value-for-all-bash-users
+## Ref: https://serverfault.com/questions/218629/most-effective-way-to-change-linux-command-prompt-for-all-users
+## Ref: https://askubuntu.com/questions/984060/export-ps1-for-customizing-shell-prompt
+## Ref: https://serverfault.com/questions/296970/bash-prompt-on-ubuntu-fqdn-h-same-as-hostname-h
+## Ref: https://www.howtoforge.com/tutorial/linux-touch-command/
+## Ref: https://www.binarytides.com/linux-touch-command/
+## Ref: http://www.linfo.org/touch.html
+## Ref: https://superuser.com/questions/351251/get-total-size-of-my-hard-drive-in-linux-using-the-command-line-without-root-p
+## Ref: https://www.shellhacks.com/bash-colors/
+## Ref: https://misc.flogisoft.com/bash/tip_colors_and_formatting
+## Ref: https://www.geeksforgeeks.org/hostname-command-in-linux-with-examples/
+## Ref: https://dev.mysql.com/doc/refman/8.0/en/packet-too-large.html
+## Ref: https://superuser.com/questions/161110/why-doesnt-hostname-fqdn-work-on-my-ubuntu-computer
+## Ref: https://techpiezo.com/linux/wget-force-ipv4-ipv6-connection/
+## Ref: https://unix.stackexchange.com/questions/168584/wget-is-unable-to-resolve-host-address-80-of-the-time
+## Ref: https://github.community/t/cannot-reach-any-github-io-page-via-ipv6/10310
+## Ref: https://github.com/isaacs/github/issues/354
+## Ref: https://stackoverflow.com/questions/27392410/how-to-check-if-grep-has-no-output/27393148
+## Ref: https://unix.stackexchange.com/questions/608483/grep-q-vs-if-n-z
+## Ref: https://unix.stackexchange.com/questions/118433/quoting-within-command-substitution-in-bash
+## Ref: https://stackoverflow.com/questions/56170215/what-is-the-point-of-grep-q
+## Ref: https://stackoverflow.com/questions/9449778/what-is-the-benefit-of-using-instead-of-backticks-in-shell-scripts
+## Ref: https://stackoverflow.com/questions/4651437/how-do-i-set-a-variable-to-the-output-of-a-command-in-bash
+## Ref: https://stackoverflow.com/questions/43662591/wget-using-timeout-and-tries-together
+## Ref: https://www.shell-tips.com/bash/functions/#function-variables
+## Ref: https://unix.stackexchange.com/questions/30925/in-bash-when-to-alias-when-to-script-and-when-to-write-a-function
+## Ref: https://unix.stackexchange.com/questions/89714/easy-way-to-determine-virtualization-technology
+## Ref: https://stackoverflow.com/questions/29760638/remove-white-space-in-bash-using-sed
+## Ref: https://linoxide.com/linux-command/how-to-display-system-hardware-information-in-bios/
+## Ref: https://unix.stackexchange.com/questions/288521/with-the-linux-cat-command-how-do-i-show-only-certain-lines-by-number
+## Ref: https://www.howtoforge.com/linux-lshw-command/
+## Ref: https://linuxize.com/post/how-to-check-if-string-contains-substring-in-bash/
+## Ref: https://stackoverflow.com/questions/2440947/how-to-build-a-conditional-assignment-in-bash
+## Ref: https://stackoverflow.com/questions/3341372/difference-between-shell-and-environment-variables
+## Ref: https://unix.stackexchange.com/questions/337877/unix-system-unzip-archive-zip-extracting-zip-files-silently
+## Ref: https://askubuntu.com/questions/185070/why-do-i-get-hostname-name-or-service-not-known-error
+## Ref: https://stackoverflow.com/questions/22717169/how-can-i-test-if-a-variable-contains-a-string-in-a-bash-script-without-getting
+## Ref: https://www.reddit.com/r/bash/comments/j6z26q/do_you_use_curly_braces_on_variables_all_the_time/
+## Ref: https://google.github.io/styleguide/shellguide.html
+## Ref: https://stackoverflow.com/questions/8748831/when-do-we-need-curly-braces-around-shell-variables
+## Ref: https://stackoverflow.com/questions/8110530/check-free-disk-space-for-current-partition-in-bash
+## Ref: https://stackoverflow.com/questions/16136943/how-to-get-the-second-column-from-command-output
+## Ref: https://stackoverflow.com/questions/4651012/why-is-the-default-terminal-width-80-characters
+## Ref: https://onceupon.github.io/Bash-Oneliner/
+## Ref: https://stackoverflow.com/questions/6426363/how-can-i-have-grep-not-print-out-no-such-file-or-directory-errors
+## Ref: https://stackoverflow.com/questions/28296411/how-to-touch-a-file-and-mkdir-if-needed-in-one-line
+## Ref: https://unix.stackexchange.com/questions/305844/how-to-create-a-file-and-parent-directories-in-one-command
+## Ref: https://askubuntu.com/questions/800845/create-file-and-its-parent-directory
+## Ref: https://unix.stackexchange.com/questions/277412/cp-vs-mv-which-operation-is-more-efficient
+## Ref: https://stackoverflow.com/questions/547719/is-there-a-way-to-make-mv-create-the-directory-to-be-moved-to-if-it-doesnt-exis
+## Ref: https://unix.stackexchange.com/questions/41571/what-is-the-difference-between-and
+## Ref: https://www.baeldung.com/linux/create-destination-directory
+## Ref: https://unix.stackexchange.com/questions/484423/should-we-use-utf-8-characters-like-in-bash-shell-script
+## Ref: https://stackoverflow.com/questions/13777387/check-for-ip-validity
+## Ref: https://stackoverflow.com/questions/45565521/regex-validate-ipv6-shell-script
+## Ref: https://1.1.1.1/dns/
+## Ref: https://askubuntu.com/questions/187888/what-is-the-correct-way-to-completely-remove-an-application
+## Ref: https://linuxize.com/post/how-to-check-if-string-contains-substring-in-bash/
+## Ref: https://stackoverflow.com/questions/2440947/how-to-build-a-conditional-assignment-in-bash
+
+## SS_EOF

@@ -1,0 +1,157 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/bash/ss-purge-transients.txt #######################
+#### path: /var/www/ss-purge-transients ############################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Manually deletes all transients data from the WordPress wp_options table #############
+#### module version: MySQL 8.0.x ###################################################################
+#### sourced by: ss-install ########################################################################
+#### bash aliases: ss purge transients #############################################################
+####################################################################################################
+
+## PURGING CACHES DURING TRAFFIC SPIKES MIGHT CAUSE SUDDEN STRESS TO SERVER RESOURCES ##
+## KEEP IN MIND THAT MOST CACHING IS FORCE-DISABLED ON DEV/STAGING WEBSITES ##
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Purge-Transients) #######################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Source SS-Config + SS-Functions
+## B. Touch Timestamp File
+## C. Message (Begin Script)
+## D. Delete Transients From Database
+
+####################################################################################################
+#### A. SS-Purge-Transients: Source SS-Config + SS-Functions #######################################
+####################################################################################################
+
+## before anything else we must source the critical variables that power this script ##
+## ss-config is setup during ss-install wizard but ss-functions is hardcoded ##
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### B. SS-Purge-Transients: Touch Timestamp File ##################################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_PURGE_TRANSIENTS}"
+
+####################################################################################################
+#### C. SS-Purge-Transients: Message (Begin Script) ################################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-purge-transients... ${COLOR_RESET}"
+
+####################################################################################################
+#### D. SS-Purge-Transients: Delete Transients From Database #######################################
+####################################################################################################
+
+## manually deletes all transients (temporary query cache data) from WordPress database ##
+## this is a more forceful approach than simply purging the Memcached cache ##
+
+## need to communicate better that this script is more relevant when object cache (Redis) has been disabled, otherwise its cleaning ##
+## out the database but has no affect on the queries that Redis has cached ##
+
+## ubuntu 24.04 ##
+if [[ "${SYSTEM_UBUNTU_VERSION}" = "24.04" ]] || [[ -z "${SYSTEM_UBUNTU_VERSION}" ]]; then 
+
+    if [[ -n $(ss_mysql_user --execute "SHOW TABLES FROM ${DB_NAME} WHERE Tables_in_${DB_NAME} LIKE '${DB_PREFIX}options';") ]]; then
+    
+        ss_mysql_user --execute="DELETE FROM ${DB_NAME}.${DB_PREFIX}options WHERE option_name LIKE ('%\_transient\_%');"
+    
+    fi
+    
+fi
+
+## ubuntu 22.04 ##
+if [[ "${SYSTEM_UBUNTU_VERSION}" = "22.04" ]] || [[ -z "${SYSTEM_UBUNTU_VERSION}" ]]; then 
+
+    if [[ -n $(ss_mysql_user --execute "SHOW TABLES FROM ${DB_NAME} WHERE Tables_in_${DB_NAME} LIKE '${DB_PREFIX}options';") ]]; then
+    
+        ss_mysql_user --execute="DELETE FROM ${DB_NAME}.${DB_PREFIX}options WHERE option_name LIKE ('%\_transient\_%');"
+    
+    fi
+    
+fi
+
+## ubuntu 20.04 ##
+if [[ "${SYSTEM_UBUNTU_VERSION}" = "20.04" ]]; then 
+
+    if [[ -n $(ss_mysql_user --execute "SHOW TABLES FROM ${DB_NAME} WHERE Tables_in_${DB_NAME} LIKE '${DB_PREFIX}options';") ]]; then
+    
+        ss_mysql_user --execute="DELETE FROM ${DB_NAME}.${DB_PREFIX}options WHERE option_name LIKE ('%\_transient\_%');"
+    
+    fi
+    
+fi
+
+## ubuntu 18.04 ##
+if [[ "${SYSTEM_UBUNTU_VERSION}" = "18.04" ]]; then
+
+    if [[ -n $(ss_mysql_user --execute "SHOW TABLES FROM ${DB_NAME} WHERE Tables_in_${DB_NAME} LIKE '${DB_PREFIX}options';") ]]; then
+    
+        ss_mysql_user --execute="DELETE FROM ${DB_NAME}.${DB_PREFIX}options WHERE option_name LIKE ('%\_transient\_%');"
+     
+    fi
+     
+fi
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://www.php.net/manual/en/function.opcache-reset.php#121513
+## Ref: https://stackoverflow.com/questions/5506913/bash-script-to-run-php-script
+## Ref: https://coderwall.com/p/yrqrkw/delete-all-existing-wordpress-transients-in-mysql-database
+## Ref: https://stackoverflow.com/questions/10422574/can-i-remove-transients-in-the-wp-options-table-of-my-wordpress-install
+## Ref: https://wordpress.stackexchange.com/questions/73477/is-there-any-danger-in-deleting-all-transients
+## Ref: https://stackoverflow.com/questions/20033648/how-to-run-mysql-command-on-bash
+## Ref: https://serverfault.com/questions/337818/how-to-force-mysql-to-connect-by-tcp-instead-of-a-unix-socket
+## Ref: https://stackoverflow.com/questions/33067909/bash-variable-under-a-mysql-query
+## Ref: https://dev.mysql.com/doc/refman/5.7/en/examples.html
+## Ref: https://stackoverflow.com/questions/25044817/zend-opcache-opcache-enable-cli-1-or-0-what-does-it-do#comment91052089_35880017
+## Ref: https://codex.wordpress.org/Class_Reference/WP_Object_Cache
+## Ref: https://pressidium.com/blog/2017/wordpress-object-caching-redis-memcached-and-native-apis/
+## Ref: https://pressjitsu.com/blog/transient-cache-alternatives/
+## Ref: https://unix.stackexchange.com/questions/87258/delete-all-files-except-in-a-certain-subdirectory-with-find
+## Ref: https://github.com/littlebizzy/slickstack/issues/57
+## Ref: https://stackoverflow.com/questions/5609620/show-tables-statement-with-multiple-like-values
+## Ref: https://wordpress.stackexchange.com/questions/383794/do-wordpress-crons-clean-up-expired-transients
+
+## SS_EOF

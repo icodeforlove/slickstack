@@ -1,0 +1,52 @@
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/modules/nginx/includes/real-ips-conf.txt ###########
+#### path: n/a (boilerplate) #######################################################################
+#### destination: /var/www/sites/includes/real-ips.conf ############################################
+#### purpose: Nginx submodule to tell Cloudflare to forward real client IP addresses ###############
+#### module version: Nginx 1.18.x ##################################################################
+#### sourced by: nginx.conf ########################################################################
+#### bash aliases: n/a (ss-install-nginx-config) ###################################################
+####################################################################################################
+
+####################################################################################################
+#### TABLE OF CONTENTS (Real-IPs.conf) #############################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Cloudflare IPv4 List
+## B. Cloudflare IPv6 List
+## C. Activate Real IP Header
+
+####################################################################################################
+#### A. Real-IPs.conf: Cloudflare IPv4 List ########################################################
+####################################################################################################
+
+@CLOUDFLARE_IPV4_LIST
+
+####################################################################################################
+#### B. Real-IPs.conf: Cloudflare IPv6 List ########################################################
+####################################################################################################
+
+@CLOUDFLARE_IPV6_LIST
+
+####################################################################################################
+#### C. Real-IPs.conf: Activate Real IP Header #####################################################
+####################################################################################################
+
+real_ip_header CF-Connecting-IP;
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://github.com/littlebizzy/slickstack/issues/198
+## Ref: https://developers.cloudflare.com/support/troubleshooting/restoring-visitor-ips/restoring-original-visitor-ips/
+## Ref: https://www.cloudflare.com/ips/
+## Ref: https://github.com/ergin/nginx-cloudflare-real-ip
+## Ref: https://slickstack.io/forum/topic/when-is-cloudflare-real-ip-actually-needed-for-wordpress
+
+## SS_EOF

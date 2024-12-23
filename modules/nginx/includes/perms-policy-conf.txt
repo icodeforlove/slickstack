@@ -1,0 +1,22 @@
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/modules/nginx/includes/perms-policy-conf.txt #######
+#### path: /var/www/sites/includes/perms-policy.conf ###############################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: default Nginx submodule for Permissions Policy (included in nginx.conf) ##############
+#### module version: Nginx 1.18.x ##################################################################
+#### sourced by: /etc/nginx/nginx.conf #############################################################
+#### bash aliases: n/a #############################################################################
+####################################################################################################
+
+add_header Permissions-Policy "camera=(), encrypted-media=(), geolocation=(), microphone=(), midi=()" always;
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://github.com/littlebizzy/slickstack/issues/201
+## Ref: https://scotthelme.co.uk/goodbye-feature-policy-and-hello-permissions-policy/
+
+## SS_EOF

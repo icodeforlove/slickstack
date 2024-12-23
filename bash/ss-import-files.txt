@@ -1,0 +1,140 @@
+#!/bin/bash
+
+####################################################################################################
+#### author: SlickStack ############################################################################
+#### link: https://slickstack.io ###################################################################
+#### mirror: littlebizzy/slickstack/blob/master/bash/ss-import-files.txt ###########################
+#### path: /var/www/ss-import-files ################################################################
+#### destination: n/a (not a boilerplate) ##########################################################
+#### purpose: Force imports /tmp/import.tar|.tar.gz and overwrites entire html directory ###########
+#### module version: Ubuntu 24.04 LTS ##############################################################
+#### sourced by: n/a ###############################################################################
+#### bash aliases: ss import files #################################################################
+####################################################################################################
+
+####################################################################################################
+#### TABLE OF CONTENTS (SS-Import-Files) ###########################################################
+####################################################################################################
+
+## this is a brief summary of the different code snippets you will find in this script ##
+## each section should be commented so you understand what is being accomplished ##
+
+## A. Source SS-Config + SS-Functions
+## B. Touch Timestamp File
+## C. Message (Begin Script)
+## D. Import Static Files (Overwrites Data)
+
+####################################################################################################
+#### A. SS-Import-Files: Source SS-Config + SS-Functions ###########################################
+####################################################################################################
+
+## before anything else we must source the critical variables that power this script ##
+## ss-config is setup during ss-install wizard but ss-functions is hardcoded ##
+
+## source ss-config ##
+source /var/www/ss-config
+
+## source ss-functions ##
+source /var/www/ss-functions
+
+## BELOW THIS RELIES ON SS-CONFIG AND SS-FUNCTIONS
+
+####################################################################################################
+#### B. SS-Import-Files: Touch Timestamp File ######################################################
+####################################################################################################
+
+## this is a dummy timestamp file that will remember the last time this script was run ##
+## it can be useful for developer reference and is sometimes used by SlickStack ##
+
+ss_touch "${TIMESTAMP_SS_IMPORT_FILES}"
+
+####################################################################################################
+#### C. SS-Import-Files: Message (Begin Script) ####################################################
+####################################################################################################
+
+## this is a simple message that announces to the shell the purpose of this bash script ##
+## it will only be seen by sudo users who manually run this script in the shell ##
+
+ss_echo "${COLOR_INFO}Running ss-import-files... ${COLOR_RESET}"
+
+####################################################################################################
+#### D. SS-Import-Files: Import Static Files (Overwrites Data) #####################################
+####################################################################################################
+
+## here the sudo user must manually confirm importing the files before it can proceed ##
+## import.tar is the preferred file format followed by import.tar.gz (gzipped) ##
+
+read -r -p "ALL PRODUCTION FILES will be overwritten in the html folder, are you sure? [y/N]" response
+if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+
+    if [[ -f "/tmp/import.tar" ]]; then
+        echo "found import.tar and proceeding to import and overwrite"
+        ss_chown "${SFTP_USER}":www-data /tmp/import.tar
+        chmod 6775 /tmp/import.tar
+        ss_mkdir /var/www/html
+        ss_chown "${SFTP_USER}":slickstack /var/www/html
+        chmod 0775 /var/www/html ## must be 0775 (0755 not enough)
+        ss_untar /tmp/import.tar -C /var/www/html
+        
+        ## run ss-install-wordpress-config ##
+        source "${PATH_SS_INSTALL_WORDPRESS_CONFIG}"
+
+        ## run ss-perms-wordpress-mu-plugins ##
+        source "${PATH_SS_PERMS_WORDPRESS_MU_PLUGINS}"
+        
+        ## run ss-perms-wordpress-packages ##
+        source "${PATH_SS_PERMS_WORDPRESS_PACKAGES}"
+    
+    elif [[ ! -f "/tmp/import.tar" ]] && [[ -f "/tmp/import.tar.gz" ]]; then
+        echo "found import.tar.gz and proceeding to import and overwrite"
+        ss_chown "${SFTP_USER}":www-data /tmp/import.tar.gz
+        chmod 6775 /tmp/import.tar.gz
+        ss_mkdir /var/www/html
+        ss_chown "${SFTP_USER}":slickstack /var/www/html
+        chmod 0775 /var/www/html ## must be 0775 (0755 not enough)
+        ss_untargz /tmp/import.tar.gz -C /var/www/html
+
+        ## run ss-install-wordpress-config ##
+        source "${PATH_SS_INSTALL_WORDPRESS_CONFIG}"
+
+        ## run ss-perms-wordpress-mu-plugins ##
+        source "${PATH_SS_PERMS_WORDPRESS_MU_PLUGINS}"
+        
+        ## run ss-perms-wordpress-packages ##
+        source "${PATH_SS_PERMS_WORDPRESS_PACKAGES}"
+        
+    elif [[ ! -f "/tmp/import.tar" ]] && [[ ! -f "/tmp/import.tar.gz" ]]; then
+        echo "could not find import.tar or import.tar.gz in /tmp/ folder"
+    fi
+
+else
+    echo "cancelled import"
+    exit 1
+fi
+
+####################################################################################################
+#### SlickStack: Reset Permissions (SlickStack Scripts) ############################################
+####################################################################################################
+
+## we include this permissions reset in all cron jobs and bash scripts for redundancy ##
+## chmod 0700 means only the root/sudo users can execute any SlickStack scripts ##
+
+## THIS SNIPPET DOES NOT RELY ON SS-CONFIG OR SS-FUNCTIONS
+## SNIPPET: ss bash scripts, ss cron jobs
+## UPDATED: 02JUL2022
+
+chown root:root /var/www/ss* ## must be root:root
+chown root:root /var/www/crons/*cron* ## must be root:root
+chown root:root /var/www/crons/custom/*cron* ## must be root:root
+chmod 0700 /var/www/ss* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/*cron* ## 0700 means only root/sudo can execute
+chmod 0700 /var/www/crons/custom/*cron* ## 0700 means only root/sudo can execute
+
+####################################################################################################
+#### SlickStack: External References Used To Improve This Script (Thanks, Interwebz) ###############
+####################################################################################################
+
+## Ref: https://github.com/littlebizzy/slickstack/blob/master/bash/ss-perms.txt
+## Ref: https://stackoverflow.com/questions/41243174/untar-tar-file-using-strip-components-1
+
+## SS_EOF
