@@ -1,31 +1,29 @@
+<span style="color: red">⚠️ **SECURITY NOTICE**
+
+This is a fork of the original SlickStack project (https://github.com/littlebizzy/slickstack) which was found to be executing remote code from personal servers - a significant security risk. This version has been cleaned up to:
+
+- Remove all potentially malicious code and unsafe installation processes 
+- Ensure all remote calls are made directly to this repository
+- Provide transparent, descriptive multi-file commits for all updates
+- Maintain the useful functionality while prioritizing security
+- Remove unnecessary files, reducing repo size from over 500MB to just 2MB</span>
+
+---
+
 <img src="https://repository-images.githubusercontent.com/104382627/49a17307-d8e9-49f3-a320-b3bd9c0f5e70" />
 
 # SlickStack
 
 SlickStack is a free LEMP stack automation script written in Bash designed to enhance and simplify WordPress provisioning, performance, and security.
 
-<a href="https://www.g2.com/products/slickstack/reviews">G2 Crowd</a> | <a href="https://www.capterra.com/p/211436/SlickStack">Capterra</a> | <a href="https://www.producthunt.com/posts/slickstack">Product Hunt</a> | <a href="https://sourceforge.net/software/product/SlickStack/">SourceForge</a>
-
-## Thank you to our generous sponsors!
-
-[**Become a sponsor**](https://github.com/sponsors/jessuppi) and receive access to our **#perma-lounge** channel on Discord. Your donations and public displays of support for SlickStack are what keep this project going. Thank you very much!
-
-&nbsp;
-
-<a href="https://emplibot.com"><img width="150" style="padding: 20px" src="https://slickstack.io/wp-content/uploads/2024/09/emplibot-square.png" /></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://www.osoelectric.com"><img width="150" src="https://slickstack.io/wp-content/uploads/2023/04/oso-logo-color-480x467.webp" /></a>
-
-&nbsp;
-
-Our sponsors: [backamblock](https://github.com/backamblock), [yamanmucahit](https://github.com/yamanmucahit), [maxalerator](https://github.com/maxalerator), [konkova](https://github.com/konkova), [HDBear](https://github.com/HDBear), [Politicalite](https://github.com/politicalite), [liwernyap](https://github.com/liwernyap), [vivdev](https://github.com/vivdev), [hamzah](https://github.com/hamzah), [gingibash](https://github.com/gingibash), [damiafaw](https://github.com/damiafaw), [trevplaig](https://github.com/trevplaig), [hargums](https://github.com/hargums), [volneanschi](https://github/volneanschi), [OSO Electric Equipment](https://github.com/Oso-Electric-Equipment), [vladbejenaru](https://github.com/vladbejenaru), [alexbohariuc](https://github.com/alexbohariuc), [romfeo](https://github/romfeo), [chelovek07](https://github/chelovek07)
-
 ## Installation
 
-Because it’s written purely in Bash (Unix shell), SlickStack has no dependencies and works on any Ubuntu LTS machine. Unlike heavier provisioning tools like EasyEngine or Ansible, there are no third party languages required such as Python or Docker, meaning a lighter and simpler approach to WordPress servers.
+Because it's written purely in Bash (Unix shell), SlickStack has no dependencies and works on any Ubuntu LTS machine. Unlike heavier provisioning tools like EasyEngine or Ansible, there are no third party languages required such as Python or Docker, meaning a lighter and simpler approach to WordPress servers.
 
 The below installation steps assume that you've already spun up a [KVM cloud server](https://slickstack.io/hosting) on Ubuntu LTS, with at least 1GB+ RAM, and that you are logged in via SSH as `root`:
 
 ```
-cd /tmp/ && wget -O ss slick.fyi/ss && bash ss
+cd /tmp/ && wget -O ss https://raw.githubusercontent.com/icodeforlove/slickstack/master/bash/ss-install.txt && bash ss
 ```
 
 From this point forward, you can manage your SlickStack server by simply using the `sudo bash` command on any one of the bundled scripts located within the `/var/www/` directory, as needed. However, in most cases there shouldn't be any need for much hands-on management as the server will intelligently run various cron jobs which connect to this GitHub repo.

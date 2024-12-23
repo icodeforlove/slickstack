@@ -760,25 +760,25 @@ INTERVAL_SS_UPDATE_MODULES="never" ## ss default = never
 
 ## TO DISABLE ANY OF THE MU PLUGINS BELOW SIMPLY DELETE THE RELEVANT LINES FROM SS-CONFIG ##
 
-MU_PLUGIN_01_SOURCE="https://github.com/littlebizzy/slickstack/raw/master/modules/wordpress/mu-plugins/clear-caches.zip"
+MU_PLUGIN_01_SOURCE="https://github.com/icodeforlove/slickstack/raw/master/modules/wordpress/mu-plugins/clear-caches.zip"
 MU_PLUGIN_01_DIR="clear-caches"
 
-MU_PLUGIN_02_SOURCE="https://github.com/littlebizzy/slickstack/raw/master/modules/wordpress/mu-plugins/disable-empty-trash.zip"
+MU_PLUGIN_02_SOURCE="https://github.com/icodeforlove/slickstack/raw/master/modules/wordpress/mu-plugins/disable-empty-trash.zip"
 MU_PLUGIN_02_DIR="disable-empty-trash"
 
-MU_PLUGIN_03_SOURCE="https://github.com/littlebizzy/slickstack/raw/master/modules/wordpress/mu-plugins/disable-image-compression.zip"
+MU_PLUGIN_03_SOURCE="https://github.com/icodeforlove/slickstack/raw/master/modules/wordpress/mu-plugins/disable-image-compression.zip"
 MU_PLUGIN_03_DIR="disable-image-compression"
 
-MU_PLUGIN_04_SOURCE="https://github.com/littlebizzy/slickstack/raw/master/modules/wordpress/mu-plugins/disable-xml-rpc.zip"
+MU_PLUGIN_04_SOURCE="https://github.com/icodeforlove/slickstack/raw/master/modules/wordpress/mu-plugins/disable-xml-rpc.zip"
 MU_PLUGIN_04_DIR="disable-xml-rpc"
 
-MU_PLUGIN_05_SOURCE="https://github.com/littlebizzy/slickstack/raw/master/modules/wordpress/mu-plugins/force-https.zip"
+MU_PLUGIN_05_SOURCE="https://github.com/icodeforlove/slickstack/raw/master/modules/wordpress/mu-plugins/force-https.zip"
 MU_PLUGIN_05_DIR="force-https"
 
-MU_PLUGIN_06_SOURCE="https://github.com/littlebizzy/slickstack/raw/master/modules/wordpress/mu-plugins/plugin-blacklist.zip"
+MU_PLUGIN_06_SOURCE="https://github.com/icodeforlove/slickstack/raw/master/modules/wordpress/mu-plugins/plugin-blacklist.zip"
 MU_PLUGIN_06_DIR="plugin-blacklist"
 
-MU_PLUGIN_07_SOURCE="https://github.com/littlebizzy/slickstack/raw/master/modules/wordpress/mu-plugins/repoman.zip"
+MU_PLUGIN_07_SOURCE="https://github.com/icodeforlove/slickstack/raw/master/modules/wordpress/mu-plugins/repoman.zip"
 MU_PLUGIN_07_DIR="repoman"
 
 ## SS_EOF
