@@ -1,12 +1,28 @@
-<span style="color: red">⚠️ **SECURITY NOTICE**
+![SECURITY NOTICE](https://img.shields.io/badge/SECURITY%20NOTICE-red?style=for-the-badge&logo=warning)
 
-This is a fork of the original SlickStack project (https://github.com/littlebizzy/slickstack) which was found to be executing remote code from personal servers - a significant security risk. This version has been cleaned up to:
+This repository is a fork of the original SlickStack project (`/littlebizzy/slickstack`), which was discovered to execute remote code from personal servers—a major security vulnerability. This fork has been thoroughly cleaned to:
 
-- Remove all potentially malicious code and unsafe installation processes 
-- Ensure all remote calls are made directly to this repository
-- Provide transparent, descriptive multi-file commits for all updates
-- Maintain the useful functionality while prioritizing security
-- Remove unnecessary files, reducing repo size from over 500MB to just 2MB</span>
+- Eliminate all potentially malicious code and unsafe installation procedures.
+- Ensure that all remote calls are directed exclusively to this repository.
+- Offer transparent, descriptive, multi-file commits for all updates.
+- Retain useful functionality while placing a strong emphasis on security.
+- Remove unnecessary files, reducing the repository size from over 500MB to just 2MB.
+
+![HOW TO USE](https://img.shields.io/badge/HOW%20TO%20USE-red?style=for-the-badge&logo=warning)
+
+**It is strongly advised to avoid using SlickStack entirely** due to its inherent security issues, poor design, and substandard maintenance practices. 
+
+However, if you choose to proceed and security is not your top concern, please follow these recommendations:
+
+1. Update all external calls/mirrors to point to your own server in the `slickstack/bash/ss-functions.txt` file.
+2. Alternatively, remove all external calls/mirrors entirely from the `slickstack/bash/ss-functions.txt` file.
+
+If you maintain your own fork:
+- Be cautious when pulling updates or merging, as these may reintroduce malicious code.
+- Note that fully addressing these issues is beyond the scope of this repository, and I do not plan to dedicate time to resolving them comprehensively.
+
+Lastly, keep in mind that this code only functions if your fork is made public on GitHub, which is already a flawed design. A better implementation would allow for custom forks without requiring remote calls to a public repository. Instead, users could simply perform a `git pull` and merge changes locally.
+
 
 ---
 
@@ -21,6 +37,10 @@ SlickStack is a free LEMP stack automation script written in Bash designed to en
 Because it's written purely in Bash (Unix shell), SlickStack has no dependencies and works on any Ubuntu LTS machine. Unlike heavier provisioning tools like EasyEngine or Ansible, there are no third party languages required such as Python or Docker, meaning a lighter and simpler approach to WordPress servers.
 
 The below installation steps assume that you've already spun up a [KVM cloud server](https://slickstack.io/hosting) on Ubuntu LTS, with at least 1GB+ RAM, and that you are logged in via SSH as `root`:
+
+![SECURITY NOTICE](https://img.shields.io/badge/DO%20NOT%20USE%20EXAMPLE%20ONLY-red?style=for-the-badge&logo=warning)
+
+You should replace the url to your own repo.
 
 ```
 cd /tmp/ && wget -O ss https://raw.githubusercontent.com/icodeforlove/slickstack/master/bash/ss-install.txt && bash ss
