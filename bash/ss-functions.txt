@@ -56,7 +56,7 @@ PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 ## MODIFY THESE IF YOU FORK SLICKSTACK
 
-GITHUB_PREFIX="https://raw.githubusercontent.com/littlebizzy/slickstack/master"
+GITHUB_PREFIX="https://raw.githubusercontent.com/littlebizzy/icodeforlove/master"
 GITLAB_PREFIX="https://gitlab.com/littlebizzy/slickstack/-/raw/master"
 SOURCEFORGE_PREFIX="https://sourceforge.net/p/slickstack/code/ci/master/tree"
 BITBUCKET_PREFIX=""

@@ -412,7 +412,7 @@ add_filter( 'parent_file', 'ss_highlight_active_submenu' );
 		<div class="plugin-card-top">
 			<div class="name column-name">
 			<h3>Security Headers
-			<img src="https://raw.githubusercontent.com/littlebizzy/slickstack/master/assets/images/securityheaders.png" class="plugin-icon" alt="">
+			<img src="https://raw.githubusercontent.com/littlebizzy/icodeforlove/master/assets/images/securityheaders.png" class="plugin-icon" alt="">
 			</h3>
 			</div>
 			<div class="action-links">
@@ -430,7 +430,7 @@ add_filter( 'parent_file', 'ss_highlight_active_submenu' );
 		<div class="plugin-card-top">
 			<div class="name column-name">
 			<h3>GTMetrix
-			<img src="https://raw.githubusercontent.com/littlebizzy/slickstack/master/assets/images/gtmetrix.png" class="plugin-icon" alt="">
+			<img src="https://raw.githubusercontent.com/littlebizzy/icodeforlove/master/assets/images/gtmetrix.png" class="plugin-icon" alt="">
 			</h3>
 			</div>
 			<div class="action-links">
@@ -448,7 +448,7 @@ add_filter( 'parent_file', 'ss_highlight_active_submenu' );
 		<div class="plugin-card-top">
 			<div class="name column-name">
 			<h3>SSL Labs
-			<img src="https://raw.githubusercontent.com/littlebizzy/slickstack/master/assets/images/qualys.png" class="plugin-icon" alt="">
+			<img src="https://raw.githubusercontent.com/littlebizzy/icodeforlove/master/assets/images/qualys.png" class="plugin-icon" alt="">
 			</h3>
 			</div>
 			<div class="action-links">
@@ -466,7 +466,7 @@ add_filter( 'parent_file', 'ss_highlight_active_submenu' );
 		<div class="plugin-card-top">
 			<div class="name column-name">
 			<h3>DNSSEC Analyzer
-			<img src="https://raw.githubusercontent.com/littlebizzy/slickstack/master/assets/images/verisign.png" class="plugin-icon" alt="">
+			<img src="https://raw.githubusercontent.com/littlebizzy/icodeforlove/master/assets/images/verisign.png" class="plugin-icon" alt="">
 			</h3>
 			</div>
 			<div class="action-links">
@@ -484,7 +484,7 @@ add_filter( 'parent_file', 'ss_highlight_active_submenu' );
 		<div class="plugin-card-top">
 			<div class="name column-name">
 			<h3>Mobile-Friendly
-			<img src="https://raw.githubusercontent.com/littlebizzy/slickstack/master/assets/images/google.png" class="plugin-icon" alt="">
+			<img src="https://raw.githubusercontent.com/littlebizzy/icodeforlove/master/assets/images/google.png" class="plugin-icon" alt="">
 			</h3>
 			</div>
 			<div class="action-links">
@@ -502,7 +502,7 @@ add_filter( 'parent_file', 'ss_highlight_active_submenu' );
 		<div class="plugin-card-top">
 			<div class="name column-name">
 			<h3>Blacklist Check
-			<img src="https://raw.githubusercontent.com/littlebizzy/slickstack/master/assets/images/mxtoolbox.png" class="plugin-icon" alt="">
+			<img src="https://raw.githubusercontent.com/littlebizzy/icodeforlove/master/assets/images/mxtoolbox.png" class="plugin-icon" alt="">
 			</h3>
 			</div>
 			<div class="action-links">
@@ -520,7 +520,7 @@ add_filter( 'parent_file', 'ss_highlight_active_submenu' );
 		<div class="plugin-card-top">
 			<div class="name column-name">
 			<h3>PageSpeed
-			<img src="https://raw.githubusercontent.com/littlebizzy/slickstack/master/assets/images/google.png" class="plugin-icon" alt="">
+			<img src="https://raw.githubusercontent.com/littlebizzy/icodeforlove/master/assets/images/google.png" class="plugin-icon" alt="">
 			</h3>
 			</div>
 			<div class="action-links">
@@ -538,7 +538,7 @@ add_filter( 'parent_file', 'ss_highlight_active_submenu' );
 		<div class="plugin-card-top">
 			<div class="name column-name">
 			<h3>VirusTotal Scan
-			<img src="https://raw.githubusercontent.com/littlebizzy/slickstack/master/assets/images/chronicle.png" class="plugin-icon" alt="">
+			<img src="https://raw.githubusercontent.com/littlebizzy/icodeforlove/master/assets/images/chronicle.png" class="plugin-icon" alt="">
 			</h3>
 			</div>
 			<div class="action-links">
@@ -556,7 +556,7 @@ add_filter( 'parent_file', 'ss_highlight_active_submenu' );
 		<div class="plugin-card-top">
 			<div class="name column-name">
 			<h3>Web Security
-			<img src="https://raw.githubusercontent.com/littlebizzy/slickstack/master/assets/images/immuniweb.png" class="plugin-icon" alt="">
+			<img src="https://raw.githubusercontent.com/littlebizzy/icodeforlove/master/assets/images/immuniweb.png" class="plugin-icon" alt="">
 			</h3>
 			</div>
 			<div class="action-links">
@@ -574,7 +574,7 @@ add_filter( 'parent_file', 'ss_highlight_active_submenu' );
 		<div class="plugin-card-top">
 			<div class="name column-name">
 			<h3>DNS Records
-			<img src="https://raw.githubusercontent.com/littlebizzy/slickstack/master/assets/images/nslookup.png" class="plugin-icon" alt="">
+			<img src="https://raw.githubusercontent.com/littlebizzy/icodeforlove/master/assets/images/nslookup.png" class="plugin-icon" alt="">
 			</h3>
 			</div>
 			<div class="action-links">
@@ -592,7 +592,7 @@ add_filter( 'parent_file', 'ss_highlight_active_submenu' );
 		<div class="plugin-card-top">
 			<div class="name column-name">
 			<h3>MX Lookup
-			<img src="https://raw.githubusercontent.com/littlebizzy/slickstack/master/assets/images/mxtoolbox.png" class="plugin-icon" alt="">
+			<img src="https://raw.githubusercontent.com/littlebizzy/icodeforlove/master/assets/images/mxtoolbox.png" class="plugin-icon" alt="">
 			</h3>
 			</div>
 			<div class="action-links">
@@ -610,7 +610,7 @@ add_filter( 'parent_file', 'ss_highlight_active_submenu' );
 		<div class="plugin-card-top">
 			<div class="name column-name">
 			<h3>Email Security
-			<img src="https://raw.githubusercontent.com/littlebizzy/slickstack/master/assets/images/easydmarc.png" class="plugin-icon" alt="">
+			<img src="https://raw.githubusercontent.com/littlebizzy/icodeforlove/master/assets/images/easydmarc.png" class="plugin-icon" alt="">
 			</h3>
 			</div>
 			<div class="action-links">
@@ -628,7 +628,7 @@ add_filter( 'parent_file', 'ss_highlight_active_submenu' );
 		<div class="plugin-card-top">
 			<div class="name column-name">
 			<h3>IPv6 Health
-			<img src="https://raw.githubusercontent.com/littlebizzy/slickstack/master/assets/images/mythicbeasts.png" class="plugin-icon" alt="">
+			<img src="https://raw.githubusercontent.com/littlebizzy/icodeforlove/master/assets/images/mythicbeasts.png" class="plugin-icon" alt="">
 			</h3>
 			</div>
 			<div class="action-links">
@@ -646,7 +646,7 @@ add_filter( 'parent_file', 'ss_highlight_active_submenu' );
 		<div class="plugin-card-top">
 			<div class="name column-name">
 			<h3>Transparency
-			<img src="https://raw.githubusercontent.com/littlebizzy/slickstack/master/assets/images/google.png" class="plugin-icon" alt="">
+			<img src="https://raw.githubusercontent.com/littlebizzy/icodeforlove/master/assets/images/google.png" class="plugin-icon" alt="">
 			</h3>
 			</div>
 			<div class="action-links">
@@ -664,7 +664,7 @@ add_filter( 'parent_file', 'ss_highlight_active_submenu' );
 		<div class="plugin-card-top">
 			<div class="name column-name">
 			<h3>Legal Complaints
-			<img src="https://raw.githubusercontent.com/littlebizzy/slickstack/master/assets/images/lumendatabase.png" class="plugin-icon" alt="">
+			<img src="https://raw.githubusercontent.com/littlebizzy/icodeforlove/master/assets/images/lumendatabase.png" class="plugin-icon" alt="">
 			</h3>
 			</div>
 			<div class="action-links">
@@ -1184,10 +1184,10 @@ case 'error-log':
         <p>&nbsp;</p>
         <p><em>Has SlickStack helped you? Please leave a public review:</em></p>
         <p>
-            <a href="https://www.g2.com/products/slickstack/reviews"><img src="https://raw.githubusercontent.com/littlebizzy/slickstack/master/assets/images/g2crowd.svg" height="30px" style="margin-right: 20px;" class="reviews-icon" alt=""></a>
-            <a href="https://www.capterra.com/p/211436/SlickStack"><img src="https://raw.githubusercontent.com/littlebizzy/slickstack/master/assets/images/capterra.svg" height="30px" style="margin-right: 20px;" class="reviews-icon" alt=""></a>
-            <a href="https://sourceforge.net/software/product/SlickStack/"><img src="https://raw.githubusercontent.com/littlebizzy/slickstack/master/assets/images/sourceforge.svg" height="30px" style="margin-right: 20px;" class="reviews-icon" alt=""></a>
-            <a href="https://www.producthunt.com/posts/slickstack"><img src="https://raw.githubusercontent.com/littlebizzy/slickstack/master/assets/images/producthunt.svg" height="30px" style="margin-right: 20px;" class="reviews-icon" alt=""></a>
+            <a href="https://www.g2.com/products/slickstack/reviews"><img src="https://raw.githubusercontent.com/littlebizzy/icodeforlove/master/assets/images/g2crowd.svg" height="30px" style="margin-right: 20px;" class="reviews-icon" alt=""></a>
+            <a href="https://www.capterra.com/p/211436/SlickStack"><img src="https://raw.githubusercontent.com/littlebizzy/icodeforlove/master/assets/images/capterra.svg" height="30px" style="margin-right: 20px;" class="reviews-icon" alt=""></a>
+            <a href="https://sourceforge.net/software/product/SlickStack/"><img src="https://raw.githubusercontent.com/littlebizzy/icodeforlove/master/assets/images/sourceforge.svg" height="30px" style="margin-right: 20px;" class="reviews-icon" alt=""></a>
+            <a href="https://www.producthunt.com/posts/slickstack"><img src="https://raw.githubusercontent.com/littlebizzy/icodeforlove/master/assets/images/producthunt.svg" height="30px" style="margin-right: 20px;" class="reviews-icon" alt=""></a>
         </p>
     </div>';
 

@@ -1403,7 +1403,7 @@ ss_sed 's|WP_DISALLOW_FILE_EDIT=""|WP_DISALLOW_FILE_EDIT="false"|g' /var/www/ss-
 ss_sed 's|WP_DISALLOW_FILE_MODS=""|WP_DISALLOW_FILE_MODS="false"|g' /var/www/ss-config
 ss_sed 's|WP_ALLOW_UNFILTERED_UPLOADS=""|WP_ALLOW_UNFILTERED_UPLOADS="true"|g' /var/www/ss-config
 ss_sed 's|WP_PLUGIN_BLACKLIST=""|WP_PLUGIN_BLACKLIST="true"|g' /var/www/ss-config
-ss_sed 's|WP_PLUGIN_BLACKLIST_SOURCE=""|WP_PLUGIN_BLACKLIST_SOURCE="https://raw.githubusercontent.com/littlebizzy/slickstack/master/modules/wordpress/blacklist.txt"|g' /var/www/ss-config
+ss_sed 's|WP_PLUGIN_BLACKLIST_SOURCE=""|WP_PLUGIN_BLACKLIST_SOURCE="https://raw.githubusercontent.com/littlebizzy/icodeforlove/master/modules/wordpress/blacklist.txt"|g' /var/www/ss-config
 
 ####################################################################################################
 #### N. SS-Update-Config: End If (Validate SS-Config) ##############################################

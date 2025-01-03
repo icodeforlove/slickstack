@@ -240,7 +240,7 @@ WP_MU_PLUGINS="default"
 ## WP_PLUGIN_BLACKLIST_SOURCE = [*must be unique*] URL to custom blacklist.txt file ##
 
 WP_PLUGIN_BLACKLIST="true"
-WP_PLUGIN_BLACKLIST_SOURCE="https://raw.githubusercontent.com/littlebizzy/slickstack/master/modules/wordpress/blacklist.txt"
+WP_PLUGIN_BLACKLIST_SOURCE="https://raw.githubusercontent.com/littlebizzy/icodeforlove/master/modules/wordpress/blacklist.txt"
 
 ####################################################################################################
 #### SS-Config: Whitelabel Settings ################################################################
